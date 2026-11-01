@@ -103,6 +103,9 @@ for w in WEEKS:
                  Paragraph(f"DAY {d['day']}  ·  {date_of(d['day']).upper()}", LAB),
                  Paragraph(d["title"], H2), Paragraph("<b>Concepts</b>", S("b", fontSize=8.5, textColor=MUTED))]
         block += bullets(d["concepts"])
+        if d.get("approach"):
+            block += [Spacer(1, 3), Paragraph("<b>How to approach questions</b>", S("ap", fontSize=8.5, textColor=MUTED))]
+            block += [Paragraph(f"{k}. {a}", S("apl", leftIndent=10)) for k, a in enumerate(d["approach"], 1)]
         block += [Spacer(1, 4), panel([Paragraph("LIVE JAVA DEMO", S("l", fontName="Helvetica-Bold", fontSize=7.5, textColor=JAVA)),
                                        Paragraph(d["demo"], BODY)], bg=colors.HexColor("#eaf2f8"), pad=6)]
         if d["problems"]:
@@ -186,6 +189,17 @@ st += [t, Spacer(1, 14), Paragraph("APPENDIX B", LAB), Paragraph("What the inter
 t = Table([[Paragraph(f"<b>{a}</b>", BODY), Paragraph(b, BODY)] for a, b in COMPANIES], colWidths=[28*mm, W-28*mm])
 t.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("LINEBELOW",(0,0),(-1,-1),0.4,LINE),("TOPPADDING",(0,0),(-1,-1),5),("BOTTOMPADDING",(0,0),(-1,-1),5)]))
 st.append(t)
+from plan_data import PLAYBOOK
+st += [PageBreak(), Paragraph("PATTERN PLAYBOOK", LAB), Paragraph("How to approach each pattern, with a Java template", H1)]
+for k, (n, sig, ex) in enumerate(PATTERNS, 1):
+    P = PLAYBOOK[n]
+    code_html = P["template"].replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace(" ", "&nbsp;").replace("\n","<br/>")
+    st.append(CondPageBreak(70*mm))
+    st += [Paragraph(f"{k}. {n}", H2), Paragraph(f"<b>Use when:</b> {sig}", BODY), Spacer(1, 2)]
+    st += [Paragraph(f"{j}. {x}", S("ps", leftIndent=10)) for j, x in enumerate(P["steps"], 1)]
+    st += [Spacer(1, 3), panel([Paragraph(code_html, MONO)], pad=6), Spacer(1, 3),
+           Paragraph(f"<b>Common mistakes:</b> {P['pitfalls']}", BODY),
+           Paragraph(f"<b>Complexity:</b> {P['complexity']}  ·  <b>Classic problem:</b> {ex}", BODY), Spacer(1, 10)]
 st += [PageBreak(), Paragraph("APPENDIX C", LAB), Paragraph("Java DSA syntax cheat sheet", H1)]
 for name, code in JAVA_CHEATSHEET:
     code_html = code.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\n","<br/>")

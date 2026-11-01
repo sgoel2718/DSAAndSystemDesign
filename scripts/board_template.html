@@ -86,7 +86,7 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .kit h2{font:700 26px var(--hand);margin:0 0 4px}
 .kit > p{color:var(--muted);margin:0 0 14px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:30px}
-.pcard{background:var(--n4);color:var(--note-ink);padding:12px 14px;border-radius:2px;box-shadow:0 6px 12px -8px rgba(0,0,0,.3);transform:rotate(var(--r))}
+.pcard{border:0;text-align:left;font:inherit;cursor:pointer;width:100%;background:var(--n4);color:var(--note-ink);padding:12px 14px;border-radius:2px;box-shadow:0 6px 12px -8px rgba(0,0,0,.3);transform:rotate(var(--r))}
 .pcard b{font:700 17px var(--hand);display:block}
 .pcard span{font:15px/1.3 var(--hand);display:block;margin:2px 0 6px}
 .pcard i{font:normal 11px var(--mono);opacity:.8}
@@ -118,6 +118,12 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .snote span{font:15px/1.35 var(--hand)}.snote i{font:normal 11px var(--mono);opacity:.75;margin-top:auto;padding-top:4px}
 .nums{width:100%;border-collapse:collapse;font-size:14px}.nums td{padding:6px 8px;border-bottom:1px solid var(--line)}
 .nums td:last-child{font:13px var(--mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pcard:hover{transform:rotate(0) translateY(-2px)}
+.pcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.appr{padding-left:20px;margin:0}.appr li{margin:3px 0}
+.code{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow-x:auto;font:12.5px/1.55 var(--mono)}
+.pnav{display:flex;justify-content:space-between;gap:10px;margin-top:24px}
+.pnav button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:99px;padding:7px 14px;cursor:pointer;font:500 13px var(--sans)}
 footer{margin-top:40px;color:var(--muted);font-size:13px}
 @media (max-width:720px){header,.proj{grid-template-columns:1fr}.today{min-width:0}}
 @media (prefers-reduced-motion:reduce){.note,.bar i{transition:none}.note{transform:none}}
@@ -171,7 +177,7 @@ function renderTop(){
 }
 function renderTabs(){
   const t = document.getElementById("tabs");
-  const opts = [[0,"All 30 days"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns & Java toolkit"]];
+  const opts = [[0,"All 30 days"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns: how to approach"]];
   t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; renderTabs(); renderBoard(); });
 }
@@ -206,6 +212,7 @@ function openSheet(day){
     <h2 id="sheetTitle">${esc(d.title)}</h2>
     <div class="status">${TAUGHT.includes(d.day) ? "Lesson taught in chat" : "Lesson not taught yet: say “Start Day " + d.day + "” in chat"}</div>
     <h4>Concepts</h4><ul>${d.concepts.map(c => `<li>${esc(c)}</li>`).join("")}</ul>
+    ${d.approach.length ? `<h4>How to approach questions</h4><ol class="appr">${d.approach.map(a => `<li>${esc(a)}</li>`).join("")}</ol>` : ""}
     <h4>Live Java demo</h4><div class="demo">${esc(d.demo)}</div>
     ${d.problems.length ? `<h4>Problems</h4>${d.problems.map(([n,slug,diff]) => {
         const k = slug + "@" + d.day;
@@ -233,15 +240,35 @@ function renderProj(){
   document.getElementById("foot").textContent = `Last updated ${__UPDATED__}. Progress ticks are saved in this browser only.`;
 }
 function renderKit(){
-  document.getElementById("kit").innerHTML = `<div class="eyebrow">Toolkit</div><h2>20 patterns to recognise</h2>
-    <p>Read the question, find the signal, name the pattern out loud, then code.</p>
-    <div class="pgrid">${PLAN.patterns.map(([n,sig,ex],i) => `<div class="pcard" style="--r:${((i*29)%5-2)*0.5}deg"><b>${esc(n)}</b><span>${esc(sig)}</span><i>e.g. ${esc(ex)}</i></div>`).join("")}</div>
+  document.getElementById("kit").innerHTML = `<div class="eyebrow">Toolkit</div><h2>20 patterns and how to approach them</h2>
+    <p>Read the question, find the signal, name the pattern out loud, then code. Tap a pattern for its step-by-step approach, Java template, common mistakes and complexity.</p>
+    <div class="pgrid">${PLAN.patterns.map(([n,sig,ex],i) => `<button type="button" class="pcard" data-p="${i}" style="--r:${((i*29)%5-2)*0.5}deg"><b>${esc(n)}</b><span>${esc(sig)}</span><i>e.g. ${esc(ex)} · open approach →</i></button>`).join("")}</div>
     <div class="cols">
       <div class="box"><h3>Java DSA cheat sheet</h3>${PLAN.java.map(([n,c]) => `<div class="snip"><b>${esc(n)}</b><pre>${esc(c)}</pre></div>`).join("")}</div>
       <div style="display:grid;gap:20px;align-content:start;min-width:0">
         <div class="box"><h3>Interview loops (typical)</h3>${PLAN.companies.map(([n,t]) => `<div class="loop"><b>${esc(n)}</b>${esc(t)}</div>`).join("")}</div>
         <div class="box"><h3>Revision system</h3><ul>${PLAN.revision.map(r => `<li>${esc(r)}</li>`).join("")}</ul></div>
       </div></div>`;
+  document.querySelectorAll("#kit .pcard").forEach(c => c.onclick = () => openPattern(+c.dataset.p));
+}
+function openPattern(i){
+  const [n, sig, ex] = PLAN.patterns[i], P = PLAN.playbook[n], s = document.getElementById("sheet");
+  s.innerHTML = `<button type="button" class="close" id="closeSheet">Close</button>
+    <div class="eyebrow">Pattern ${i + 1} of ${PLAN.patterns.length}</div>
+    <h2 id="sheetTitle">${esc(n)}</h2>
+    <h4>When to use it</h4><p style="margin:0">${esc(sig)}</p>
+    <h4>How to approach</h4><ol class="appr">${P.steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+    <h4>Java template</h4><pre class="code">${esc(P.template)}</pre>
+    <h4>Common mistakes</h4><p style="margin:0">${esc(P.pitfalls)}</p>
+    <h4>Complexity</h4><p style="margin:0;font:14px var(--mono)">${esc(P.complexity)}</p>
+    <h4>Classic problem</h4><p style="margin:0">${esc(ex)}</p>
+    <div class="pnav">${i > 0 ? `<button type="button" id="pPrev">← ${esc(PLAN.patterns[i-1][0])}</button>` : "<span></span>"}
+      ${i < PLAN.patterns.length - 1 ? `<button type="button" id="pNext">${esc(PLAN.patterns[i+1][0])} →</button>` : ""}</div>`;
+  s.hidden = false; document.getElementById("scrim").hidden = false; s.scrollTop = 0;
+  const c = document.getElementById("closeSheet"); c.onclick = closeSheet; c.focus();
+  const pv = document.getElementById("pPrev"), nx = document.getElementById("pNext");
+  if (pv) pv.onclick = () => openPattern(i - 1);
+  if (nx) nx.onclick = () => openPattern(i + 1);
 }
 function renderSD(){
   const S = PLAN.sd, rot = i => ((i*31)%5-2)*0.5;
