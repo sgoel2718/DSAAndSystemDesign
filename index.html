@@ -25,6 +25,7 @@
   --n1:#5c5222; --n2:#22493a; --n3:#5a3324; --n4:#263c63; --note-ink:#f3efe2;
   --easy:#6fcf97; --med:#e8b84a; --hard:#f08a63; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1.2px);background-size:22px 22px;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
 .wrap{max-width:1180px;margin:0 auto;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:end}
@@ -83,7 +84,7 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .build{border:1px dashed var(--warm);padding:10px 12px;border-radius:6px}
 .donebox{display:flex;gap:10px;align-items:center;margin-top:22px;font-weight:600}
 .status{font:12px var(--mono);color:var(--muted)}
-.kit{margin-top:36px}
+.kit{margin-top:20px}
 .kit h2{font:700 26px var(--hand);margin:0 0 4px}
 .kit > p{color:var(--muted);margin:0 0 14px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:30px}
@@ -99,6 +100,11 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .loop{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}.loop b{display:block}
 .box ul{padding-left:18px;margin:0;font-size:14px}
 @media (max-width:720px){.cols{grid-template-columns:1fr}}
+.totop{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:15;
+  width:48px;height:48px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font:600 22px/1 var(--sans);cursor:pointer;
+  box-shadow:0 6px 16px -4px rgba(0,0,0,.35)}
+.totop:hover{transform:translateY(-2px)}
+.totop:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 footer{margin-top:40px;color:var(--muted);font-size:13px}
 @media (max-width:720px){header,.proj{grid-template-columns:1fr}.today{min-width:0}}
 @media (prefers-reduced-motion:reduce){.note,.bar i{transition:none}.note{transform:none}}
@@ -120,6 +126,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
   <footer id="foot"></footer>
 </div>
 <div class="scrim" id="scrim" hidden></div>
+<button type="button" class="totop" id="totop" aria-label="Scroll to top" hidden>↑</button>
 <aside class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></aside>
 
 <script>
@@ -152,7 +159,7 @@ function renderTabs(){
   const t = document.getElementById("tabs");
   const opts = [[0,"All 30 days"], ...PLAN.weeks.map(w => [w.n, `Week ${w.n}`]), [9,"Build days"], [8,"Patterns & Java toolkit"]];
   t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
-  t.querySelectorAll("button").forEach(b => b.onclick = () => { const v = +b.dataset.v; if (v === 8) { document.getElementById("kit").scrollIntoView({behavior:"smooth"}); return; } filter = v; renderTabs(); renderBoard(); });
+  t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; renderTabs(); renderBoard(); });
 }
 function noteHTML(d, i){
   const r = ((d.day * 37) % 7 - 3) * 0.45;
@@ -167,6 +174,9 @@ function noteHTML(d, i){
 }
 function renderBoard(){
   const b = document.getElementById("board");
+  const kitView = filter === 8;
+  b.hidden = kitView; document.getElementById("proj").hidden = kitView; document.getElementById("kit").hidden = !kitView;
+  if (kitView) { b.innerHTML = ""; return; }
   b.innerHTML = PLAN.weeks.filter(w => !filter || filter === 9 || filter === w.n).map(w => {
     const ds = PLAN.days.filter(d => d.week === w.n && (filter !== 9 || d.project));
     if (!ds.length) return "";
@@ -218,6 +228,11 @@ function renderKit(){
         <div class="box"><h3>Revision system</h3><ul>${PLAN.revision.map(r => `<li>${esc(r)}</li>`).join("")}</ul></div>
       </div></div>`;
 }
-renderTop(); renderTabs(); renderBoard(); renderProj(); renderKit();
+renderTop(); renderTabs(); renderProj(); renderKit(); renderBoard();
+const totop = document.getElementById("totop");
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function onScroll(){ totop.hidden = window.scrollY < 300; }
+window.addEventListener("scroll", onScroll, {passive:true}); onScroll();
+totop.onclick = () => window.scrollTo({top:0, behavior: reduce ? "auto" : "smooth"});
 </script>
 </html>
