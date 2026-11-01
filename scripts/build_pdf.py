@@ -155,7 +155,27 @@ st += bullets(["Keep 2 problems/day (one new, one re-solve) until your interview
                "One HLD case study per week from the list on Day 27.",
                "Weekly LeetCode contest every Sunday morning."])
 
-from plan_data import PATTERNS, JAVA_CHEATSHEET, REVISION, COMPANIES
+from plan_data import PATTERNS, JAVA_CHEATSHEET, REVISION, COMPANIES, SD_FRAMEWORK, SD_BLOCKS, SD_CASES, SD_LLD, SD_NUMBERS
+def grid(rows, widths, head=None):
+    data = ([[Paragraph(f"<b>{h}</b>", SMALL) for h in head]] if head else []) + rows
+    t = Table(data, colWidths=widths, repeatRows=1 if head else 0)
+    t.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("LINEBELOW",(0,0),(-1,-1),0.4,LINE),("TOPPADDING",(0,0),(-1,-1),3.5),("BOTTOMPADDING",(0,0),(-1,-1),3.5)]))
+    return t
+st.append(PageBreak())
+st += [Paragraph("SYSTEM DESIGN HANDBOOK", LAB), Paragraph("System design at a glance (Days 22-28)", H1),
+       Paragraph("Everything system design in one place: the answer framework, the building blocks, the case studies and low-level design. "
+                 "Each row names the day it is taught.", SMALL), Spacer(1, 6), Paragraph("The 7-step answer framework", H2),
+       grid([[Paragraph(f"<b>{a}</b>", BODY), Paragraph(b, BODY)] for a, b in SD_FRAMEWORK], [42*mm, W-42*mm]), Spacer(1, 8),
+       Paragraph("High-level design building blocks", H2),
+       grid([[Paragraph(f"<b>{t}</b><br/><font color='#5b6478'>{w}</font>", BODY), Paragraph(k, BODY), Paragraph(f"Day {d}", SMALL)] for t, w, k, d in SD_BLOCKS],
+            [48*mm, W-64*mm, 16*mm], head=["Block", "Key points", "Day"]),
+       Spacer(1, 8), Paragraph("Case studies to practise", H2),
+       grid([[Paragraph(f"<b>{t}</b>", BODY), Paragraph(k, BODY), Paragraph(f"Day {d}", SMALL)] for t, k, d in SD_CASES],
+            [48*mm, W-64*mm, 16*mm], head=["Design", "Key idea", "Day"]),
+       Spacer(1, 8), Paragraph("Low-level design", H2),
+       grid([[Paragraph(f"<b>{t}</b>", BODY), Paragraph(k, BODY), Paragraph(f"Day {d}", SMALL)] for t, k, d in SD_LLD], [48*mm, W-64*mm, 16*mm]),
+       Spacer(1, 8), CondPageBreak(60*mm), Paragraph("Numbers to know for estimates", H2),
+       grid([[Paragraph(a, BODY), Paragraph(b, MONO)] for a, b in SD_NUMBERS], [W*0.6, W*0.4])]
 st.append(PageBreak())
 st += [Paragraph("APPENDIX A", LAB), Paragraph("20 coding patterns: spot the pattern in 2 minutes", H1)]
 rows = [[Paragraph("<b>Pattern</b>", SMALL), Paragraph("<b>Signal in the question</b>", SMALL), Paragraph("<b>Classic problem</b>", SMALL)]]

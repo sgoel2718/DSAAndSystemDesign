@@ -8,7 +8,7 @@ WEEKS = [
     {"n": 1, "name": "Foundations & Linear Structures", "goal": "Java for DSA, complexity, arrays, hashing, recursion, sorting, linked lists, stacks/queues"},
     {"n": 2, "name": "Trees, Heaps, Tries & Graphs", "goal": "Hierarchical and network structures plus the classic graph algorithms"},
     {"n": 3, "name": "Advanced Algorithms", "goal": "Greedy, the four flavours of DP, bit tricks, segment/Fenwick trees, advanced graphs"},
-    {"n": 4, "name": "LLD, Concurrency & System Design", "goal": "OOP/SOLID/patterns, Java concurrency, HLD building blocks, distributed systems, mocks"},
+    {"n": 4, "name": "System Design: LLD, Concurrency & HLD", "goal": "OOP/SOLID/patterns, Java concurrency, HLD building blocks, distributed systems, mocks"},
 ]
 
 # Each problem: (title, leetcode-slug, difficulty)
@@ -535,9 +535,69 @@ COMPANIES = [
                "and an 'as appropriate' final round with a senior manager. Collaboration and growth mindset are probed."),
 ]
 
+SD_FRAMEWORK = [
+ ("1. Requirements", "Functional (what it does) and non-functional (scale, latency, availability, consistency). Agree on scope in 5 minutes."),
+ ("2. Estimates", "DAU, read/write QPS, peak = 2-3x average, storage per year, bandwidth."),
+ ("3. API", "Endpoints or RPCs with request/response; pagination; idempotency keys for writes."),
+ ("4. Data model", "Entities, access patterns, SQL vs NoSQL choice, indexes, sharding key."),
+ ("5. High-level design", "Client, load balancer, stateless services, cache, database, queue, object storage, CDN."),
+ ("6. Deep dives", "The 1-2 hardest parts: hot keys, fan-out, ordering, consistency, failure handling."),
+ ("7. Bottlenecks & trade-offs", "Single points of failure, monitoring, what you would change at 10x scale."),
+]
+SD_BLOCKS = [
+ ("Load balancing", "Spread traffic over stateless servers", "L4 vs L7; round robin, least connections, consistent hashing; health checks; sticky sessions only if forced", 24),
+ ("Caching", "Serve hot reads from memory", "Cache-aside, write-through, write-back; TTL + invalidation; LRU/LFU; thundering herd; Redis", 24),
+ ("CDN", "Serve static/media from the edge", "Push vs pull CDN; cache headers; signed URLs for private media", 24),
+ ("CAP & consistency", "What you give up during a partition", "CP vs AP; PACELC; strong, eventual, read-your-writes, monotonic reads", 24),
+ ("API design", "Contracts between services", "REST vs gRPC vs GraphQL vs WebSockets; status codes; cursor pagination; versioning; rate limits", 24),
+ ("Auth & security", "Who you are and what you may do", "Sessions vs JWT; OAuth 2.0; HTTPS/TLS; hashing passwords (bcrypt); least privilege", 24),
+ ("Unique IDs", "IDs across many machines", "UUID vs DB sequence vs Snowflake (time + machine + sequence); sortable IDs", 24),
+ ("Databases", "Pick storage by access pattern", "SQL (ACID, joins) vs key-value, document, wide-column, graph; isolation levels", 25),
+ ("Indexes & storage engines", "Fast lookups on disk", "B+Tree (read-optimised) vs LSM-tree (write-optimised); secondary indexes", 25),
+ ("Replication", "Copies for availability and reads", "Leader-follower, multi-leader, leaderless; sync vs async; quorum R + W > N; replica lag", 25),
+ ("Sharding", "Split data across machines", "Range vs hash partitioning; consistent hashing + virtual nodes; hot keys; rebalancing", 25),
+ ("Object storage", "Big files and media", "S3-style blob store + metadata in DB; multipart upload; lifecycle to cold storage", 25),
+ ("Message queues & streams", "Decouple and absorb spikes", "Kafka partitions, consumer groups, offsets; at-least-once + idempotent consumers; DLQ", 26),
+ ("Consensus", "Agree on one leader / one log", "Raft: terms, elections by majority, log replication; ZooKeeper/etcd for coordination", 26),
+ ("Rate limiting", "Protect services from abuse", "Token bucket, leaky bucket, fixed/sliding window; distributed with Redis + Lua", 26),
+ ("Microservices", "Independent deployable services", "API gateway, service discovery, circuit breaker, retries with backoff, bulkheads", 26),
+ ("Distributed transactions", "Keep data correct across services", "2PC vs saga; outbox pattern; CQRS & event sourcing", 26),
+ ("Search", "Full-text queries", "Inverted index, tokenisation, ranking; Elasticsearch; sync via change data capture", 26),
+ ("Observability", "Know when and why it breaks", "Logs, metrics, traces; SLIs/SLOs; p50/p99 latency; alerting", 26),
+]
+SD_CASES = [
+ ("URL shortener", "Base62 IDs from a key-generation service, read-heavy cache, 301 vs 302 redirects, analytics via queue", 27),
+ ("Rate limiter (distributed)", "Token bucket in Redis with Lua for atomicity, per-user and per-IP keys, 429 + Retry-After", 27),
+ ("Chat app (WhatsApp)", "WebSocket gateways, per-chat ordering with sequence numbers, offline inbox, delivery/read receipts", 27),
+ ("News feed (Instagram/Twitter)", "Fan-out on write for normal users, fan-out on read for celebrities, ranked feed cache", 27),
+ ("Video streaming (YouTube)", "Upload to blob store, async transcoding pipeline, adaptive bitrate, CDN delivery", 27),
+ ("Ride hailing (Uber)", "Driver locations in geohash/quadtree, matching service, trip state machine, surge pricing", 27),
+ ("Notification system", "Priority queues per channel (push/SMS/email), templates, retries, user preferences, dedup", 27),
+ ("Typeahead / autocomplete", "Trie of top-K queries per prefix, offline rebuild from logs, edge caching", 27),
+ ("Web crawler", "URL frontier with politeness per domain, dedup with Bloom filter + content hash, robots.txt", 27),
+ ("Google Drive / Dropbox", "Chunked uploads, block-level dedup, metadata DB, sync via change notifications, conflict copies", 27),
+ ("Ticket booking (BookMyShow)", "Seat hold with TTL lock, payment saga, idempotent booking, handling flash traffic with a queue", 27),
+ ("Distributed key-value store", "Exactly your NexusKV project: LSM storage, consistent hashing, replication, leader election", 28),
+]
+SD_LLD = [
+ ("SOLID", "Single responsibility, Open/closed, Liskov, Interface segregation, Dependency inversion", 22),
+ ("Creational patterns", "Singleton, Factory, Abstract Factory, Builder, Prototype", 22),
+ ("Structural patterns", "Adapter, Decorator, Proxy, Facade, Composite", 22),
+ ("Behavioural patterns", "Strategy, Observer, Command, State, Template Method, Chain of Responsibility", 22),
+ ("Concurrency in Java", "ExecutorService, locks, ConcurrentHashMap, BlockingQueue, CompletableFuture, deadlocks", 23),
+ ("LLD case studies", "Parking lot, elevator, BookMyShow, Splitwise, rate limiter class, LRU cache, logger, vending machine", 23),
+]
+SD_NUMBERS = [
+ ("L1 cache reference", "~1 ns"), ("Main memory reference", "~100 ns"), ("Read 1 MB from memory", "~250 us"),
+ ("SSD random read", "~100 us"), ("Round trip in same datacenter", "~0.5 ms"), ("Read 1 MB from SSD", "~1 ms"),
+ ("Disk seek (HDD)", "~10 ms"), ("Round trip India to US", "~150-250 ms"),
+ ("1 million requests/day", "~12 QPS"), ("1 char / 1 int / 1 long", "1-2 B / 4 B / 8 B"),
+]
+
 def as_json():
     return json.dumps(dict(start=START, weeks=WEEKS, days=DAYS, schedule=DAILY_SCHEDULE, project=PROJECT, extras=EXTRAS, resources=RESOURCES,
-                           patterns=PATTERNS, java=JAVA_CHEATSHEET, revision=REVISION, companies=COMPANIES), ensure_ascii=False)
+                           patterns=PATTERNS, java=JAVA_CHEATSHEET, revision=REVISION, companies=COMPANIES,
+                           sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
 
 if __name__ == "__main__":
     print(len(DAYS), sum(len(d["problems"]) for d in DAYS))
