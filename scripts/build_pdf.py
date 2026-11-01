@@ -199,7 +199,18 @@ for k, (n, sig, ex) in enumerate(PATTERNS, 1):
     st += [Paragraph(f"{j}. {x}", S("ps", leftIndent=10)) for j, x in enumerate(P["steps"], 1)]
     st += [Spacer(1, 3), panel([Paragraph(code_html, MONO)], pad=6), Spacer(1, 3),
            Paragraph(f"<b>Common mistakes:</b> {P['pitfalls']}", BODY),
-           Paragraph(f"<b>Complexity:</b> {P['complexity']}  ·  <b>Classic problem:</b> {ex}", BODY), Spacer(1, 10)]
+           Paragraph(f"<b>Complexity:</b> {P['complexity']}", BODY), Spacer(1, 4),
+           Paragraph("<b>Questions solved with this pattern</b> (click to open on LeetCode):", BODY)]
+    from plan_data import PATTERN_Q
+    qrows = []
+    for q in PATTERN_Q[n]:
+        tag = f"Day {q['day']}" if q["day"] else "Extra"
+        qrows.append([Paragraph(f'<link href="https://leetcode.com/problems/{q["slug"]}/" color="#1f5f8b">{q["name"]}</link>', BODY),
+                      Paragraph(tag, SMALL), Paragraph(f"<font color='{DIFF[q['diff']]}'><b>{q['diff']}</b></font>", SMALL)])
+    qt = Table(qrows, colWidths=[W - 40*mm, 18*mm, 22*mm])
+    qt.setStyle(TableStyle([("LINEBELOW",(0,0),(-1,-1),0.3,LINE),("TOPPADDING",(0,0),(-1,-1),2),
+                            ("BOTTOMPADDING",(0,0),(-1,-1),2),("LEFTPADDING",(0,0),(-1,-1),2)]))
+    st += [qt, Spacer(1, 12)]
 st += [PageBreak(), Paragraph("APPENDIX C", LAB), Paragraph("Java DSA syntax cheat sheet", H1)]
 for name, code in JAVA_CHEATSHEET:
     code_html = code.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\n","<br/>")

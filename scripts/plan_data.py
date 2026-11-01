@@ -597,6 +597,9 @@ SD_NUMBERS = [
 
 from approach_data import PLAYBOOK, DAY_APPROACH
 from solutions_data import SOLUTIONS
+from pattern_questions import build as _build_pq
+PATTERN_Q = _build_pq(DAYS)
+assert set(PATTERN_Q) == {n for n, _, _ in PATTERNS}
 for _d in DAYS:
     _d["approach"] = DAY_APPROACH.get(_d["day"], [])
 assert all(n in PLAYBOOK for n, _, _ in PATTERNS), [n for n, _, _ in PATTERNS if n not in PLAYBOOK]
@@ -604,7 +607,7 @@ assert all(n in PLAYBOOK for n, _, _ in PATTERNS), [n for n, _, _ in PATTERNS if
 def as_json():
     return json.dumps(dict(start=START, weeks=WEEKS, days=DAYS, schedule=DAILY_SCHEDULE, project=PROJECT, extras=EXTRAS, resources=RESOURCES,
                            patterns=PATTERNS, java=JAVA_CHEATSHEET, revision=REVISION, companies=COMPANIES,
-                           playbook=PLAYBOOK, solutions=SOLUTIONS, sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
+                           playbook=PLAYBOOK, solutions=SOLUTIONS, pattern_q=PATTERN_Q, sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
 
 if __name__ == "__main__":
     print(len(DAYS), sum(len(d["problems"]) for d in DAYS))
