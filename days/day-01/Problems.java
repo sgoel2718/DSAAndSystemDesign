@@ -30,6 +30,49 @@ public class Problems {
         return new int[0];
     }
 
+    // Sort + two pointers, VALUES version (or "does a pair exist?").
+    // Time O(n log n), extra space O(log n) for the sort's recursion stack (no extra arrays).
+    // Trade-off: it sorts the caller's array in place, so the original order is lost.
+    static int[] twoSumValuesSorted(int[] nums, int target) {
+        Arrays.sort(nums);                                    // dual-pivot quicksort for int[]
+        int l = 0, r = nums.length - 1;
+        while (l < r) {
+            int sum = nums[l] + nums[r];
+            if (sum == target) return new int[]{nums[l], nums[r]};
+            if (sum < target) l++;                            // need a bigger sum
+            else r--;                                         // need a smaller sum
+        }
+        return new int[0];
+    }
+
+    // Sort + two pointers, INDICES version (what LeetCode 1 actually asks).
+    // Sorting moves elements, so we must remember where each came from: an index array.
+    // Time O(n log n), Space O(n) -> no better than the HashMap, and slower.
+    static int[] twoSumIndicesSorted(int[] nums, int target) {
+        Integer[] idx = new Integer[nums.length];             // O(n) extra space
+        for (int i = 0; i < nums.length; i++) idx[i] = i;
+        Arrays.sort(idx, (a, b) -> Integer.compare(nums[a], nums[b]));
+        int l = 0, r = nums.length - 1;
+        while (l < r) {
+            int sum = nums[idx[l]] + nums[idx[r]];
+            if (sum == target) return new int[]{Math.min(idx[l], idx[r]), Math.max(idx[l], idx[r])};
+            if (sum < target) l++; else r--;
+        }
+        return new int[0];
+    }
+
+    // Two Sum II (LeetCode 167): input is ALREADY sorted, answer is 1-based indices.
+    // Time O(n), Space O(1) -> the best of both worlds, because no sort is needed.
+    static int[] twoSumII(int[] numbers, int target) {
+        int l = 0, r = numbers.length - 1;
+        while (l < r) {
+            int sum = numbers[l] + numbers[r];
+            if (sum == target) return new int[]{l + 1, r + 1};
+            if (sum < target) l++; else r--;
+        }
+        return new int[0];
+    }
+
     // ------------------------------------------------------------------
     // 2. Contains Duplicate (LeetCode 217)
     // ------------------------------------------------------------------
@@ -85,6 +128,16 @@ public class Problems {
         check("twoSum same value twice", Arrays.toString(twoSum(new int[]{3, 3}, 6)), "[0, 1]");
         check("twoSum negatives", Arrays.toString(twoSum(new int[]{-3, 4, 3, 90}, 0)), "[0, 2]");
         check("twoSum brute == optimal", Arrays.toString(twoSumBrute(new int[]{3, 2, 4}, 6)), Arrays.toString(twoSum(new int[]{3, 2, 4}, 6)));
+
+        check("twoSum values (sorted)", Arrays.toString(twoSumValuesSorted(new int[]{11, 7, 2, 15}, 9)), "[2, 7]");
+        check("twoSum indices (sorted)", Arrays.toString(twoSumIndicesSorted(new int[]{11, 7, 2, 15}, 9)), "[1, 2]");
+        check("twoSum indices (sorted) dupes", Arrays.toString(twoSumIndicesSorted(new int[]{3, 3}, 6)), "[0, 1]");
+        check("twoSum indices sorted == hashmap", Arrays.toString(twoSumIndicesSorted(new int[]{3, 2, 4}, 6)), Arrays.toString(twoSum(new int[]{3, 2, 4}, 6)));
+        int[] original = {11, 7, 2, 15};
+        twoSumValuesSorted(original, 9);
+        check("values version mutates input", Arrays.toString(original), "[2, 7, 11, 15]");
+        check("twoSum II (already sorted)", Arrays.toString(twoSumII(new int[]{2, 7, 11, 15}, 9)), "[1, 2]");
+        check("twoSum II negatives", Arrays.toString(twoSumII(new int[]{-1, 0}, -1)), "[1, 2]");
 
         check("dup yes", containsDuplicate(new int[]{1, 2, 3, 1}), true);
         check("dup no", containsDuplicate(new int[]{1, 2, 3, 4}), false);

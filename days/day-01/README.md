@@ -152,6 +152,25 @@ LinkedList wins only at the front, and ArrayDeque does that too without the slow
 
 Checking before inserting is what makes `[3, 3], target 6` work without pairing an element with itself.
 
+### Can we avoid the O(n) space? (sort + two pointers)
+
+It depends on what the question asks you to return.
+
+| Version | Time | Extra space | Notes |
+|---|---|---|---|
+| Brute force | O(n^2) | O(1) | every pair |
+| HashMap | **O(n)** | O(n) | best for LeetCode 1 |
+| Sort + two pointers, return **values** / true-false | O(n log n) | O(log n) (sort stack) | sorts the caller's array in place |
+| Sort + two pointers, return **indices** | O(n log n) | **O(n)** | sorting loses positions, so you need an index array |
+| [Two Sum II](https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/): input **already sorted** | **O(n)** | **O(1)** | two pointers only, no sort |
+
+- LeetCode 1 asks for **indices**. Once you sort, every element moves, so you must store each element's original position: that is O(n) space again, and the time is worse (O(n log n) vs O(n)). The HashMap wins.
+- If the interviewer asks for the **values**, or only "does a pair exist?", sort + two pointers really does cut space to O(log n). Mention that it **mutates the input**; if that is not allowed, you need a copy and the space is O(n) again.
+- If the input is **already sorted**, two pointers gives O(n) time and O(1) space: the best of both.
+- `Arrays.sort(int[])` is dual-pivot quicksort, which uses O(log n) stack space. Most interviewers accept calling that "O(1) extra space", but saying O(log n) shows you know.
+
+**Say this in the interview:** "HashMap gives O(n) time and O(n) space. If memory is tight and I only need the values, I can sort and use two pointers for O(n log n) time and O(log n) space, but that changes the input order and loses the original indices."
+
 ## 8. How to approach questions today
 
 1. Read the constraints and state the target complexity (n <= 10^5 -> O(n log n) or better).
