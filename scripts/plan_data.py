@@ -444,6 +444,7 @@ ADD = {
  1: dict(concepts=["Core Java interview set: String/StringBuilder/StringBuffer, immutability, String pool, final/finally/finalize",
                    "JVM & GC: heap generations, G1/ZGC basics, OutOfMemoryError vs StackOverflowError",
                    "Java 8-21 features: lambdas, streams, Optional, records, sealed classes, var; checked vs unchecked exceptions"],
+         problems=[("Two Sum II - Input Array Is Sorted","two-sum-ii-input-array-is-sorted","Medium")],
          notes=["StackOverflowError = recursion too deep; raise -Xss or go iterative"]),
  2: dict(concepts=["Matrix traversal: spiral, rotate 90 degrees in place (transpose + reverse), set-zeroes with O(1) space",
                    "Cyclic sort pattern for numbers in range 1..n (missing / duplicate numbers)"],
@@ -595,6 +596,7 @@ SD_NUMBERS = [
 ]
 
 from approach_data import PLAYBOOK, DAY_APPROACH
+from solutions_data import SOLUTIONS
 for _d in DAYS:
     _d["approach"] = DAY_APPROACH.get(_d["day"], [])
 assert all(n in PLAYBOOK for n, _, _ in PATTERNS), [n for n, _, _ in PATTERNS if n not in PLAYBOOK]
@@ -602,7 +604,7 @@ assert all(n in PLAYBOOK for n, _, _ in PATTERNS), [n for n, _, _ in PATTERNS if
 def as_json():
     return json.dumps(dict(start=START, weeks=WEEKS, days=DAYS, schedule=DAILY_SCHEDULE, project=PROJECT, extras=EXTRAS, resources=RESOURCES,
                            patterns=PATTERNS, java=JAVA_CHEATSHEET, revision=REVISION, companies=COMPANIES,
-                           playbook=PLAYBOOK, sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
+                           playbook=PLAYBOOK, solutions=SOLUTIONS, sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
 
 if __name__ == "__main__":
     print(len(DAYS), sum(len(d["problems"]) for d in DAYS))
