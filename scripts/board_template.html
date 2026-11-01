@@ -1,0 +1,220 @@
+<title>DSA Sticky Notes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a dotted engineering-pad board; one sticky note per day grouped by week; click a note to open its full lesson sheet. */
+:root{
+  --bg:#eef1f4; --dot:#c9d1da; --ink:#1b2430; --muted:#5d6877; --panel:#ffffff; --line:#d5dce4;
+  --accent:#1f5f8b; --warm:#b4441f;
+  --n1:#fff1a8; --n2:#c9ecd6; --n3:#ffd6c2; --n4:#d6e4ff; --note-ink:#2a2a22;
+  --easy:#2e7d4f; --med:#a06e00; --hard:#b4441f;
+  --hand:"Kalam","Comic Sans MS",cursive; --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a21; --dot:#2a323d; --ink:#e6ebf1; --muted:#9aa6b4; --panel:#1d242e; --line:#2f3946;
+  --accent:#7fb6dd; --warm:#f08a63;
+  --n1:#5c5222; --n2:#22493a; --n3:#5a3324; --n4:#263c63; --note-ink:#f3efe2;
+  --easy:#6fcf97; --med:#e8b84a; --hard:#f08a63; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a21; --dot:#2a323d; --ink:#e6ebf1; --muted:#9aa6b4; --panel:#1d242e; --line:#2f3946;
+  --accent:#7fb6dd; --warm:#f08a63;
+  --n1:#5c5222; --n2:#22493a; --n3:#5a3324; --n4:#263c63; --note-ink:#f3efe2;
+  --easy:#6fcf97; --med:#e8b84a; --hard:#f08a63; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1.2px);background-size:22px 22px;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:end}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--warm)}
+h1{font:700 clamp(30px,5vw,44px)/1.05 var(--hand);margin:4px 0 6px;text-wrap:balance}
+.sub{color:var(--muted);max-width:62ch;margin:0}
+.today{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:230px}
+.today b{font:700 22px var(--hand)}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s}
+.meta{font:12px var(--mono);color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 8px}
+nav button{font:500 13px var(--sans);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 14px;border-radius:99px;cursor:pointer}
+nav button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.week{margin-top:28px}
+.week h2{font:600 13px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 4px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.week h2 span{font:700 22px var(--hand);letter-spacing:0;text-transform:none;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:22px;margin-top:14px}
+.note{position:relative;background:var(--c);color:var(--note-ink);padding:18px 16px 14px;min-height:230px;border-radius:2px;
+  box-shadow:0 1px 1px rgba(0,0,0,.08),0 8px 16px -8px rgba(0,0,0,.25);transform:rotate(var(--r));transition:transform .15s;cursor:pointer;border:0;text-align:left;font:inherit;width:100%;display:flex;flex-direction:column;gap:6px}
+.note:hover{transform:rotate(0) translateY(-3px)}
+.note::before{content:"";position:absolute;top:-9px;left:50%;width:70px;height:18px;margin-left:-35px;background:rgba(255,255,255,.45);border:1px solid rgba(0,0,0,.06);transform:rotate(-2deg)}
+.note .d{font:500 11px var(--mono);letter-spacing:.06em;opacity:.75;display:flex;justify-content:space-between;gap:8px}
+.note h3{font:700 19px/1.15 var(--hand);margin:0;text-wrap:balance}
+.note ul{margin:2px 0 0;padding-left:16px;font:400 14.5px/1.35 var(--hand)}
+.note li{margin:2px 0}
+.note .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font:11px var(--mono);opacity:.8;padding-top:6px}
+.note.done .d::after{content:"DONE";background:var(--note-ink);color:var(--c);padding:0 6px;border-radius:3px}
+.note.today-n{outline:3px dashed var(--warm);outline-offset:4px}
+.w1{--c:var(--n1)}.w2{--c:var(--n2)}.w3{--c:var(--n3)}.w4{--c:var(--n4)}
+.proj{margin-top:36px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;grid-template-columns:1.2fr 1fr;gap:20px}
+.proj h2{font:700 26px var(--hand);margin:2px 0 6px}
+.proj p{margin:0 0 10px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{font:12px var(--mono);border:1px solid var(--line);padding:2px 8px;border-radius:4px}
+.ms{list-style:none;margin:0;padding:0;font-size:14px}
+.ms li{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
+.ms b{font:500 12px var(--mono);color:var(--warm);padding-top:2px}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:20}
+.sheet{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--panel);z-index:21;overflow-y:auto;
+  padding:calc(22px + env(safe-area-inset-top,0px)) max(22px,env(safe-area-inset-right,0px)) calc(40px + env(safe-area-inset-bottom,0px)) 22px;box-shadow:-10px 0 30px rgba(0,0,0,.2)}
+.sheet .close{position:sticky;top:0;float:right;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:99px;padding:6px 12px;cursor:pointer;font:500 13px var(--sans)}
+.sheet h2{font:700 28px/1.1 var(--hand);margin:6px 0 14px;text-wrap:balance}
+.sheet h4{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 6px}
+.sheet ul{padding-left:18px;margin:0}
+.demo{background:color-mix(in srgb,var(--accent) 12%,var(--panel));border-left:3px solid var(--accent);padding:10px 12px;border-radius:4px}
+.demo code{font:13px var(--mono)}
+.prob{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.prob a{color:var(--accent);text-decoration:none}.prob a:hover{text-decoration:underline}
+.prob input,.donebox input{width:18px;height:18px;accent-color:var(--accent)}
+.tag{font:600 11px var(--mono)}.Easy{color:var(--easy)}.Medium{color:var(--med)}.Hard{color:var(--hard)}
+.pnote{background:var(--n1);color:var(--note-ink);padding:12px 14px;font:16px/1.4 var(--hand);border-radius:2px}
+.pnote ul{padding-left:18px}
+.build{border:1px dashed var(--warm);padding:10px 12px;border-radius:6px}
+.donebox{display:flex;gap:10px;align-items:center;margin-top:22px;font-weight:600}
+.status{font:12px var(--mono);color:var(--muted)}
+.kit{margin-top:36px}
+.kit h2{font:700 26px var(--hand);margin:0 0 4px}
+.kit > p{color:var(--muted);margin:0 0 14px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:30px}
+.pcard{background:var(--n4);color:var(--note-ink);padding:12px 14px;border-radius:2px;box-shadow:0 6px 12px -8px rgba(0,0,0,.3);transform:rotate(var(--r))}
+.pcard b{font:700 17px var(--hand);display:block}
+.pcard span{font:15px/1.3 var(--hand);display:block;margin:2px 0 6px}
+.pcard i{font:normal 11px var(--mono);opacity:.8}
+.cols{display:grid;grid-template-columns:1.3fr 1fr;gap:20px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-width:0}
+.box h3{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.snip{margin:0 0 10px}.snip b{font-size:13px}
+.snip pre{margin:4px 0 0;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;font:12.5px/1.5 var(--mono)}
+.loop{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}.loop b{display:block}
+.box ul{padding-left:18px;margin:0;font-size:14px}
+@media (max-width:720px){.cols{grid-template-columns:1fr}}
+footer{margin-top:40px;color:var(--muted);font-size:13px}
+@media (max-width:720px){header,.proj{grid-template-columns:1fr}.today{min-width:0}}
+@media (prefers-reduced-motion:reduce){.note,.bar i{transition:none}.note{transform:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Java · 30 days · DSA → System Design</div>
+      <h1>DSA Sticky Notes</h1>
+      <p class="sub">One note per day with the points to revise before an interview. Tap a note for the full lesson sheet: concepts, the live Java demo, linked LeetCode problems and the NexusKV build task.</p>
+    </div>
+    <div class="today" id="today"></div>
+  </header>
+  <nav id="tabs" aria-label="Filter by week"></nav>
+  <main id="board"></main>
+  <section class="proj" id="proj"></section>
+  <section class="kit" id="kit"></section>
+  <footer id="foot"></footer>
+</div>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></aside>
+
+<script>
+const PLAN = __PLAN__;
+const TAUGHT = __TAUGHT__;  // days whose lesson has been taught in chat
+const KEY = "dsa30-progress-v1";
+let state = {days:{}, probs:{}};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e) {}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const start = new Date(PLAN.start + "T00:00:00");
+function dateOf(d){ const x = new Date(start); x.setDate(x.getDate() + d - 1); return x.toLocaleDateString("en-IN",{weekday:"short",day:"2-digit",month:"short"}); }
+const now = new Date(); now.setHours(0,0,0,0);
+const todayDay = Math.floor((now - start) / 864e5) + 1;
+let filter = 0;
+
+function renderTop(){
+  const done = PLAN.days.filter(d => state.days[d.day]).length;
+  const totalP = PLAN.days.reduce((a,d) => a + d.problems.length, 0);
+  const doneP = Object.values(state.probs).filter(Boolean).length;
+  let label = todayDay < 1 ? `Starts ${dateOf(1)}` : todayDay > 30 ? "Plan complete window" : `Today is Day ${todayDay}`;
+  const cur = PLAN.days.find(d => d.day === todayDay);
+  document.getElementById("today").innerHTML =
+    `<div class="status">${todayDay < 1 ? "Countdown" : "Calendar"}</div><b>${label}</b>` +
+    (cur ? `<div class="status">${esc(cur.title)}</div>` : todayDay < 1 ? `<div class="status">Day 1: ${esc(PLAN.days[0].title)}</div>` : "") +
+    `<div class="bar"><i style="width:${done/30*100}%"></i></div>` +
+    `<div class="meta">${done}/30 days · ${doneP}/${totalP} problems</div>`;
+}
+function renderTabs(){
+  const t = document.getElementById("tabs");
+  const opts = [[0,"All 30 days"], ...PLAN.weeks.map(w => [w.n, `Week ${w.n}`]), [9,"Build days"], [8,"Patterns & Java toolkit"]];
+  t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
+  t.querySelectorAll("button").forEach(b => b.onclick = () => { const v = +b.dataset.v; if (v === 8) { document.getElementById("kit").scrollIntoView({behavior:"smooth"}); return; } filter = v; renderTabs(); renderBoard(); });
+}
+function noteHTML(d, i){
+  const r = ((d.day * 37) % 7 - 3) * 0.45;
+  const cls = `note w${d.week}${state.days[d.day] ? " done":""}${d.day===todayDay ? " today-n":""}`;
+  const np = d.problems.length, dp = d.problems.filter(p => state.probs[p[1]+"@"+d.day]).length;
+  return `<button type="button" class="${cls}" style="--r:${r}deg" data-day="${d.day}" aria-label="Open Day ${d.day}: ${esc(d.title)}">
+    <div class="d"><span>DAY ${d.day} · ${dateOf(d.day).toUpperCase()}</span></div>
+    <h3>${esc(d.title)}</h3>
+    <ul>${d.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>
+    <div class="foot"><span>${np ? `${dp}/${np} problems` : "Design day"}</span><span>${d.project ? "◆ build" : ""}${TAUGHT.includes(d.day) ? " · taught" : ""}</span></div>
+  </button>`;
+}
+function renderBoard(){
+  const b = document.getElementById("board");
+  b.innerHTML = PLAN.weeks.filter(w => !filter || filter === 9 || filter === w.n).map(w => {
+    const ds = PLAN.days.filter(d => d.week === w.n && (filter !== 9 || d.project));
+    if (!ds.length) return "";
+    return `<section class="week"><h2>Week ${w.n} <span>${esc(w.name)}</span></h2><div class="grid">${ds.map(noteHTML).join("")}</div></section>`;
+  }).join("");
+  b.querySelectorAll(".note").forEach(n => n.onclick = () => openSheet(+n.dataset.day));
+}
+function openSheet(day){
+  const d = PLAN.days.find(x => x.day === day), s = document.getElementById("sheet");
+  s.innerHTML = `<button type="button" class="close" id="closeSheet">Close</button>
+    <div class="eyebrow">Day ${d.day} · ${dateOf(d.day)} · Week ${d.week}</div>
+    <h2 id="sheetTitle">${esc(d.title)}</h2>
+    <div class="status">${TAUGHT.includes(d.day) ? "Lesson taught in chat" : "Lesson not taught yet: say “Start Day " + d.day + "” in chat"}</div>
+    <h4>Concepts</h4><ul>${d.concepts.map(c => `<li>${esc(c)}</li>`).join("")}</ul>
+    <h4>Live Java demo</h4><div class="demo">${esc(d.demo)}</div>
+    ${d.problems.length ? `<h4>Problems</h4>${d.problems.map(([n,slug,diff]) => {
+        const k = slug + "@" + d.day;
+        return `<label class="prob"><input type="checkbox" id="p-${k}" data-k="${k}" ${state.probs[k] ? "checked":""}>
+          <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener">${esc(n)}</a><span class="tag ${diff}">${diff}</span></label>`; }).join("")}` : ""}
+    ${d.project ? `<h4>NexusKV build</h4><div class="build">${esc(d.project.replace(/^NexusKV: /,""))}</div>` : ""}
+    <h4>Sticky notes</h4><div class="pnote"><ul>${d.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>
+    <label class="donebox"><input type="checkbox" id="done-${d.day}" ${state.days[d.day] ? "checked":""}> Mark Day ${d.day} complete</label>`;
+  s.hidden = false; document.getElementById("scrim").hidden = false;
+  s.querySelectorAll(".prob input").forEach(i => i.onchange = () => { state.probs[i.dataset.k] = i.checked; save(); renderTop(); renderBoard(); });
+  s.querySelector(`#done-${d.day}`).onchange = e => { state.days[d.day] = e.target.checked; save(); renderTop(); renderBoard(); };
+  const c = document.getElementById("closeSheet"); c.onclick = closeSheet; c.focus();
+}
+function closeSheet(){ document.getElementById("sheet").hidden = true; document.getElementById("scrim").hidden = true; }
+document.getElementById("scrim").onclick = closeSheet;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+function renderProj(){
+  const P = PLAN.project;
+  document.getElementById("proj").innerHTML = `<div>
+      <div class="eyebrow">Flagship resume project</div><h2>${esc(P.name)}</h2>
+      <p><b style="color:var(--ink)">${esc(P.tagline)}.</b> ${esc(P.why)}</p>
+      <div class="chips">${P.stack.map(x => `<span>${esc(x)}</span>`).join("")}</div></div>
+    <div><div class="eyebrow">Build milestones</div><ul class="ms">${PLAN.days.filter(d => d.project).map(d =>
+      `<li><b>Day ${d.day}</b><span>${esc(d.project.replace(/^NexusKV: /,""))}</span></li>`).join("")}</ul></div>`;
+  document.getElementById("foot").textContent = `Last updated ${__UPDATED__}. Progress ticks are saved in this browser only.`;
+}
+function renderKit(){
+  document.getElementById("kit").innerHTML = `<div class="eyebrow">Toolkit</div><h2>20 patterns to recognise</h2>
+    <p>Read the question, find the signal, name the pattern out loud, then code.</p>
+    <div class="pgrid">${PLAN.patterns.map(([n,sig,ex],i) => `<div class="pcard" style="--r:${((i*29)%5-2)*0.5}deg"><b>${esc(n)}</b><span>${esc(sig)}</span><i>e.g. ${esc(ex)}</i></div>`).join("")}</div>
+    <div class="cols">
+      <div class="box"><h3>Java DSA cheat sheet</h3>${PLAN.java.map(([n,c]) => `<div class="snip"><b>${esc(n)}</b><pre>${esc(c)}</pre></div>`).join("")}</div>
+      <div style="display:grid;gap:20px;align-content:start;min-width:0">
+        <div class="box"><h3>Interview loops (typical)</h3>${PLAN.companies.map(([n,t]) => `<div class="loop"><b>${esc(n)}</b>${esc(t)}</div>`).join("")}</div>
+        <div class="box"><h3>Revision system</h3><ul>${PLAN.revision.map(r => `<li>${esc(r)}</li>`).join("")}</ul></div>
+      </div></div>`;
+}
+renderTop(); renderTabs(); renderBoard(); renderProj(); renderKit();
+</script>
