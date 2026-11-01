@@ -210,7 +210,7 @@ function openSheet(day){
   s.innerHTML = `<button type="button" class="close" id="closeSheet">Close</button>
     <div class="eyebrow">Day ${d.day} · ${dateOf(d.day)} · Week ${d.week}</div>
     <h2 id="sheetTitle">${esc(d.title)}</h2>
-    <div class="status">${TAUGHT.includes(d.day) ? "Lesson taught in chat" : "Lesson not taught yet: say “Start Day " + d.day + "” in chat"}</div>
+    <div class="status">${TAUGHT.includes(d.day) ? `Lesson taught · <a href="https://github.com/sgoel2718/DSAAndSystemDesign/tree/main/days/day-${String(d.day).padStart(2,"0")}" target="_blank" rel="noopener" style="color:var(--accent)">notes and Java code on GitHub</a>` : "Lesson not taught yet: say “Day " + d.day + "” in chat"}</div>
     <h4>Concepts</h4><ul>${d.concepts.map(c => `<li>${esc(c)}</li>`).join("")}</ul>
     ${d.approach.length ? `<h4>How to approach questions</h4><ol class="appr">${d.approach.map(a => `<li>${esc(a)}</li>`).join("")}</ol>` : ""}
     <h4>Live Java demo</h4><div class="demo">${esc(d.demo)}</div>

@@ -24,7 +24,8 @@ My 30-day plan to prepare for Google, Microsoft and Amazon interviews, entirely 
 index.html            sticky-notes board (GitHub Pages)
 plan/                 downloadable PDF plan
 scripts/              plan_data.py is the single source; build_pdf.py and build_board.py regenerate both
-days/                 daily Java lessons and solutions (added as each day is taught)
+days/                 daily lessons: notes (README) + runnable Java demos and solutions
+nexuskv/              the NexusKV project (Maven multi-module, Java 21)
 ```
 
 Progress ticks on the board are saved in your own browser.

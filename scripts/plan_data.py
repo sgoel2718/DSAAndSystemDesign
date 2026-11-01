@@ -23,7 +23,7 @@ DAYS = [
   demo="Benchmark ArrayList vs LinkedList vs ArrayDeque insert/get with System.nanoTime(); watch O(1) vs O(n) appear in real numbers.",
   problems=[("Two Sum","two-sum","Easy"),("Contains Duplicate","contains-duplicate","Easy"),("Fizz Buzz","fizz-buzz","Easy"),("Richest Customer Wealth","richest-customer-wealth","Easy")],
   project="Create the GitHub repo + Maven multi-module skeleton for NexusKV; set up JUnit 5.",
-  notes=["Drop constants and lower terms: O(2n + 5) = O(n)","Amortized O(1): ArrayList doubles capacity, so n adds cost about 3n work",
+  notes=["Drop constants and lower terms: O(2n + 5) = O(n)","Amortized O(1): ArrayList grows 1.5x when full, so n adds still cost O(n) total",
          "Integer caching only covers -128..127: compare wrappers with equals(), never ==","Interviewers expect you to state time AND space before coding"]),
  dict(day=2, week=1, title="Arrays & Strings: Two Pointers, Sliding Window, Prefix Sums",
   concepts=["Static vs dynamic arrays; 2D arrays; String immutability & String pool",
