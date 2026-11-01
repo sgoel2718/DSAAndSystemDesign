@@ -149,6 +149,23 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .copy:focus-visible{outline:2px solid var(--accent)}
 .code.java{background:var(--panel);border:0;border-radius:0}
 .sol-none{margin:0 0 8px 28px;font:12px var(--mono);color:var(--muted)}
+.qs{margin-top:20px}
+.qs h2{font:700 26px var(--hand);margin:0 0 4px}
+.qs .lead{color:var(--muted);margin:0 0 12px;max-width:70ch}
+.qtools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px}
+.qtools input[type=search],.qtools select{font:14px var(--sans);padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.qsearch{flex:1 1 260px;display:flex}.qsearch input{width:100%}
+.qonly{display:flex;gap:6px;align-items:center;font-size:14px}
+.qtools :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.qstat{font:12.5px var(--mono);color:var(--muted);margin-bottom:14px;font-variant-numeric:tabular-nums}
+.qday{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:14px;min-width:0}
+.qday h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 6px;font:600 16px var(--sans)}
+.qd{font:500 12px var(--mono);color:var(--warm);letter-spacing:.05em;text-transform:uppercase}
+.qbadge{font:500 11px var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:0 8px}
+.qbadge.on{color:var(--easy);border-color:var(--easy)}
+.qrow{min-width:0}
+.qn{font:12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
 @media (max-width:520px){.sol,.sol-none{margin-left:0}}
 footer{margin-top:40px;color:var(--muted);font-size:13px}
 @media (max-width:720px){header,.proj{grid-template-columns:1fr}.today{min-width:0}}
@@ -168,6 +185,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
   <main id="board"></main>
   <section class="proj" id="proj"></section>
   <section class="kit" id="kit"></section>
+  <section class="qs" id="qs" hidden></section>
   <section class="sd" id="sd" hidden></section>
   <footer id="foot"></footer>
 </div>
@@ -203,7 +221,7 @@ function renderTop(){
 }
 function renderTabs(){
   const t = document.getElementById("tabs");
-  const opts = [[0,"All 30 days"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns: how to approach"]];
+  const opts = [[0,"All 30 days"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns: how to approach"]];
   t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; renderTabs(); renderBoard(); });
 }
@@ -220,9 +238,10 @@ function noteHTML(d, i){
 }
 function renderBoard(){
   const b = document.getElementById("board");
-  const kitView = filter === 8, sdView = filter === 7, other = kitView || sdView;
+  const kitView = filter === 8, sdView = filter === 7, qView = filter === 6, other = kitView || sdView || qView;
   b.hidden = other; document.getElementById("proj").hidden = other;
-  document.getElementById("kit").hidden = !kitView; document.getElementById("sd").hidden = !sdView;
+  document.getElementById("kit").hidden = !kitView; document.getElementById("sd").hidden = !sdView; document.getElementById("qs").hidden = !qView;
+  if (qView) renderQuestions();
   if (other) { b.innerHTML = ""; return; }
   b.innerHTML = PLAN.weeks.filter(w => !filter || filter === 9 || filter === w.n).map(w => {
     const ds = PLAN.days.filter(d => d.week === w.n && (filter !== 9 || d.project));
@@ -253,11 +272,11 @@ function openSheet(day){
   wireCopy(s);
   const c = document.getElementById("closeSheet"); c.onclick = closeSheet; c.focus();
 }
-function solHTML(slug, day){
+function solHTML(slug, day, ctx = "s"){
   const A = PLAN.solutions[slug];
   if (!A) return TAUGHT.includes(day) ? "" : `<div class="sol-none">Approaches in Java are added when Day ${day} is taught</div>`;
   const best = A.find(a => a.best) || A[A.length - 1];
-  return `<details class="sol" id="sol-${slug}-${day}">
+  return `<details class="sol" id="sol-${ctx}-${slug}-${day}">
     <summary><span>${A.length} approaches in Java</span><span class="chip">Best: ${esc(best.time)} time · ${esc(best.space)} space</span></summary>
     <div class="sol-body">
       <div class="tscroll"><table class="cmp"><thead><tr><th>#</th><th>Approach</th><th>Time</th><th>Space</th></tr></thead><tbody>
@@ -326,6 +345,53 @@ function openPattern(i){
   const pv = document.getElementById("pPrev"), nx = document.getElementById("pNext");
   if (pv) pv.onclick = () => openPattern(i - 1);
   if (nx) nx.onclick = () => openPattern(i + 1);
+}
+let qFilter = {text: "", diff: "", only: false};
+function renderQuestions(){
+  const root = document.getElementById("qs");
+  const total = PLAN.days.reduce((a, d) => a + d.problems.length, 0);
+  const withSol = PLAN.days.reduce((a, d) => a + d.problems.filter(p => PLAN.solutions[p[1]]).length, 0);
+  const nApp = Object.values(PLAN.solutions).reduce((a, x) => a + x.length, 0);
+  if (!root.dataset.built) {
+    root.dataset.built = "1";
+    root.innerHTML = `<div class="eyebrow">Practice list</div><h2>Questions, day by day</h2>
+      <p class="lead">Every question in the plan, in the order you meet it. Expand a question to see all approaches from brute force to optimal, each with time and space complexity and Java code.</p>
+      <div class="qtools">
+        <label class="qsearch"><span class="sr">Search questions</span><input type="search" id="qText" placeholder="Search a question, e.g. Two Sum"></label>
+        <label><span class="sr">Difficulty</span><select id="qDiff"><option value="">All difficulties</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label>
+        <label class="qonly"><input type="checkbox" id="qOnly"> Only questions with approaches</label>
+      </div>
+      <div class="qstat" id="qStat"></div>
+      <div id="qList"></div>`;
+    root.querySelector("#qText").oninput = e => { qFilter.text = e.target.value.trim().toLowerCase(); drawQ(); };
+    root.querySelector("#qDiff").onchange = e => { qFilter.diff = e.target.value; drawQ(); };
+    root.querySelector("#qOnly").onchange = e => { qFilter.only = e.target.checked; drawQ(); };
+  }
+  document.getElementById("qStat").textContent = `${total} questions · ${withSol} with full approaches so far (${nApp} Java solutions) · ${Object.values(state.probs).filter(Boolean).length} solved by you`;
+  drawQ();
+}
+function drawQ(){
+  const list = document.getElementById("qList"); let shown = 0, n = 0;
+  const html = PLAN.days.map(d => {
+    const rows = d.problems.map(p => ({p, i: ++n})).filter(({p: [name, slug, diff]}) =>
+      (!qFilter.text || name.toLowerCase().includes(qFilter.text)) && (!qFilter.diff || diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[slug]));
+    if (!rows.length) return "";
+    shown += rows.length;
+    const taught = TAUGHT.includes(d.day);
+    return `<section class="qday"><h3><span class="qd">Day ${d.day}</span>${esc(d.title)}<span class="qbadge ${taught ? "on" : ""}">${taught ? "taught" : "upcoming"}</span></h3>
+      ${rows.map(({p: [name, slug, diff], i}) => {
+        const k = slug + "@" + d.day, A = PLAN.solutions[slug], best = A && (A.find(a => a.best) || A[A.length - 1]);
+        return `<div class="qrow">
+          <label class="prob"><input type="checkbox" id="q-${k}" data-k="${k}" ${state.probs[k] ? "checked" : ""}>
+            <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener"><span class="qn">${i}.</span> ${esc(name)}</a>
+            <span class="tag ${diff}">${diff}</span></label>
+          ${solHTML(slug, d.day, "q")}
+        </div>`; }).join("")}
+    </section>`;
+  }).join("");
+  list.innerHTML = html || `<p class="lead">No questions match. Clear the search or filters.</p>`;
+  list.querySelectorAll(".prob input").forEach(i => i.onchange = () => { state.probs[i.dataset.k] = i.checked; save(); renderTop(); renderQuestions(); });
+  wireCopy(list);
 }
 function renderSD(){
   const S = PLAN.sd, rot = i => ((i*31)%5-2)*0.5;
