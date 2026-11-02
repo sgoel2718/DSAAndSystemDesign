@@ -1,4 +1,5 @@
 <title>DSA Sticky Notes</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 64 64&quot; role=&quot;img&quot; aria-labelledby=&quot;t&quot;%3E %3Ctitle id=&quot;t&quot;%3EDSA and System Design Notes%3C/title%3E %3Cg transform=&quot;rotate%28-5 32 32%29&quot;%3E %3Cpath d=&quot;M12 8H52a4 4 0 0 1 4 4V44L44 56H12a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z&quot; fill=&quot;%23FFD95A&quot;/%3E %3Cpath d=&quot;M56 44H47a3 3 0 0 0-3 3V56Z&quot; fill=&quot;%23E0B43A&quot;/%3E %3Crect x=&quot;23&quot; y=&quot;3.5&quot; width=&quot;18&quot; height=&quot;8&quot; rx=&quot;1&quot; fill=&quot;%23FFFFFF&quot; fill-opacity=&quot;.75&quot; stroke=&quot;%231B2430&quot; stroke-opacity=&quot;.12&quot; transform=&quot;rotate%284 32 7.5%29&quot;/%3E %3Cg transform=&quot;translate%280.5 3.5%29&quot;%3E %3Cpath d=&quot;M31 20L19 36M31 20L40 30&quot; stroke=&quot;%231B2430&quot; stroke-width=&quot;3&quot; stroke-linecap=&quot;round&quot; fill=&quot;none&quot;/%3E %3Ccircle cx=&quot;31&quot; cy=&quot;19&quot; r=&quot;6.5&quot; fill=&quot;%231F5F8B&quot;/%3E %3Ccircle cx=&quot;31&quot; cy=&quot;19&quot; r=&quot;2.2&quot; fill=&quot;%23FFD95A&quot;/%3E %3Ccircle cx=&quot;18&quot; cy=&quot;37&quot; r=&quot;5.5&quot; fill=&quot;%23FFFFFF&quot; stroke=&quot;%231B2430&quot; stroke-width=&quot;3&quot;/%3E %3Crect x=&quot;34&quot; y=&quot;27.5&quot; width=&quot;15&quot; height=&quot;6.5&quot; rx=&quot;1.8&quot; fill=&quot;%23B4441F&quot;/%3E %3Crect x=&quot;34&quot; y=&quot;35.5&quot; width=&quot;15&quot; height=&quot;6.5&quot; rx=&quot;1.8&quot; fill=&quot;%23B4441F&quot;/%3E %3Ccircle cx=&quot;37.8&quot; cy=&quot;30.75&quot; r=&quot;1.2&quot; fill=&quot;%23FFD95A&quot;/%3E %3Ccircle cx=&quot;37.8&quot; cy=&quot;38.75&quot; r=&quot;1.2&quot; fill=&quot;%23FFD95A&quot;/%3E %3C/g%3E %3C/g%3E %3C/svg%3E">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,6 +29,9 @@ body{background:var(--bg);background-image:radial-gradient(var(--dot) 1px,transp
 .wrap{max-width:1180px;margin:0 auto;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:end}
 .eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--warm)}
+.brand{display:flex;align-items:center;gap:14px;margin:4px 0 6px}
+.brand .logo{width:clamp(48px,7vw,68px);height:auto;flex:none}
+.brand h1{margin:0}
 h1{font:700 clamp(30px,5vw,44px)/1.05 var(--hand);margin:4px 0 6px;text-wrap:balance}
 .sub{color:var(--muted);max-width:62ch;margin:0}
 .today{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:230px}
@@ -188,7 +192,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
   <header>
     <div>
       <div class="eyebrow">Java · 30 days · DSA → System Design</div>
-      <h1>DSA &amp; System Design Notes</h1>
+      <div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" class="logo"> <g transform="rotate(-5 32 32)"> <path d="M12 8H52a4 4 0 0 1 4 4V44L44 56H12a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z" fill="#FFD95A"/> <path d="M56 44H47a3 3 0 0 0-3 3V56Z" fill="#E0B43A"/> <rect x="23" y="3.5" width="18" height="8" rx="1" fill="#FFFFFF" fill-opacity=".75" stroke="#1B2430" stroke-opacity=".12" transform="rotate(4 32 7.5)"/> <g transform="translate(0.5 3.5)"> <path d="M31 20L19 36M31 20L40 30" stroke="#1B2430" stroke-width="3" stroke-linecap="round" fill="none"/> <circle cx="31" cy="19" r="6.5" fill="#1F5F8B"/> <circle cx="31" cy="19" r="2.2" fill="#FFD95A"/> <circle cx="18" cy="37" r="5.5" fill="#FFFFFF" stroke="#1B2430" stroke-width="3"/> <rect x="34" y="27.5" width="15" height="6.5" rx="1.8" fill="#B4441F"/> <rect x="34" y="35.5" width="15" height="6.5" rx="1.8" fill="#B4441F"/> <circle cx="37.8" cy="30.75" r="1.2" fill="#FFD95A"/> <circle cx="37.8" cy="38.75" r="1.2" fill="#FFD95A"/> </g> </g> </svg><h1>DSA &amp; System Design Notes</h1></div>
       <p class="sub">Days 1-21 cover data structures and algorithms; Days 22-28 cover system design (LLD and HLD). Open the System Design tab for the full design handbook. One note per day with the points to revise before an interview. Tap a note for the full lesson sheet: concepts, the live Java demo, linked LeetCode problems and the NexusKV build task.</p>
     </div>
     <div class="today" id="today"></div>

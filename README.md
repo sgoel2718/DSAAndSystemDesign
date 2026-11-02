@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.svg" width="120" alt="DSA and System Design Notes logo"></p>
+
 # 30 Days: Data Structures to System Design (Java)
 
 My 30-day plan to prepare for Google, Microsoft and Amazon interviews, entirely in Java.
