@@ -235,3 +235,6 @@ SOLUTIONS = {
 }"""),
 ],
 }
+
+from solutions_day02 import D2
+SOLUTIONS.update(D2)
