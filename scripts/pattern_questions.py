@@ -196,3 +196,24 @@ def build(days):
             r["mine"] = r["slug"] in mine
         out[pat] = rows
     return out
+
+
+# Which plan day teaches each pattern from Shubham's sheet (so the Questions tab can show them day-wise)
+SHEET_DAY = {"Two pointers": 2, "Sliding window": 2, "Kadane's algorithm": 2, "Prefix sum + hash map": 2, "Hash maps": 3,
+             "Modified binary search": 5, "Fast & slow pointers": 6, "In-place list reversal": 6, "Stack & monotonic stack": 7,
+             "Merge intervals": 15}
+SHEET_ORDER = ["Two pointers", "Fast & slow pointers", "Sliding window", "Kadane's algorithm", "Prefix sum + hash map",
+               "Merge intervals", "In-place list reversal", "Stack & monotonic stack", "Hash maps", "Modified binary search"]
+
+
+def mine_by_day(days, pattern_q):
+    """Sheet questions that are not already plan questions, grouped under the day that teaches their pattern."""
+    in_plan = {slug for d in days for _, slug, _ in d["problems"]}
+    assert set(SHEET_ORDER) == set(SHEET_DAY) == set(SHEET_NEW) | set(SHEET_EXISTING)
+    out, seen = {}, set()
+    for pat in SHEET_ORDER:
+        for r in pattern_q[pat]:
+            if r["mine"] and r["slug"] not in in_plan and r["slug"] not in seen:
+                seen.add(r["slug"])
+                out.setdefault(SHEET_DAY[pat], []).append(dict(name=r["name"], slug=r["slug"], diff=r["diff"], url=r["url"], pattern=pat))
+    return out

@@ -173,6 +173,11 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .pqmeta{display:flex;gap:8px;align-items:center;flex-shrink:0}
 .pqday{font:500 11px var(--mono);color:var(--warm);border:1px solid currentColor;border-radius:99px;padding:0 7px}
 .pqday.x{color:var(--muted)}
+.mmeta{display:inline-flex;gap:8px;align-items:center;justify-self:end}
+.mpat{font:500 11px var(--mono);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:99px;padding:0 7px;white-space:nowrap}
+.minehead{margin:14px 0 2px;padding-top:10px;border-top:1px dashed var(--line);font-size:13.5px;color:var(--muted)}
+.minehead b{color:var(--accent);font-weight:600}
+@media (max-width:520px){.mpat{display:none}}
 .pqmine{font:500 11px var(--mono);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:99px;padding:0 7px}
 .pqsrc{font:500 10.5px var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px}
 .mineonly{display:flex;gap:8px;align-items:center;font-size:14px;margin:0 0 8px}
@@ -363,7 +368,8 @@ let filter = 0;
 function renderTop(){
   const done = PLAN.days.filter(d => state.days[d.day]).length;
   const totalP = PLAN.days.reduce((a,d) => a + d.problems.length, 0);
-  const doneP = Object.values(state.probs).filter(Boolean).length;
+  const planKeys = new Set(PLAN.days.flatMap(d => d.problems.map(p => p[1] + "@" + d.day)));
+  const doneP = Object.entries(state.probs).filter(([k, v]) => v && planKeys.has(k)).length;
   let label = todayDay < 1 ? `Starts ${dateOf(1)}` : todayDay > 30 ? "Plan complete window" : `Today is Day ${todayDay}`;
   const cur = PLAN.days.find(d => d.day === todayDay);
   document.getElementById("today").innerHTML =
@@ -420,6 +426,7 @@ function openSheet(day){
         const k = slug + "@" + d.day;
         return `<div class="probline"><label class="prob"><input type="checkbox" id="p-${k}" data-k="${k}" ${state.probs[k] ? "checked":""}>
           <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener">${esc(n)}</a><span class="tag ${diff}">${diff}</span></label><span class="acts">${cmb(slug, n)}${bm(slug, n)}</span></div>${cmtRegion(slug, "s-" + slug + "-" + d.day)}${solHTML(slug, d.day)}`; }).join("")}` : ""}
+    ${(PLAN.mine[d.day] || []).length ? `<h4>From your list (${PLAN.mine[d.day].length})</h4><p class="pqnote">Questions from your own sheet for this day's patterns.</p>${PLAN.mine[d.day].map(r => mineRow(r, d.day, "s")).join("")}` : ""}
     ${d.project ? `<h4>NexusKV build</h4><div class="build">${esc(d.project.replace(/^NexusKV: /,""))}</div>` : ""}
     <h4>Sticky notes</h4><div class="pnote"><ul>${d.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>
     <label class="donebox"><input type="checkbox" id="done-${d.day}" ${state.days[d.day] ? "checked":""}> Mark Day ${d.day} complete</label>`;
@@ -511,7 +518,18 @@ function openPattern(i){
   if (pv) pv.onclick = () => openPattern(i - 1);
   if (nx) nx.onclick = () => openPattern(i + 1);
 }
-let qFilter = {text: "", diff: "", only: false, marks: false, notes: false};
+let qFilter = {text: "", diff: "", only: false, marks: false, notes: false, mine: false};
+const MINE_SLUGS = new Set(Object.values(PLAN.pattern_q).flat().filter(q => q.mine).map(q => q.slug));
+const MINE_DAY_SLUGS = new Set(Object.values(PLAN.mine).flat().map(r => r.slug));
+const srcChip = url => url.includes("leetcode.com") ? "" : ` <span class="pqsrc">${url.includes("geeksforgeeks") ? "GfG" : "web"}</span>`;
+function mineRow(r, day, ctx){
+  const k = r.slug + "@" + day;
+  return `<div class="qrow minerow"><div class="probline">
+    <label class="prob"><input type="checkbox" id="${ctx}m-${k}" data-k="${k}" ${state.probs[k] ? "checked" : ""}>
+      <a href="${r.url}" target="_blank" rel="noopener">${esc(r.name)}${srcChip(r.url)}</a>
+      <span class="mmeta"><span class="mpat">${esc(r.pattern)}</span><span class="tag ${r.diff}">${r.diff}</span></span></label>
+    <span class="acts">${cmb(r.slug, r.name)}${bm(r.slug, r.name)}</span></div>${cmtRegion(r.slug, ctx + "m-" + r.slug + "-" + day)}${PLAN.solutions[r.slug] ? solHTML(r.slug, day, ctx + "m") : ""}</div>`;
+}
 const matchText = (name, slug) => !qFilter.text || name.toLowerCase().includes(qFilter.text) || (state.notes[slug] && state.notes[slug].t.toLowerCase().includes(qFilter.text));
 function renderQuestions(){
   const root = document.getElementById("qs");
@@ -528,6 +546,7 @@ function renderQuestions(){
         <label class="qonly"><input type="checkbox" id="qOnly"> Only questions with approaches</label>
         <label class="qonly"><input type="checkbox" id="qMarks"> <span id="qMarksLabel">Only bookmarked</span></label>
         <label class="qonly"><input type="checkbox" id="qNotes"> <span id="qNotesLabel">Only with comments</span></label>
+        <label class="qonly"><input type="checkbox" id="qMine"> <span>Only from your list (${MINE_SLUGS.size})</span></label>
       </div>
       <div class="qstat" id="qStat"></div>
       <div id="qList"></div>`;
@@ -536,12 +555,14 @@ function renderQuestions(){
     root.querySelector("#qOnly").onchange = e => { qFilter.only = e.target.checked; drawQ(); };
     root.querySelector("#qMarks").onchange = e => { qFilter.marks = e.target.checked; filter = qFilter.marks ? 5 : 6; renderTabs(); renderQuestions(); };
     root.querySelector("#qNotes").onchange = e => { qFilter.notes = e.target.checked; renderQuestions(); };
+    root.querySelector("#qMine").onchange = e => { qFilter.mine = e.target.checked; renderQuestions(); };
   }
   document.getElementById("qMarks").checked = qFilter.marks;
   document.getElementById("qMarksLabel").textContent = `Only bookmarked (${markCount()})`;
   document.getElementById("qNotes").checked = qFilter.notes;
+  document.getElementById("qMine").checked = qFilter.mine;
   document.getElementById("qNotesLabel").textContent = `Only with comments (${noteCount()})`;
-  root.querySelector("h2").textContent = qFilter.marks ? "Bookmarked questions" : qFilter.notes ? "Questions with your comments" : "Questions, day by day";
+  root.querySelector("h2").textContent = qFilter.marks ? "Bookmarked questions" : qFilter.notes ? "Questions with your comments" : qFilter.mine ? "Questions from your list, day by day" : "Questions, day by day";
   root.querySelector(".lead").textContent = qFilter.marks
     ? "Questions you saved to revise. Search them, open the approaches again, and remove the bookmark once you can solve it without notes."
     : qFilter.notes
@@ -554,16 +575,18 @@ function updateQStat(){
   const total = PLAN.days.reduce((a, d) => a + d.problems.length, 0);
   const withSol = PLAN.days.reduce((a, d) => a + d.problems.filter(p => PLAN.solutions[p[1]]).length, 0);
   const nApp = Object.values(PLAN.solutions).reduce((a, x) => a + x.length, 0);
-  document.getElementById("qStat").textContent = `${total} questions · ${withSol} with full approaches so far (${nApp} Java solutions) · ${Object.values(state.probs).filter(Boolean).length} solved by you · ${markCount()} bookmarked · ${noteCount()} comment${noteCount() === 1 ? "" : "s"}`;
+  document.getElementById("qStat").textContent = `${total} plan questions + ${MINE_DAY_SLUGS.size} from your list · ${withSol} with full approaches so far (${nApp} Java solutions) · ${Object.values(state.probs).filter(Boolean).length} solved by you · ${markCount()} bookmarked · ${noteCount()} comment${noteCount() === 1 ? "" : "s"}`;
   const nl = document.getElementById("qNotesLabel"); if (nl) nl.textContent = `Only with comments (${noteCount()})`;
 }
 function drawQ(){
   const list = document.getElementById("qList"); let shown = 0, n = 0;
   const html = PLAN.days.map(d => {
     const rows = d.problems.map(p => ({p, i: ++n})).filter(({p: [name, slug, diff]}) =>
-      matchText(name, slug) && (!qFilter.diff || diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[slug]) && (!qFilter.marks || state.marks[slug]) && (!qFilter.notes || state.notes[slug]));
-    if (!rows.length) return "";
-    shown += rows.length;
+      matchText(name, slug) && (!qFilter.diff || diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[slug]) && (!qFilter.marks || state.marks[slug]) && (!qFilter.notes || state.notes[slug]) && (!qFilter.mine || MINE_SLUGS.has(slug)));
+    const mine = (PLAN.mine[d.day] || []).filter(r => matchText(r.name, r.slug) && (!qFilter.diff || r.diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[r.slug])
+      && (!qFilter.marks || state.marks[r.slug]) && (!qFilter.notes || state.notes[r.slug]));
+    if (!rows.length && !mine.length) return "";
+    shown += rows.length + mine.length;
     const taught = TAUGHT.includes(d.day);
     return `<section class="qday"><h3><span class="qd">Day ${d.day}</span>${esc(d.title)}<span class="qbadge ${taught ? "on" : ""}">${taught ? "taught" : "upcoming"}</span></h3>
       ${rows.map(({p: [name, slug, diff], i}) => {
@@ -571,15 +594,16 @@ function drawQ(){
         return `<div class="qrow"><div class="probline">
           <label class="prob"><input type="checkbox" id="q-${k}" data-k="${k}" ${state.probs[k] ? "checked" : ""}>
             <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener"><span class="qn">${i}.</span> ${esc(name)}</a>
-            <span class="tag ${diff}">${diff}</span></label><span class="acts">${cmb(slug, name)}${bm(slug, name)}</span>
+            <span class="mmeta">${MINE_SLUGS.has(slug) ? '<span class="pqmine">your list</span>' : ""}<span class="tag ${diff}">${diff}</span></span></label><span class="acts">${cmb(slug, name)}${bm(slug, name)}</span>
           </div>${cmtRegion(slug, "q-" + slug + "-" + d.day)}${solHTML(slug, d.day, "q")}
         </div>`; }).join("")}
+      ${mine.length ? `<div class="minehead"><b>From your list</b> · ${mine.length} question${mine.length === 1 ? "" : "s"} for this day's patterns</div>${mine.map(r => mineRow(r, d.day, "q")).join("")}` : ""}
     </section>`;
   }).join("");
   let extraHTML = "";
   if (qFilter.marks || qFilter.notes) {
     const inPlan = new Set(PLAN.days.flatMap(d => d.problems.map(p => p[1]))), seen = new Set();
-    const extras = Object.values(PLAN.pattern_q).flat().filter(q => !inPlan.has(q.slug) && (!qFilter.marks || state.marks[q.slug]) && (!qFilter.notes || state.notes[q.slug]) && !seen.has(q.slug) && seen.add(q.slug))
+    const extras = Object.values(PLAN.pattern_q).flat().filter(q => !inPlan.has(q.slug) && !MINE_DAY_SLUGS.has(q.slug) && !qFilter.mine && (!qFilter.marks || state.marks[q.slug]) && (!qFilter.notes || state.notes[q.slug]) && !seen.has(q.slug) && seen.add(q.slug))
       .filter(q => matchText(q.name, q.slug) && (!qFilter.diff || q.diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[q.slug]));
     if (extras.length) {
       const pats = slug => Object.entries(PLAN.pattern_q).filter(([, qs]) => qs.some(q => q.slug === slug)).map(([p]) => p).join(", ");
