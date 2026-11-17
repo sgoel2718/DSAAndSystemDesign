@@ -267,6 +267,72 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .pptable .pptitle td:not(.rn){font-weight:600}
 .pptable .pphead td:not(.rn){font-weight:600}
 .pptable .ppsec td:not(.rn){font-weight:600;background:color-mix(in srgb,var(--n1) 55%,var(--panel))}
+.cbtns{display:inline-flex;gap:6px}
+.vizbtn{border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 12%,var(--panel));color:var(--accent);border-radius:5px;padding:2px 10px;font:600 12px var(--sans);cursor:pointer}
+.vizbtn:hover{background:color-mix(in srgb,var(--accent) 22%,var(--panel))}
+.vizbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.vizlayer{position:fixed;inset:0;z-index:30;background:rgba(10,14,20,.55);display:flex;align-items:stretch;justify-content:center;
+  padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.vz{background:var(--panel);color:var(--ink);border-radius:14px;width:min(1200px,100%);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.vzhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.vzhead h2{font:700 24px/1.1 var(--hand);margin:2px 0}
+.vzsub{font:12.5px var(--mono);color:var(--muted)}
+.vzhead .close{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:99px;padding:6px 12px;cursor:pointer;font:500 13px var(--sans);flex:none}
+.vzbody{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:12px 18px;overflow:auto}
+.vzload{color:var(--muted);padding:20px 0}
+.vzinput{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}
+.vzinput span{font:600 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.vzinput code{font:12.5px var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px;overflow-wrap:anywhere}
+.vzgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:14px;min-height:0;flex:1}
+.vzcode{background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:62vh;font:12.5px/1.6 var(--mono);padding:6px 0}
+.vzln{display:flex;white-space:pre;padding:0 10px 0 0;border-left:3px solid transparent}
+.vzln .no{width:34px;flex:none;text-align:right;padding-right:10px;color:var(--muted);user-select:none}
+.vzln.was{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.vzln.on{background:color-mix(in srgb,var(--warm) 18%,transparent);border-left-color:var(--warm)}
+.vzln.on .no{color:var(--warm);font-weight:600}
+.vzstate{display:flex;flex-direction:column;gap:10px;min-width:0;overflow:auto;max-height:62vh}
+.vznote{background:var(--n1);color:var(--note-ink);border-radius:4px;padding:8px 12px;font-size:14px}
+.vznote code{font:12.5px var(--mono);background:color-mix(in srgb,var(--note-ink) 12%,transparent);color:var(--note-ink);padding:0 4px;border-radius:3px}
+.vzin{font:11.5px var(--mono);opacity:.8;margin-left:6px}
+.vzchg{margin-top:4px;font-size:13px}
+.vzblk{border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+.vzname{font:600 12px var(--mono);color:var(--muted);margin-bottom:6px}
+.vzname i{font-style:normal;color:var(--warm);margin-left:4px}
+.vzt{font:500 11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.vzarr{display:flex;flex-wrap:wrap;gap:4px 3px}
+.vzarr .col{display:flex;flex-direction:column;align-items:center;min-width:34px}
+.cell{display:inline-grid;place-items:center;min-width:34px;height:32px;padding:0 6px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);font:500 13.5px var(--mono);font-variant-numeric:tabular-nums;transition:background .2s}
+.cell.hot{background:color-mix(in srgb,var(--warm) 25%,var(--bg));border-color:var(--warm)}
+.cell.cur{outline:2px solid var(--accent);outline-offset:1px}
+.cell.ghost{opacity:.5;border-style:dashed;font-size:11px}
+.ix{font:10.5px var(--mono);color:var(--muted);margin-top:1px}
+.ptrs{display:flex;flex-direction:column;align-items:center;gap:1px;min-height:16px}
+.ptrs b,.nl b{font:600 11px var(--mono);color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:4px;padding:0 4px}
+.ptrs b.mv,.nl b.mv{color:var(--panel);background:var(--accent)}
+.ptrs b::before{content:"↑ "}
+.vzgridt{display:grid;gap:3px;overflow-x:auto}
+.vzrow{display:flex;gap:3px}
+.vzll{display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px;margin:4px 0 8px}
+.nd{display:flex;flex-direction:column;align-items:center;gap:2px}
+.nv{display:inline-grid;place-items:center;min-width:34px;height:32px;padding:0 6px;border:1.5px solid var(--accent);border-radius:16px;font:600 13px var(--mono)}
+.nl{display:flex;flex-direction:column;align-items:center;gap:1px}
+.ar{font:600 14px var(--mono);color:var(--muted);padding-top:6px}
+.vzobj{font:12.5px var(--mono);background:var(--bg);border-radius:6px;padding:6px 8px;overflow-wrap:anywhere}
+.vzobj.hot{background:color-mix(in srgb,var(--warm) 18%,var(--bg))}
+.vzvars{display:flex;flex-wrap:wrap;gap:6px}
+.vv{font:12.5px var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px;overflow-wrap:anywhere;max-width:100%}
+.vv.hot{border-color:var(--warm);background:color-mix(in srgb,var(--warm) 18%,var(--bg))}
+.vztrunc{margin:0;font-size:13px;color:var(--muted)}
+.vzctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:10px}
+.vzctl button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 12px;font:500 13.5px var(--sans);cursor:pointer}
+.vzctl button.pri{background:var(--accent);border-color:var(--accent);color:var(--panel);min-width:96px}
+.vzctl button:focus-visible,.vzctl input:focus-visible,.vzctl select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.vzslide{flex:1 1 160px;display:flex}.vzslide input{width:100%;accent-color:var(--accent)}
+.vzcount{font:12.5px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.vzspeed{font-size:13px;display:flex;gap:6px;align-items:center}
+.vzspeed select{font:13px var(--sans);padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+@media (max-width:760px){.vzgrid{grid-template-columns:1fr}.vzcode{max-height:30vh}.vzstate{max-height:none}.vzhead h2{font-size:20px}}
+@media (prefers-reduced-motion:reduce){.cell{transition:none}}
 footer{margin-top:40px;color:var(--muted);font-size:13px}
 @media (max-width:720px){header,.proj{grid-template-columns:1fr}.today{min-width:0}}
 @media (prefers-reduced-motion:reduce){.note,.bar i{transition:none}.note{transform:none}}
@@ -293,6 +359,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
 <div class="scrim" id="scrim" hidden></div>
 <button type="button" class="totop" id="totop" aria-label="Scroll to top" hidden>↑</button>
 <aside class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></aside>
+<div class="vizlayer" id="viz" hidden role="dialog" aria-modal="true" aria-labelledby="vizTitle"></div>
 
 <script>
 const PLAN = __PLAN__;
@@ -367,6 +434,8 @@ function saveNote(region){
 }
 function markCount(){ return Object.values(state.marks).filter(Boolean).length; }
 document.addEventListener("click", e => {
+  const vb = e.target.closest(".vizbtn");
+  if (vb) { e.preventDefault(); e.stopPropagation(); const [sl, ix] = vb.dataset.viz.split("|"); openViz(sl, +ix); return; }
   const c = e.target.closest(".cmb, .cmt-save, .cmt-cancel, .cmt-del, .cmt-edit");
   if (c) {
     e.preventDefault(); e.stopPropagation();
@@ -490,7 +559,7 @@ function solHTML(slug, day, ctx = "s"){
         <div class="apph"><b>${i + 1}. ${esc(a.name)}</b>${a.best ? '<span class="bestb">best</span>' : ""}</div>
         <p>${esc(a.idea)}</p>
         <div class="cx"><span>Time <b>${esc(a.time)}</b></span><span>Space <b>${esc(a.space)}</b></span></div>
-        <div class="codewrap"><div class="codebar"><span>Java</span><button type="button" class="copy" data-code="${slug}|${i}">Copy</button></div><pre class="code java">${esc(a.code)}</pre></div>
+        <div class="codewrap"><div class="codebar"><span>Java</span><span class="cbtns"><button type="button" class="vizbtn" data-viz="${slug}|${i}">▶ Step-by-step</button><button type="button" class="copy" data-code="${slug}|${i}">Copy</button></span></div><pre class="code java">${esc(a.code)}</pre></div>
       </div>`).join("")}
     </div></details>`;
 }
@@ -506,9 +575,166 @@ function selectCode(b){
   const pre = b.parentElement.nextElementSibling, r = document.createRange(); r.selectNodeContents(pre);
   const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = "Press Ctrl+C";
 }
+/* ---------- Step-by-step visualizer: replays a trace recorded from the real Java code ---------- */
+const TRACES = {};
+const PTR = new Set(["i","j","l","r","lo","hi","mid","left","right","low","high","start","end","slow","fast","write","read","w","p","q","idx",
+  "pos","pivot","home","at","first","last","top","bottom","x0","a","b","c0","jj","ii","st0","s0","e0","m0","from","to","off","cur0"]);
+const VZ = {slug: "", i: 0, k: 0, states: [], timer: null};
+async function loadTrace(slug){
+  if (TRACES[slug]) return TRACES[slug];
+  const r = await fetch(`traces/${slug}.json`, {cache: "force-cache"});
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return (TRACES[slug] = await r.json());
+}
+function openViz(slug, i){
+  const L = document.getElementById("viz"), A = PLAN.solutions[slug][i];
+  const name = (Object.values(PLAN.pattern_q).flat().find(q => q.slug === slug) || {}).name
+    || (PLAN.days.flatMap(d => d.problems).find(p => p[1] === slug) || [slug])[0];
+  L.innerHTML = `<div class="vz">
+    <div class="vzhead"><div><div class="eyebrow">Step-by-step · recorded from the real Java code</div>
+      <h2 id="vizTitle">${esc(name)}</h2><div class="vzsub">${esc(A.name)} · Time ${esc(A.time)} · Space ${esc(A.space)}</div></div>
+      <button type="button" class="close" id="vzClose">Close</button></div>
+    <div class="vzbody"><div class="vzload">Loading the recording…</div></div></div>`;
+  L.hidden = false;
+  document.getElementById("vzClose").onclick = closeViz;
+  document.getElementById("vzClose").focus();
+  loadTrace(slug).then(T => {
+    const t = T.approaches[i];
+    if (!t || !t.steps.length) { L.querySelector(".vzbody").innerHTML = `<p class="vzload">No recording for this approach yet.</p>`; return; }
+    let cur = {};
+    VZ.states = t.steps.map(st => { cur = Object.assign({}, cur, st.v || {}); (st.x || []).forEach(n => delete cur[n]); return cur; });
+    Object.assign(VZ, {slug, i, k: 0, t, code: A.code.split("\n")});
+    buildViz();
+  }).catch(err => {
+    L.querySelector(".vzbody").innerHTML = `<p class="vzload">Could not load the recording (${esc(err.message)}). If you opened this page as a local file, open it from the website instead.</p>`;
+  });
+}
+function closeViz(){ stopPlay(); document.getElementById("viz").hidden = true; }
+function stopPlay(){ clearInterval(VZ.timer); VZ.timer = null; const b = document.getElementById("vzPlay"); if (b) b.textContent = "▶ Play"; }
+function buildViz(){
+  const L = document.getElementById("viz"), t = VZ.t, n = t.steps.length;
+  L.querySelector(".vzbody").innerHTML = `
+    <div class="vzinput"><span>Example input</span><code>${esc(t.input)}</code>${t.result ? `<span>Result</span><code>${esc(t.result)}</code>` : ""}</div>
+    <div class="vzgrid">
+      <div class="vzcode" id="vzCode">${VZ.code.map((ln, k) => `<div class="vzln" data-l="${k + 1}"><span class="no">${k + 1}</span><span class="tx">${esc(ln) || " "}</span></div>`).join("")}</div>
+      <div class="vzstate"><div class="vznote" id="vzNote"></div><div id="vzState"></div></div>
+    </div>
+    ${t.truncated ? `<p class="vztrunc">The recording stops after ${n} steps. This approach keeps going the same way; that long run is exactly why it is slow.</p>` : ""}
+    <div class="vzctl">
+      <button type="button" id="vzFirst" aria-label="First step">⏮</button>
+      <button type="button" id="vzPrev">◀ Back</button>
+      <button type="button" id="vzPlay" class="pri">▶ Play</button>
+      <button type="button" id="vzNext">Next ▶</button>
+      <button type="button" id="vzLast" aria-label="Last step">⏭</button>
+      <label class="vzslide"><span class="sr">Step</span><input type="range" id="vzRange" min="0" max="${n - 1}" value="0"></label>
+      <span class="vzcount" id="vzCount"></span>
+      <label class="vzspeed">Speed <select id="vzSpeed"><option value="1200">Slow</option><option value="650" selected>Normal</option><option value="250">Fast</option></select></label>
+    </div>`;
+  const go = k => { VZ.k = Math.max(0, Math.min(n - 1, k)); renderStep(); };
+  document.getElementById("vzFirst").onclick = () => { stopPlay(); go(0); };
+  document.getElementById("vzPrev").onclick = () => { stopPlay(); go(VZ.k - 1); };
+  document.getElementById("vzNext").onclick = () => { stopPlay(); go(VZ.k + 1); };
+  document.getElementById("vzLast").onclick = () => { stopPlay(); go(n - 1); };
+  document.getElementById("vzRange").oninput = e => { stopPlay(); go(+e.target.value); };
+  document.getElementById("vzPlay").onclick = () => {
+    if (VZ.timer) return stopPlay();
+    if (VZ.k >= n - 1) go(0);
+    document.getElementById("vzPlay").textContent = "❚❚ Pause";
+    const tick = () => { if (VZ.k >= n - 1) return stopPlay(); go(VZ.k + 1); };
+    VZ.timer = setInterval(tick, +document.getElementById("vzSpeed").value);
+  };
+  document.getElementById("vzSpeed").onchange = () => { if (VZ.timer) { stopPlay(); document.getElementById("vzPlay").click(); } };
+  L.onkeydown = e => {
+    if (e.target.tagName === "SELECT" || e.target.type === "range") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); go(VZ.k + 1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); go(VZ.k - 1); }
+    if (e.key === " ") { e.preventDefault(); document.getElementById("vzPlay").click(); }
+  };
+  renderStep();
+}
+function vzVal(v){
+  if (v === null || v === undefined) return "null";
+  if (typeof v === "object") {
+    if ("a" in v) return "[" + v.a.map(vzVal).join(", ") + (v.more ? ", …" : "") + "]";
+    if ("c" in v) return v.c.map(x => x[1]).join(" → ");
+    if ("o" in v) return v.o;
+  }
+  return typeof v === "string" ? JSON.stringify(v) : String(v);
+}
+function renderStep(){
+  const t = VZ.t, k = VZ.k, st = t.steps[k], S = VZ.states[k], P = k > 0 ? VZ.states[k - 1] : {};
+  document.getElementById("vzRange").value = k;
+  document.getElementById("vzCount").textContent = `Step ${k + 1} / ${t.steps.length}`;
+  // code highlight
+  const code = document.getElementById("vzCode");
+  code.querySelectorAll(".vzln").forEach(el => el.classList.remove("on", "was"));
+  const prevL = k > 0 ? t.steps[k - 1].l : 0;
+  const was = code.querySelector(`.vzln[data-l="${prevL}"]`); if (was) was.classList.add("was");
+  const on = code.querySelector(`.vzln[data-l="${st.l}"]`);
+  if (on) { on.classList.add("on"); const top = on.offsetTop - code.clientHeight / 2; if (on.offsetTop < code.scrollTop || on.offsetTop > code.scrollTop + code.clientHeight - 30) code.scrollTop = top; }
+  const line = (VZ.code[st.l - 1] || "").trim();
+  const changed = Object.keys(S).filter(n => JSON.stringify(S[n]) !== JSON.stringify(P[n]));
+  let note = "ret" in st
+    ? `<b>Returns ${esc(vzVal(st.ret))}</b>${st.ret === "(void)" ? " (the input was changed in place)" : ""}`
+    : k === 0 ? `<b>Start.</b> The method is called with the example input.` : `About to run line ${st.l}: <code>${esc(line)}</code>`;
+  if (st.m) note += ` <span class="vzin">inside ${esc(st.m)}()</span>`;
+  if (st.d > 1) note += ` <span class="vzin">recursion depth ${st.d}</span>`;
+  if (k > 0 && changed.length) note += `<div class="vzchg">Changed: ${changed.map(n => `<b>${esc(n)}</b>`).join(", ")}</div>`;
+  document.getElementById("vzNote").innerHTML = note;
+  document.getElementById("vzState").innerHTML = renderState(S, P);
+}
+function renderState(S, P){
+  const names = Object.keys(S), out = [];
+  const ints = names.filter(n => typeof S[n] === "number" && Number.isInteger(S[n]));
+  const ptrsFor = len => ints.filter(n => PTR.has(n) && S[n] >= 0 && S[n] <= len);
+  const chg = n => JSON.stringify(S[n]) !== JSON.stringify(P[n]);
+  // arrays and strings with pointer chips
+  names.forEach(n => {
+    const v = S[n];
+    const isArr = v && typeof v === "object" && "a" in v, isStr = typeof v === "string" && v.length > 1 && v.length <= 64;
+    if (!isArr && !isStr) return;
+    const cells = isArr ? v.a : [...v];
+    if (isArr && cells.length && typeof cells[0] === "object" && cells[0] && "a" in cells[0]) {     // 2D grid
+      const pv = P[n] && P[n].a;
+      const pr = [["i","j"],["r","c"],["row","col"],["nr","nc"]].find(([a, b]) => Number.isInteger(S[a]) && Number.isInteger(S[b]));
+      out.push(`<div class="vzblk"><div class="vzname">${esc(n)}${chg(n) ? ' <i>changed</i>' : ""}${pr ? ` <span class="vzt">outlined: [${pr[0]}][${pr[1]}]</span>` : ""}</div><div class="vzgridt">${cells.map((row, ri) =>
+        `<div class="vzrow">${row.a.map((c, ci) => `<span class="cell${pv && pv[ri] && pv[ri].a && JSON.stringify(pv[ri].a[ci]) !== JSON.stringify(c) ? " hot" : ""}${pr && S[pr[0]] === ri && S[pr[1]] === ci ? " cur" : ""}">${esc(vzVal(c))}</span>`).join("")}</div>`).join("")}</div></div>`);
+      return;
+    }
+    const pa = P[n] && (P[n].a || (typeof P[n] === "string" ? [...P[n]] : null));
+    const ptrs = ptrsFor(cells.length);
+    out.push(`<div class="vzblk"><div class="vzname">${esc(n)}${isStr ? ' <span class="vzt">String</span>' : ""}${v.more ? ` <span class="vzt">first ${cells.length} of ${cells.length + v.more}</span>` : ""}</div>
+      <div class="vzarr" style="--n:${cells.length}">
+        ${cells.map((c, ci) => `<div class="col"><span class="cell${pa && JSON.stringify(pa[ci]) !== JSON.stringify(c) ? " hot" : ""}">${esc(typeof c === "object" ? vzVal(c) : String(c))}</span><span class="ix">${ci}</span>
+          <span class="ptrs">${ptrs.filter(pn => S[pn] === ci).map(pn => `<b class="${chg(pn) ? "mv" : ""}">${esc(pn)}</b>`).join("")}</span></div>`).join("")}
+        ${ptrs.some(pn => S[pn] === cells.length) ? `<div class="col end"><span class="cell ghost">end</span><span class="ix">${cells.length}</span><span class="ptrs">${ptrs.filter(pn => S[pn] === cells.length).map(pn => `<b>${esc(pn)}</b>`).join("")}</span></div>` : ""}
+      </div></div>`);
+  });
+  // linked lists
+  const lnames = names.filter(n => S[n] && typeof S[n] === "object" && "c" in S[n]);
+  if (lnames.length) {
+    const byId = {}; lnames.forEach(n => (byId[S[n].n] = byId[n] = null, (byId["#" + S[n].n] = (byId["#" + S[n].n] || []).concat(n))));
+    const chains = lnames.map(n => S[n].c).sort((a, b) => b.length - a.length), shown = [];
+    chains.forEach(c => { const key = c.map(x => x[0]).join(","); if (!shown.some(sh => sh.map(x => x[0]).join(",").includes(key))) shown.push(c); });
+    out.push(`<div class="vzblk"><div class="vzname">Linked list nodes</div>${shown.map(c => {
+      const cyc = c.length > 1 && c.slice(0, -1).some(x => x[0] === c[c.length - 1][0]);
+      const body = cyc ? c.slice(0, -1) : c;
+      return `<div class="vzll">${body.map((x, xi) => `<span class="nd"><span class="nv">${esc(String(x[1]))}</span><span class="nl">${(byId["#" + x[0]] || []).map(v => `<b class="${chg(v) ? "mv" : ""}">${esc(v)}</b>`).join("")}</span></span>${xi < body.length - 1 ? '<span class="ar">→</span>' : ""}`).join("")}${cyc ? `<span class="ar">↺ back to ${esc(String(c[c.length - 1][1]))}</span>` : '<span class="ar">→ null</span>'}</div>`;
+    }).join("")}</div>`);
+  }
+  // collections / objects
+  names.filter(n => S[n] && typeof S[n] === "object" && "o" in S[n]).forEach(n =>
+    out.push(`<div class="vzblk"><div class="vzname">${esc(n)}${chg(n) ? ' <i>changed</i>' : ""}</div><div class="vzobj${chg(n) ? " hot" : ""}">${esc(S[n].o)}</div></div>`));
+  // scalars
+  const sc = names.filter(n => !(S[n] && typeof S[n] === "object") && !(typeof S[n] === "string" && S[n].length > 1 && S[n].length <= 64));
+  if (sc.length) out.push(`<div class="vzblk"><div class="vzname">Variables</div><div class="vzvars">${sc.map(n =>
+    `<span class="vv${chg(n) ? " hot" : ""}"><b>${esc(n)}</b> = ${esc(vzVal(S[n]))}</span>`).join("")}</div></div>`);
+  const nulls = names.filter(n => S[n] === null);
+  return out.join("") || `<p class="vzload">No variables yet.</p>`;
+}
 function closeSheet(){ document.getElementById("sheet").hidden = true; document.getElementById("scrim").hidden = true; }
 document.getElementById("scrim").onclick = closeSheet;
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!document.getElementById("viz").hidden) { closeViz(); return; } closeSheet(); } });
 function renderProj(){
   const P = PLAN.project;
   document.getElementById("proj").innerHTML = `<div>
