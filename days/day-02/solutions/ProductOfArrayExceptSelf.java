@@ -66,6 +66,7 @@ public class ProductOfArrayExceptSelf {
     static String show(Object r) {
         if (r instanceof int[] a) return Arrays.toString(a);
         if (r instanceof int[][] a) return Arrays.deepToString(a);
+        if (r instanceof ListNode l) return toList(l);
         return String.valueOf(r);
     }
     static String norm(List<List<Integer>> x) {                 // order-independent view of a list of lists
@@ -75,6 +76,19 @@ public class ProductOfArrayExceptSelf {
         return c.toString();
     }
     static String sorted(List<Integer> x) { List<Integer> c = new ArrayList<>(x); Collections.sort(c); return c.toString(); }
+    static class ListNode {
+        int val; ListNode next;
+        ListNode() {}
+        ListNode(int val) { this.val = val; }
+        ListNode(int val, ListNode next) { this.val = val; this.next = next; }
+    }
+    static ListNode list(int... v) { ListNode d = new ListNode(0), t = d; for (int x : v) { t.next = new ListNode(x); t = t.next; } return d.next; }
+    static ListNode cyclic(int[] v, int pos) {                   // list whose tail links back to index pos (-1 = no cycle)
+        ListNode h = list(v), t = h, at = null;
+        for (int i = 0; t != null; i++, t = t.next) { if (i == pos) at = t; if (t.next == null) { t.next = at; break; } }
+        return h;
+    }
+    static String toList(ListNode h) { List<Integer> o = new ArrayList<>(); for (int i = 0; h != null && i < 1000; i++, h = h.next) o.add(h.val); return o.toString(); }
     static int passed = 0;
     static void check(String what, Object r, String want) {
         String got = show(r);

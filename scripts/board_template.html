@@ -242,6 +242,17 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .pptable td:nth-child(4){min-width:260px}
 .pptable td:nth-child(n+5){max-width:280px;overflow-wrap:anywhere;font:12px var(--mono)}
 .pptable td a{color:var(--accent);text-decoration:none}.pptable td a:hover{text-decoration:underline}
+.pptable .apcol{width:132px;text-align:center}
+.ppap{font:500 12.5px var(--sans);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:99px;padding:3px 10px;cursor:pointer;white-space:nowrap}
+.ppap::after{content:" ▸";display:inline-block;transition:transform .15s}
+.ppap[aria-expanded="true"]::after{transform:rotate(90deg)}
+.ppap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ppsolrow td{background:var(--bg)}
+.ppsolwrap{max-width:900px;display:grid;gap:8px}
+.ppsolwrap .sol{margin:0}
+.ppsolname{font:600 13px var(--sans);margin-top:4px}
+.pqsolwrap{padding:0 12px 10px}
+.pqsolwrap .sol{margin:0}
 .pptable .ck{width:52px;text-align:center;background:var(--bg)}
 .pptable thead th.ck{text-align:center}
 .ppck{width:18px;height:18px;accent-color:var(--easy);cursor:pointer;margin:0}
@@ -536,11 +547,12 @@ function openPattern(i){
       const k = q.day ? q.slug + "@" + q.day : "", done = k && state.probs[k], sol = PLAN.solutions[q.slug];
       return `<div class="pqrow${done ? " done" : ""}${q.mine ? " mine" : ""}"><a class="pqlink" href="${q.url}" target="_blank" rel="noopener">
         <span class="pqname">${done ? "✓ " : ""}${esc(q.name)}${q.url.includes("leetcode.com") ? "" : ` <span class="pqsrc">${q.url.includes("geeksforgeeks") ? "GfG" : "web"}</span>`}</span>
-        <span class="pqmeta">${q.mine ? '<span class="pqmine">your list</span>' : ""}${sol ? `<span class="pqsol">${sol.length} approaches</span>` : ""}<span class="pqday ${q.day ? "" : "x"}">${q.day ? "Day " + q.day : "Extra"}</span><span class="tag ${q.diff}">${q.diff}</span></span></a><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div><div class="cmtwrap${q.mine ? " mine" : ""}">${cmtRegion(q.slug, "p-" + q.slug)}</div>`; }).join("")}</div>
+        <span class="pqmeta">${q.mine ? '<span class="pqmine">your list</span>' : ""}${sol ? `<span class="pqsol">${sol.length} approaches</span>` : ""}<span class="pqday ${q.day ? "" : "x"}">${q.day ? "Day " + q.day : "Extra"}</span><span class="tag ${q.diff}">${q.diff}</span></span></a><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div><div class="cmtwrap${q.mine ? " mine" : ""}">${cmtRegion(q.slug, "p-" + q.slug)}${sol ? `<div class="pqsolwrap">${solHTML(q.slug, q.day || 0, "p")}</div>` : ""}</div>`; }).join("")}</div>
     <div class="pnav">${i > 0 ? `<button type="button" id="pPrev">← ${esc(PLAN.patterns[i-1][0])}</button>` : "<span></span>"}
       ${i < PLAN.patterns.length - 1 ? `<button type="button" id="pNext">${esc(PLAN.patterns[i+1][0])} →</button>` : ""}</div>`;
   s.hidden = false; document.getElementById("scrim").hidden = false; s.scrollTop = 0;
   const c = document.getElementById("closeSheet"); c.onclick = closeSheet; c.focus();
+  wireCopy(s);
   const mo = document.getElementById("mineOnly");
   if (mo) mo.onchange = () => s.querySelector(".pq").classList.toggle("mine-only", mo.checked);
   const pv = document.getElementById("pPrev"), nx = document.getElementById("pNext");
@@ -602,7 +614,8 @@ function renderQuestions(){
 }
 function updateQStat(){
   const total = PLAN.days.reduce((a, d) => a + d.problems.length, 0);
-  const withSol = PLAN.days.reduce((a, d) => a + d.problems.filter(p => PLAN.solutions[p[1]]).length, 0);
+  const withSol = PLAN.days.reduce((a, d) => a + d.problems.filter(p => PLAN.solutions[p[1]]).length, 0)
+    + Object.values(PLAN.mine).flat().filter(r => PLAN.solutions[r.slug]).length;
   const nApp = Object.values(PLAN.solutions).reduce((a, x) => a + x.length, 0);
   document.getElementById("qStat").textContent = `${total} plan questions + ${MINE_DAY_SLUGS.size} from your list · ${withSol} with full approaches so far (${nApp} Java solutions) · ${Object.values(state.probs).filter(Boolean).length} solved by you · ${markCount()} bookmarked · ${noteCount()} comment${noteCount() === 1 ? "" : "s"}`;
   const nl = document.getElementById("qNotesLabel"); if (nl) nl.textContent = `Only with comments (${noteCount()})`;
@@ -662,15 +675,29 @@ function renderPP(){
       <p class="lead">Copied as it is from your Google Sheet: same rows, order, text and links. <a href="${P.source}" target="_blank" rel="noopener">Open the original sheet</a></p>
       <div class="ppprog" id="ppProg"></div>
       <div class="pptable"><table>
-        <thead><tr><th class="rn" scope="col"><span class="sr">Row</span></th><th class="ck" scope="col">Done</th>${P.header.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
+        <thead><tr><th class="rn" scope="col"><span class="sr">Row</span></th><th class="ck" scope="col">Done</th>${P.header.map(h => `<th scope="col">${esc(h)}</th>`).join("")}<th scope="col" class="apcol">Approaches</th></tr></thead>
         <tbody>
-          <tr class="pphead"><td class="rn">1</td><td class="ck"></td>${P.header.map(h => `<td>${esc(h)}</td>`).join("")}</tr>
+          <tr class="pphead"><td class="rn">1</td><td class="ck"></td>${P.header.map(h => `<td>${esc(h)}</td>`).join("")}<td></td></tr>
           ${P.rows.map((r, i) => {
             const keys = P.keys[i];
             const ck = keys.length ? `<input type="checkbox" class="ppck" id="pp-${i}" data-i="${i}" aria-label="Mark done: ${esc(r[1])}">` : "";
-            return `<tr id="ppr-${i}"${keys.length ? "" : ' class="ppsec"'}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}</tr>`;
+            const slugs = keys.map(k => k.split("@")), withSol = slugs.filter(([sl]) => PLAN.solutions[sl]);
+            const nApp = withSol.reduce((a, [sl]) => a + PLAN.solutions[sl].length, 0);
+            const btn = nApp ? `<button type="button" class="ppap" id="ppap-${i}" data-i="${i}" aria-expanded="false" aria-controls="pps-${i}">${nApp} approaches</button>` : "";
+            const names = Object.fromEntries(Object.values(PLAN.pattern_q).flat().map(q => [q.slug, q.name]));
+            const detail = nApp ? `<tr class="ppsolrow" id="pps-${i}" hidden><td class="rn"></td><td colspan="7"><div class="ppsolwrap">
+                ${withSol.map(([sl, day]) => `${withSol.length > 1 ? `<div class="ppsolname">${esc(names[sl] || sl)}</div>` : ""}${solHTML(sl, +day, "pp" + i)}`).join("")}
+              </div></td></tr>` : "";
+            return `<tr id="ppr-${i}"${keys.length ? "" : ' class="ppsec"'}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol">${btn}</td></tr>${detail}`;
           }).join("")}
         </tbody></table></div>`;
+    root.querySelectorAll(".ppap").forEach(b => b.onclick = () => {
+      const row = document.getElementById("pps-" + b.dataset.i), open = row.hidden;
+      row.hidden = !open;
+      b.setAttribute("aria-expanded", open);
+      if (open) row.querySelectorAll("details.sol").forEach(d => d.open = true);
+    });
+    wireCopy(root);
     root.querySelectorAll(".ppck").forEach(c => c.onchange = () => {
       PLAN.pp.keys[+c.dataset.i].forEach(k => { if (c.checked) state.probs[k] = true; else delete state.probs[k]; });
       save(); renderTop(); ppSync();

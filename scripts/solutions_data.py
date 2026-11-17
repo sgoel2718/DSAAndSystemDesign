@@ -238,3 +238,18 @@ SOLUTIONS = {
 
 from solutions_day02 import D2
 SOLUTIONS.update(D2)
+
+# Approaches for the questions from Shubham's practice sheet, one module per pattern group.
+# Each module defines SOL (slug -> approaches) and TESTS (slug -> test cases).
+import importlib
+EXTRA_TESTS = {}
+for _m in ["sheet_two_pointers", "sheet_fast_slow", "sheet_sliding_kadane_prefix", "sheet_intervals_reversal_stack",
+           "sheet_hash_binary_search"]:
+    try:
+        _mod = importlib.import_module(_m)
+    except ModuleNotFoundError as e:
+        if e.name == _m: continue
+        raise
+    assert not set(_mod.SOL) & set(SOLUTIONS), set(_mod.SOL) & set(SOLUTIONS)
+    SOLUTIONS.update(_mod.SOL)
+    EXTRA_TESTS.update(_mod.TESTS)
