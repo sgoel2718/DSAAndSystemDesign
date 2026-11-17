@@ -173,6 +173,11 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .pqmeta{display:flex;gap:8px;align-items:center;flex-shrink:0}
 .pqday{font:500 11px var(--mono);color:var(--warm);border:1px solid currentColor;border-radius:99px;padding:0 7px}
 .pqday.x{color:var(--muted)}
+.pqmine{font:500 11px var(--mono);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:99px;padding:0 7px}
+.pqsrc{font:500 10.5px var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px}
+.mineonly{display:flex;gap:8px;align-items:center;font-size:14px;margin:0 0 8px}
+.mineonly input{width:17px;height:17px;accent-color:var(--accent)}
+.pq.mine-only .pqrow:not(.mine),.pq.mine-only .cmtwrap:not(.mine){display:none}
 .pqsol{font:500 11px var(--mono);color:var(--easy)}
 .appr{padding-left:20px;margin:0}.appr li{margin:3px 0}
 .code{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow-x:auto;font:12.5px/1.55 var(--mono)}
@@ -301,7 +306,8 @@ function setCmb(slug, expanded, region){
   document.querySelectorAll(`.cmb[data-slug="${slug}"]`).forEach(b => {
     b.classList.toggle("has", has); b.title = has ? "Edit your comment" : "Add a comment";
   });
-  const btn = region && region.previousElementSibling && region.previousElementSibling.querySelector(".cmb");
+  const host = region && (region.parentElement.classList.contains("cmtwrap") ? region.parentElement : region);
+  const btn = host && host.previousElementSibling && host.previousElementSibling.querySelector(".cmb");
   if (btn) btn.setAttribute("aria-expanded", expanded);
 }
 function refreshNotes(slug){
@@ -323,7 +329,8 @@ document.addEventListener("click", e => {
   if (c) {
     e.preventDefault(); e.stopPropagation();
     if (c.classList.contains("cmb")) {
-      const region = c.closest(".probline, .pqrow").nextElementSibling;
+      let region = c.closest(".probline, .pqrow").nextElementSibling;
+      if (region.classList.contains("cmtwrap")) region = region.firstElementChild;
       if (region.classList.contains("editing")) closeEditor(region); else openEditor(region);
       return;
     }
@@ -466,7 +473,7 @@ function renderProj(){
   document.getElementById("foot").textContent = `Last updated ${__UPDATED__}. Progress ticks, bookmarks and comments are saved in this browser only.`;
 }
 function renderKit(){
-  document.getElementById("kit").innerHTML = `<div class="eyebrow">Toolkit</div><h2>20 patterns and how to approach them</h2>
+  document.getElementById("kit").innerHTML = `<div class="eyebrow">Toolkit</div><h2>${PLAN.patterns.length} patterns and how to approach them</h2>
     <p>Read the question, find the signal, name the pattern out loud, then code. Tap a pattern for its step-by-step approach, Java template, common mistakes and complexity.</p>
     <div class="pgrid">${PLAN.patterns.map(([n,sig,ex],i) => `<button type="button" class="pcard" data-p="${i}" style="--r:${((i*29)%5-2)*0.5}deg"><b>${esc(n)}</b><span>${esc(sig)}</span><i>${PLAN.pattern_q[n].length} questions · open approach →</i></button>`).join("")}</div>
     <div class="cols">
@@ -487,17 +494,19 @@ function openPattern(i){
     <h4>Java template</h4><pre class="code">${esc(P.template)}</pre>
     <h4>Common mistakes</h4><p style="margin:0">${esc(P.pitfalls)}</p>
     <h4>Complexity</h4><p style="margin:0;font:14px var(--mono)">${esc(P.complexity)}</p>
-    <h4>Questions solved with this pattern (${PLAN.pattern_q[n].length})</h4>
-    <p class="pqnote">Tap a question to open it on LeetCode, the speech bubble to add your own comment, or the bookmark to save it for revision. “Day N” questions are in your plan; “Extra” ones are additional practice.</p>
+    <h4>Questions solved with this pattern (${PLAN.pattern_q[n].length})</h4>${PLAN.pattern_q[n].some(q => q.mine) ? `<label class="mineonly"><input type="checkbox" id="mineOnly"> Show only questions from your list (${PLAN.pattern_q[n].filter(q => q.mine).length})</label>` : ""}
+    <p class="pqnote">Tap a question to open it on LeetCode, the speech bubble to add your own comment, or the bookmark to save it for revision. “Day N” questions are in your plan; “Extra” ones are additional practice; “your list” marks questions from your own sheet. GfG means the link goes to GeeksforGeeks.</p>
     <div class="pq">${PLAN.pattern_q[n].map(q => {
       const k = q.day ? q.slug + "@" + q.day : "", done = k && state.probs[k], sol = PLAN.solutions[q.slug];
-      return `<div class="pqrow${done ? " done" : ""}"><a class="pqlink" href="https://leetcode.com/problems/${q.slug}/" target="_blank" rel="noopener">
-        <span class="pqname">${done ? "✓ " : ""}${esc(q.name)}</span>
-        <span class="pqmeta">${sol ? `<span class="pqsol">${sol.length} approaches</span>` : ""}<span class="pqday ${q.day ? "" : "x"}">${q.day ? "Day " + q.day : "Extra"}</span><span class="tag ${q.diff}">${q.diff}</span></span></a><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div>${cmtRegion(q.slug, "p-" + q.slug)}`; }).join("")}</div>
+      return `<div class="pqrow${done ? " done" : ""}${q.mine ? " mine" : ""}"><a class="pqlink" href="${q.url}" target="_blank" rel="noopener">
+        <span class="pqname">${done ? "✓ " : ""}${esc(q.name)}${q.url.includes("leetcode.com") ? "" : ` <span class="pqsrc">${q.url.includes("geeksforgeeks") ? "GfG" : "web"}</span>`}</span>
+        <span class="pqmeta">${q.mine ? '<span class="pqmine">your list</span>' : ""}${sol ? `<span class="pqsol">${sol.length} approaches</span>` : ""}<span class="pqday ${q.day ? "" : "x"}">${q.day ? "Day " + q.day : "Extra"}</span><span class="tag ${q.diff}">${q.diff}</span></span></a><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div><div class="cmtwrap${q.mine ? " mine" : ""}">${cmtRegion(q.slug, "p-" + q.slug)}</div>`; }).join("")}</div>
     <div class="pnav">${i > 0 ? `<button type="button" id="pPrev">← ${esc(PLAN.patterns[i-1][0])}</button>` : "<span></span>"}
       ${i < PLAN.patterns.length - 1 ? `<button type="button" id="pNext">${esc(PLAN.patterns[i+1][0])} →</button>` : ""}</div>`;
   s.hidden = false; document.getElementById("scrim").hidden = false; s.scrollTop = 0;
   const c = document.getElementById("closeSheet"); c.onclick = closeSheet; c.focus();
+  const mo = document.getElementById("mineOnly");
+  if (mo) mo.onchange = () => s.querySelector(".pq").classList.toggle("mine-only", mo.checked);
   const pv = document.getElementById("pPrev"), nx = document.getElementById("pNext");
   if (pv) pv.onclick = () => openPattern(i - 1);
   if (nx) nx.onclick = () => openPattern(i + 1);
@@ -576,7 +585,7 @@ function drawQ(){
       const pats = slug => Object.entries(PLAN.pattern_q).filter(([, qs]) => qs.some(q => q.slug === slug)).map(([p]) => p).join(", ");
       extraHTML = `<section class="qday"><h3><span class="qd">Extra</span>${qFilter.marks ? "Bookmarked" : "Commented"} practice from the Patterns tab</h3>
         ${extras.map(q => `<div class="qrow"><div class="probline"><div class="prob"><span></span>
-          <a href="https://leetcode.com/problems/${q.slug}/" target="_blank" rel="noopener">${esc(q.name)} <span class="qn">· ${esc(pats(q.slug))}</span></a>
+          <a href="${q.url}" target="_blank" rel="noopener">${esc(q.name)} <span class="qn">· ${esc(pats(q.slug))}</span></a>
           <span class="tag ${q.diff}">${q.diff}</span></div><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div>${cmtRegion(q.slug, "x-" + q.slug)}</div>`).join("")}</section>`;
       shown += extras.length;
     }

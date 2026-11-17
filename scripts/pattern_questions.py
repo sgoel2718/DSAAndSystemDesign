@@ -6,10 +6,12 @@ IN_PLAN = {
  "Sliding window": ["best-time-to-buy-and-sell-stock", "longest-substring-without-repeating-characters", "minimum-window-substring", "sliding-window-maximum"],
  "Fast & slow pointers": ["linked-list-cycle", "remove-nth-node-from-end-of-list", "reorder-list"],
  "Prefix sum + hash map": ["two-sum", "subarray-sum-equals-k", "product-of-array-except-self", "range-sum-query-2d-immutable", "count-of-range-sum"],
+ "Kadane's algorithm": ["best-time-to-buy-and-sell-stock", "maximum-subarray"],
+ "Hash maps": ["two-sum", "contains-duplicate", "valid-anagram", "group-anagrams", "top-k-frequent-elements", "longest-consecutive-sequence", "design-hashmap"],
  "Cyclic sort": ["missing-number", "find-all-duplicates-in-an-array", "first-missing-positive"],
  "Merge intervals": ["merge-intervals", "insert-interval", "non-overlapping-intervals", "minimum-number-of-arrows-to-burst-balloons", "partition-labels", "my-calendar-i", "my-calendar-iii"],
  "In-place list reversal": ["reverse-linked-list", "reorder-list", "reverse-nodes-in-k-group"],
- "Monotonic stack/deque": ["daily-temperatures", "largest-rectangle-in-histogram", "sliding-window-maximum", "trapping-rain-water", "min-stack", "valid-parentheses", "evaluate-reverse-polish-notation"],
+ "Stack & monotonic stack": ["daily-temperatures", "largest-rectangle-in-histogram", "sliding-window-maximum", "trapping-rain-water", "min-stack", "valid-parentheses", "evaluate-reverse-polish-notation"],
  "Tree DFS / BFS": ["maximum-depth-of-binary-tree", "invert-binary-tree", "diameter-of-binary-tree", "binary-tree-level-order-traversal", "binary-tree-right-side-view",
                     "lowest-common-ancestor-of-a-binary-tree", "binary-tree-maximum-path-sum", "serialize-and-deserialize-binary-tree", "validate-binary-search-tree",
                     "kth-smallest-element-in-a-bst", "lowest-common-ancestor-of-a-binary-search-tree", "delete-node-in-a-bst", "convert-sorted-array-to-binary-search-tree", "house-robber-iii"],
@@ -49,7 +51,7 @@ EXTRA = {
  "Merge intervals": [("Interval List Intersections", "interval-list-intersections", "Medium"), ("Car Pooling", "car-pooling", "Medium")],
  "In-place list reversal": [("Palindrome Linked List", "palindrome-linked-list", "Easy"), ("Reverse Linked List II", "reverse-linked-list-ii", "Medium"),
                             ("Swap Nodes in Pairs", "swap-nodes-in-pairs", "Medium"), ("Rotate List", "rotate-list", "Medium")],
- "Monotonic stack/deque": [("Next Greater Element I", "next-greater-element-i", "Easy"), ("Next Greater Element II", "next-greater-element-ii", "Medium"),
+ "Stack & monotonic stack": [("Next Greater Element I", "next-greater-element-i", "Easy"), ("Next Greater Element II", "next-greater-element-ii", "Medium"),
                            ("Online Stock Span", "online-stock-span", "Medium"), ("Car Fleet", "car-fleet", "Medium"), ("Remove K Digits", "remove-k-digits", "Medium"),
                            ("Sum of Subarray Minimums", "sum-of-subarray-minimums", "Medium"), ("Maximal Rectangle", "maximal-rectangle", "Hard")],
  "Tree DFS / BFS": [("Same Tree", "same-tree", "Easy"), ("Balanced Binary Tree", "balanced-binary-tree", "Easy"), ("Subtree of Another Tree", "subtree-of-another-tree", "Easy"),
@@ -86,6 +88,87 @@ EXTRA = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Questions from Shubham's own sheet (added 17 Nov 2026). (name, slug, difficulty, url or None for LeetCode)
+# Difficulty is the site's own rating. Questions already listed above are not repeated, only marked.
+# ---------------------------------------------------------------------------
+GFG = "https://www.geeksforgeeks.org/"
+SHEET_NEW = {
+ "Two pointers": [
+   ("Segregate 0s and 1s", "gfg-segregate-0s-and-1s", "Easy", GFG + "problems/segregate-0s-and-1s5106/1"),
+   ("Remove Duplicates from Sorted List", "remove-duplicates-from-sorted-list", "Easy", None),
+   ("Remove Duplicates from Sorted Array II", "remove-duplicates-from-sorted-array-ii", "Medium", None),
+   ("Squares of a Sorted Array", "squares-of-a-sorted-array", "Easy", None),
+   ("3Sum Closest", "3sum-closest", "Medium", None),
+   ("Count Triplets with Sum Smaller than X", "gfg-count-triplets-with-sum-smaller-than-x", "Medium", GFG + "problems/count-triplets-with-sum-smaller-than-x5549/1"),
+   ("Subarray Product Less Than K", "subarray-product-less-than-k", "Medium", None),
+   ("Backspace String Compare", "backspace-string-compare", "Easy", None),
+   ("Shortest Unsorted Continuous Subarray", "shortest-unsorted-continuous-subarray", "Medium", None)],
+ "Fast & slow pointers": [
+   ("Circular Array Loop", "circular-array-loop", "Medium", None)],
+ "Sliding window": [
+   ("Max Sum Subarray of Size K", "gfg-max-sum-subarray-of-size-k", "Easy", GFG + "problems/max-sum-subarray-of-size-k5313/1"),
+   ("Longest K Unique Characters Substring", "gfg-longest-k-unique-characters-substring", "Medium", GFG + "problems/longest-k-unique-characters-substring0853/1"),
+   ("Fruit Into Baskets", "fruit-into-baskets", "Medium", None),
+   ("Max Consecutive Ones III", "max-consecutive-ones-iii", "Medium", None),
+   ("Substring with Concatenation of All Words", "substring-with-concatenation-of-all-words", "Hard", None)],
+ "Kadane's algorithm": [
+   ("Smallest Sum Contiguous Subarray", "gfg-smallest-sum-contiguous-subarray", "Medium", GFG + "problems/smallest-sum-contiguous-subarray/1"),
+   ("Maximum Product Subarray", "maximum-product-subarray", "Medium", None),
+   ("Maximum Subarray Sum with One Deletion", "maximum-subarray-sum-with-one-deletion", "Medium", None),
+   ("Maximum Absolute Sum of Any Subarray", "maximum-absolute-sum-of-any-subarray", "Medium", None),
+   ("Maximum Sum Circular Subarray", "maximum-sum-circular-subarray", "Medium", None)],
+ "Prefix sum + hash map": [
+   ("Find Pivot Index", "find-pivot-index", "Easy", None),
+   ("Shortest Subarray with Sum at Least K", "shortest-subarray-with-sum-at-least-k", "Hard", None)],
+ "Merge intervals": [
+   ("Check if Any Two Intervals Overlap", "gfg-check-if-any-two-intervals-overlap", "Easy", GFG + "check-if-any-two-intervals-overlap-among-a-given-set-of-intervals/"),
+   ("Attend All Meetings II (Minimum Meeting Rooms)", "gfg-attend-all-meetings-ii", "Medium", GFG + "problems/attend-all-meetings-ii/1"),
+   ("Maximum CPU Load", "gfg-maximum-cpu-load", "Hard", GFG + "maximum-cpu-load-from-the-given-list-of-jobs/"),
+   ("Employee Free Time", "codertrain-employee-free-time", "Hard", "https://www.codertrain.co/employee-free-time")],
+ "In-place list reversal": [
+   ("Reverse Nodes in Even Length Groups", "reverse-nodes-in-even-length-groups", "Medium", None)],
+ "Stack & monotonic stack": [
+   ("Remove All Adjacent Duplicates In String", "remove-all-adjacent-duplicates-in-string", "Easy", None),
+   ("Reverse String", "reverse-string", "Easy", None),
+   ("Remove Nodes From Linked List", "remove-nodes-from-linked-list", "Medium", None),
+   ("Remove All Adjacent Duplicates in String II", "remove-all-adjacent-duplicates-in-string-ii", "Medium", None),
+   ("Simplify Path", "simplify-path", "Medium", None)],
+ "Hash maps": [
+   ("First Unique Character in a String", "first-unique-character-in-a-string", "Easy", None),
+   ("Maximum Number of Balloons", "maximum-number-of-balloons", "Easy", None),
+   ("Longest Palindrome", "longest-palindrome", "Easy", None),
+   ("Ransom Note", "ransom-note", "Easy", None)],
+ "Modified binary search": [
+   ("Ceil in a Sorted Array", "gfg-ceil-in-a-sorted-array", "Easy", GFG + "problems/ceil-in-a-sorted-array/1"),
+   ("Number of Occurrence", "gfg-number-of-occurrence", "Easy", GFG + "problems/number-of-occurrence2259/1"),
+   ("Search in an Infinite Sorted Array", "gfg-search-in-infinite-sorted-array", "Medium", GFG + "find-position-element-sorted-array-infinite-numbers/"),
+   ("Peak Index in a Mountain Array", "peak-index-in-a-mountain-array", "Medium", None),
+   ("Find Kth Rotation (rotation count)", "gfg-find-kth-rotation", "Easy", GFG + "problems/rotation4723/1"),
+   ("Minimum Number of Days to Make m Bouquets", "minimum-number-of-days-to-make-m-bouquets", "Medium", None),
+   ("Aggressive Cows", "gfg-aggressive-cows", "Medium", GFG + "problems/aggressive-cows/1"),
+   ("H-Index II", "h-index-ii", "Medium", None),
+   ("Maximum Candies Allocated to K Children", "maximum-candies-allocated-to-k-children", "Medium", None),
+   ("Allocate Minimum Pages", "gfg-allocate-minimum-pages", "Medium", GFG + "problems/allocate-minimum-number-of-pages0937/1")],
+}
+# Questions from the sheet that were already listed under that pattern (marked "your list")
+SHEET_EXISTING = {
+ "Two pointers": ["two-sum-ii-input-array-is-sorted", "remove-duplicates-from-sorted-array", "3sum", "sort-colors", "4sum"],
+ "Fast & slow pointers": ["linked-list-cycle", "linked-list-cycle-ii", "happy-number", "find-the-duplicate-number", "middle-of-the-linked-list",
+                          "palindrome-linked-list", "reorder-list"],
+ "Sliding window": ["minimum-size-subarray-sum", "longest-substring-without-repeating-characters", "longest-repeating-character-replacement",
+                    "minimum-window-substring", "permutation-in-string", "find-all-anagrams-in-a-string"],
+ "Kadane's algorithm": ["maximum-subarray"],
+ "Prefix sum + hash map": ["subarray-sum-equals-k", "subarray-sums-divisible-by-k", "contiguous-array", "count-of-range-sum"],
+ "Merge intervals": ["merge-intervals", "insert-interval", "interval-list-intersections"],
+ "In-place list reversal": ["reverse-linked-list", "reverse-linked-list-ii", "swap-nodes-in-pairs", "reverse-nodes-in-k-group", "rotate-list"],
+ "Stack & monotonic stack": ["valid-parentheses", "next-greater-element-ii", "daily-temperatures", "remove-k-digits"],
+ "Modified binary search": ["binary-search", "find-first-and-last-position-of-element-in-sorted-array", "find-peak-element",
+                            "find-minimum-in-rotated-sorted-array", "search-in-rotated-sorted-array", "koko-eating-bananas",
+                            "capacity-to-ship-packages-within-d-days", "split-array-largest-sum"],
+}
+
+
 def build(days):
     where = {}
     for d in days:
@@ -99,7 +182,17 @@ def build(days):
             name, diff, day = where[s]
             rows.append(dict(name=name, slug=s, diff=diff, day=day))
         rows.sort(key=lambda r: (r["day"], ["Easy", "Medium", "Hard"].index(r["diff"])))
+        have = {r["slug"] for r in rows}
         for name, s, diff in EXTRA.get(pat, []):
-            rows.append(dict(name=name, slug=s, diff=diff, day=None))
+            if s not in have:
+                rows.append(dict(name=name, slug=s, diff=diff, day=None)); have.add(s)
+        for name, s, diff, url in SHEET_NEW.get(pat, []):
+            assert s not in have, f"{pat}: {s} already listed"
+            rows.append(dict(name=name, slug=s, diff=diff, day=None, url=url)); have.add(s)
+        mine = set(SHEET_EXISTING.get(pat, [])) | {t[1] for t in SHEET_NEW.get(pat, [])}
+        assert mine <= have, f"{pat}: sheet slugs missing {mine - have}"
+        for r in rows:
+            r["url"] = r.get("url") or f"https://leetcode.com/problems/{r['slug']}/"
+            r["mine"] = r["slug"] in mine
         out[pat] = rows
     return out

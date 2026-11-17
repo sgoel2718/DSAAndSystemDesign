@@ -16,7 +16,8 @@ My 30-day plan to prepare for Google, Microsoft and Amazon interviews, entirely 
 
 - 161 linked LeetCode problems, a live Java demo every day, and revision sticky notes
 - System Design handbook: 7-step answer framework, 19 building blocks, 12 case studies, LLD patterns, estimation numbers
-- Pattern playbook: for each of 20 patterns, when to use it, step-by-step approach, Java template, common mistakes, complexity
+- Every pattern lists its practice questions (LeetCode and GeeksforGeeks), including all 89 questions from my own question sheet, marked "your list"
+- Pattern playbook: for each of 22 patterns (including Kadane and Hash maps), when to use it, step-by-step approach, Java template, common mistakes, complexity
 - "How to approach questions" for every day's topic
 - Every problem taught gets all its approaches (brute force to optimal) with time and space complexity and Java code, compiled and tested by `scripts/check_solutions.py`
 - Bookmark any question and add your own comment on it (day sheets, Questions tab, pattern lists); revise from the Bookmarks tab or the "Only with comments" filter, and search matches your comment text

@@ -108,8 +108,9 @@ while (cur != null) {
 return prev;""",
   pitfalls="Losing the rest of the list (save next before re-pointing); forgetting to reconnect the reversed part.",
   complexity="O(n) time, O(1) space."),
-"Monotonic stack/deque": dict(
-  steps=["Signal: 'next greater/smaller element', spans, or the max/min of every window.",
+"Stack & monotonic stack": dict(
+  steps=["Plain stack signal: matching pairs (brackets), nesting (paths, expressions), or removing adjacent items that cancel; push, and pop when the top pairs with the new item.",
+         "Monotonic stack signal: 'next greater/smaller element', spans, or the max/min of every window.",
          "Keep indices on a stack whose values are increasing or decreasing.",
          "When the new element breaks the order, pop: each popped index has found its answer (the new element).",
          "For window max, use a deque and also drop indices that slide out of the window from the front."],
@@ -124,6 +125,49 @@ for (int i = 0; i < n; i++) {
 }""",
   pitfalls="Storing values instead of indices (you lose distances); choosing the wrong comparison for duplicates.",
   complexity="O(n): each index is pushed and popped once."),
+"Kadane's algorithm": dict(
+  steps=["Signal: best sum (or product) of a contiguous subarray.",
+         "At each element decide: extend the best subarray ending at the previous index, or start fresh here.",
+         "Keep the best value seen at any index.",
+         "Variants: minimum sum (flip max to min); max product (track both max and min, a negative swaps them); circular (max of normal Kadane and total - minimum subarray); one deletion (two states: with and without a deletion used)."],
+  template="""int cur = nums[0], best = nums[0];
+for (int i = 1; i < nums.length; i++) {
+    cur = Math.max(nums[i], cur + nums[i]);   // extend or restart
+    best = Math.max(best, cur);
+}
+return best;
+
+// Max product: track max AND min; a negative swaps them
+int hi = nums[0], lo = nums[0], ans = nums[0];
+for (int i = 1; i < nums.length; i++) {
+    int x = nums[i], h = hi;
+    hi = Math.max(x, Math.max(h * x, lo * x));
+    lo = Math.min(x, Math.min(h * x, lo * x));
+    ans = Math.max(ans, hi);
+}""",
+  pitfalls="Starting cur/best at 0 (wrong when every number is negative); in the circular variant, if all numbers are negative return the normal max, not total - min.",
+  complexity="O(n) time, O(1) space."),
+"Hash maps": dict(
+  steps=["Signal: count frequencies, check 'have I seen this before?', group items by a key, or find a complement in O(1).",
+         "Pick the structure: HashSet for membership, HashMap<key, count> for frequencies, HashMap<key, List> for groups, int[26]/int[128] when keys are letters.",
+         "Build the map in one pass; answer in the same pass (Two Sum) or a second pass (first unique character).",
+         "Design the key carefully: sorted string or count signature for anagrams, value -> index for complements."],
+  template="""// Frequency count
+Map<Character, Integer> freq = new HashMap<>();
+for (char c : s.toCharArray()) freq.merge(c, 1, Integer::sum);
+
+// Letters only: an array is faster than a map
+int[] count = new int[26];
+for (char c : s.toCharArray()) count[c - 'a']++;
+
+// Group by a canonical key
+Map<String, List<String>> groups = new HashMap<>();
+for (String w : words) {
+    char[] k = w.toCharArray(); Arrays.sort(k);
+    groups.computeIfAbsent(new String(k), x -> new ArrayList<>()).add(w);
+}""",
+  pitfalls="Comparing Integer values from a map with == (only works up to 127); mutating an object that is used as a key; forgetting getOrDefault for missing keys.",
+  complexity="O(n) average time, O(k) space for k distinct keys."),
 "Tree DFS / BFS": dict(
   steps=["Decide what one call returns for a subtree (height, sum, is-valid, etc.).",
          "Write the base case for null.",

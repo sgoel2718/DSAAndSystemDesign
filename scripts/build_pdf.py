@@ -5,7 +5,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table,
                                 TableStyle, PageBreak, KeepTogether, CondPageBreak)
-from plan_data import DAYS, WEEKS, PROJECT, EXTRAS, RESOURCES, DAILY_SCHEDULE, START
+from plan_data import DAYS, WEEKS, PROJECT, EXTRAS, RESOURCES, DAILY_SCHEDULE, START, PATTERNS as PATTERNS_ALL
 
 INK = colors.HexColor("#1d2433"); MUTED = colors.HexColor("#5b6478")
 ACC = colors.HexColor("#b4441f"); JAVA = colors.HexColor("#1f5f8b")
@@ -57,12 +57,12 @@ st += [Spacer(1, 30*mm), Paragraph("JAVA EDITION  ·  30 DAYS  ·  2-5 HRS/DAY",
        Spacer(1, 14)]
 nprob = sum(len(d["problems"]) for d in DAYS)
 stats = Table([[Paragraph(f"<b><font size=20>{a}</font></b><br/><font color='#5b6478'>{b}</font>", BODY) for a, b in
-                [("30","days"),(str(nprob),"LeetCode problems"),("30","live Java demos"),("20","coding patterns")]]], colWidths=[W/4]*4)
+                [("30","days"),(str(nprob),"LeetCode problems"),("30","live Java demos"),(str(len(PATTERNS_ALL)),"coding patterns")]]], colWidths=[W/4]*4)
 stats.setStyle(TableStyle([("LINEABOVE",(0,0),(-1,0),1.2,ACC),("TOPPADDING",(0,0),(-1,-1),8)]))
 st += [stats, Spacer(1, 16),
        Paragraph(f"Prepared for <b>Shubham</b>  ·  Day 1: {date_of(1)} {start.year}  ·  Day 30: {date_of(30)}", BODY),
        Paragraph("Version 2  ·  updated 01 Nov 2026 (added matrices, cyclic sort, math & number theory, randomised algorithms, "
-                 "core Java/JVM, API design & security, distributed transactions, 20-pattern table, Java cheat sheet, interview loops)", SMALL),
+                 "core Java/JVM, API design & security, distributed transactions, pattern table, Java cheat sheet, interview loops)", SMALL),
        Spacer(1, 22)]
 st.append(panel([Paragraph("FLAGSHIP PROJECT", LAB),
                  Paragraph(f"<b>{PROJECT['name']}</b>: {PROJECT['tagline']}", S("p", fontSize=11, leading=15)),
@@ -180,7 +180,7 @@ st += [Paragraph("SYSTEM DESIGN HANDBOOK", LAB), Paragraph("System design at a g
        Spacer(1, 8), CondPageBreak(60*mm), Paragraph("Numbers to know for estimates", H2),
        grid([[Paragraph(a, BODY), Paragraph(b, MONO)] for a, b in SD_NUMBERS], [W*0.6, W*0.4])]
 st.append(PageBreak())
-st += [Paragraph("APPENDIX A", LAB), Paragraph("20 coding patterns: spot the pattern in 2 minutes", H1)]
+st += [Paragraph("APPENDIX A", LAB), Paragraph(f"{len(PATTERNS)} coding patterns: spot the pattern in 2 minutes", H1)]
 rows = [[Paragraph("<b>Pattern</b>", SMALL), Paragraph("<b>Signal in the question</b>", SMALL), Paragraph("<b>Classic problem</b>", SMALL)]]
 rows += [[Paragraph(f"<b>{a}</b>", BODY), Paragraph(b, BODY), Paragraph(c, SMALL)] for a, b, c in PATTERNS]
 t = Table(rows, colWidths=[42*mm, W-92*mm, 50*mm], repeatRows=1)
@@ -200,12 +200,14 @@ for k, (n, sig, ex) in enumerate(PATTERNS, 1):
     st += [Spacer(1, 3), panel([Paragraph(code_html, MONO)], pad=6), Spacer(1, 3),
            Paragraph(f"<b>Common mistakes:</b> {P['pitfalls']}", BODY),
            Paragraph(f"<b>Complexity:</b> {P['complexity']}", BODY), Spacer(1, 4),
-           Paragraph("<b>Questions solved with this pattern</b> (click to open on LeetCode):", BODY)]
+           Paragraph("<b>Questions solved with this pattern</b> (click to open; [your list] = from your own sheet):", BODY)]
     from plan_data import PATTERN_Q
     qrows = []
     for q in PATTERN_Q[n]:
         tag = f"Day {q['day']}" if q["day"] else "Extra"
-        qrows.append([Paragraph(f'<link href="https://leetcode.com/problems/{q["slug"]}/" color="#1f5f8b">{q["name"]}</link>', BODY),
+        src = "" if "leetcode.com" in q["url"] else (" (GfG)" if "geeksforgeeks" in q["url"] else " (web)")
+        mine = " <font color='#1f5f8b' size='7'>[your list]</font>" if q["mine"] else ""
+        qrows.append([Paragraph(f'<link href="{q["url"]}" color="#1f5f8b">{q["name"]}</link>{src}{mine}', BODY),
                       Paragraph(tag, SMALL), Paragraph(f"<font color='{DIFF[q['diff']]}'><b>{q['diff']}</b></font>", SMALL)])
     qt = Table(qrows, colWidths=[W - 40*mm, 18*mm, 22*mm])
     qt.setStyle(TableStyle([("LINEBELOW",(0,0),(-1,-1),0.3,LINE),("TOPPADDING",(0,0),(-1,-1),2),
