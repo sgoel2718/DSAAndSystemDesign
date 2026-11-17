@@ -80,6 +80,29 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .prob{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
 .probline{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;border-bottom:1px solid var(--line)}
 .probline .prob{border-bottom:0;min-width:0}
+.acts{display:inline-flex;align-items:center;gap:2px}
+.cmb{display:inline-grid;place-items:center;width:32px;height:32px;border:0;background:transparent;border-radius:6px;cursor:pointer;color:var(--muted);padding:0}
+.cmb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.cmb:hover{background:var(--bg);color:var(--accent)}
+.cmb.has{color:var(--accent)}.cmb.has svg{fill:color-mix(in srgb,var(--accent) 25%,transparent)}
+.cmb[aria-expanded="true"]{background:var(--bg);color:var(--accent)}
+.cmb:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cmt{margin:4px 0 10px 28px;min-width:0}
+.cmt-view{background:var(--n1);color:var(--note-ink);border-radius:2px;padding:8px 12px;box-shadow:0 4px 10px -8px rgba(0,0,0,.35)}
+.cmt-view p{margin:0;font:16px/1.4 var(--hand);white-space:pre-wrap;overflow-wrap:anywhere}
+.cmt-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px;font:11px var(--mono);opacity:.75}
+.cmt-meta button,.cmt-actions button{font:500 12.5px var(--sans);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:3px 10px;cursor:pointer}
+.cmt-meta button{border-color:currentColor;background:transparent;color:inherit}
+.cmt textarea{width:100%;min-height:76px;resize:vertical;font:15px/1.45 var(--sans);padding:8px 10px;border:1px solid var(--accent);border-radius:8px;background:var(--panel);color:var(--ink)}
+.cmt textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cmt-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
+.cmt-actions .cmt-save{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.cmt-actions .cmt-del{color:var(--hard)}
+.cmt-actions button:focus-visible,.cmt-meta button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cmt-hint{font:11px var(--mono);color:var(--muted);margin-left:auto}
+.pq .cmt{margin:0;padding:6px 12px 10px;border-bottom:1px solid var(--line)}
+.toplinks{display:flex;flex-wrap:wrap;gap:4px 14px}
+@media (max-width:520px){.cmt{margin-left:0}.cmt-hint{display:none}}
 .bm{display:inline-grid;place-items:center;width:32px;height:32px;border:0;background:transparent;border-radius:6px;cursor:pointer;color:var(--muted);padding:0;flex:none}
 .bm svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .bm:hover{background:var(--bg);color:var(--warm)}
@@ -87,6 +110,7 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .bm:focus-visible,.bmlink:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .bmlink{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border:0;background:none;padding:0;color:var(--warm);font:500 12.5px var(--mono);cursor:pointer}
 .bmlink svg{width:13px;height:13px;fill:currentColor}
+#openNotes{color:var(--accent)}#openNotes svg{fill:none;stroke:currentColor;stroke-width:2.4}
 .bmlink:hover span{text-decoration:underline}
 .qempty{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted)}
 .qempty svg{width:28px;height:28px;flex:none;fill:none;stroke:var(--warm);stroke-width:2}
@@ -227,17 +251,89 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
 const PLAN = __PLAN__;
 const TAUGHT = __TAUGHT__;  // days whose lesson has been taught in chat
 const KEY = "dsa30-progress-v1";
-let state = {days:{}, probs:{}, marks:{}};
+let state = {days:{}, probs:{}, marks:{}, notes:{}};
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e) {}
 if (!state.marks) state.marks = {};
+if (!state.notes) state.notes = {};
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} }
 const BM_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>';
 function bm(slug, name){
   const on = !!state.marks[slug];
   return `<button type="button" class="bm" data-slug="${slug}" aria-pressed="${on}" title="${on ? "Remove bookmark" : "Bookmark to revise later"}" aria-label="${on ? "Remove bookmark: " : "Bookmark: "}${esc(name)}">${BM_ICON}</button>`;
 }
+const CM_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10l-5 4v-4H6a2 2 0 0 1-2-2z"/></svg>';
+function noteCount(){ return Object.keys(state.notes).length; }
+function cmb(slug, name){
+  const has = !!state.notes[slug];
+  return `<button type="button" class="cmb${has ? " has" : ""}" data-slug="${slug}" aria-expanded="false" title="${has ? "Edit your comment" : "Add a comment"}" aria-label="Comment on ${esc(name)}">${CM_ICON}</button>`;
+}
+function fmtDate(ms){ try { return new Date(ms).toLocaleDateString("en-IN", {day: "2-digit", month: "short", year: "numeric"}); } catch (e) { return ""; } }
+function cmtView(slug){
+  const n = state.notes[slug];
+  return n ? `<div class="cmt-view"><p>${esc(n.t)}</p><div class="cmt-meta"><span>Your note · ${fmtDate(n.at)}</span><button type="button" class="cmt-edit">Edit</button></div></div>` : "";
+}
+function cmtRegion(slug, id){
+  return `<div class="cmt" data-slug="${slug}" data-id="${id}"${state.notes[slug] ? "" : " hidden"}>${cmtView(slug)}</div>`;
+}
+function openEditor(region){
+  const slug = region.dataset.slug, n = state.notes[slug], id = "ta-" + region.dataset.id;
+  region.hidden = false; region.classList.add("editing");
+  region.innerHTML = `<label class="sr" for="${id}">Your comment</label>
+    <textarea id="${id}" rows="3" placeholder="Your notes: the key trick, the mistake you made, what to revise next time">${esc(n ? n.t : "")}</textarea>
+    <div class="cmt-actions"><button type="button" class="cmt-save">Save</button><button type="button" class="cmt-cancel">Cancel</button>
+    ${n ? '<button type="button" class="cmt-del">Delete</button>' : ""}<span class="cmt-hint">Ctrl + Enter to save · Esc to cancel</span></div>`;
+  const ta = region.querySelector("textarea");
+  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  ta.addEventListener("keydown", e => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNote(region); }
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeEditor(region); }
+  });
+  setCmb(slug, true, region);
+}
+function closeEditor(region){
+  region.classList.remove("editing");
+  region.innerHTML = cmtView(region.dataset.slug);
+  region.hidden = !state.notes[region.dataset.slug];
+  setCmb(region.dataset.slug, false, region);
+}
+function setCmb(slug, expanded, region){
+  const has = !!state.notes[slug];
+  document.querySelectorAll(`.cmb[data-slug="${slug}"]`).forEach(b => {
+    b.classList.toggle("has", has); b.title = has ? "Edit your comment" : "Add a comment";
+  });
+  const btn = region && region.previousElementSibling && region.previousElementSibling.querySelector(".cmb");
+  if (btn) btn.setAttribute("aria-expanded", expanded);
+}
+function refreshNotes(slug){
+  document.querySelectorAll(`.cmt[data-slug="${slug}"]`).forEach(r => { if (!r.classList.contains("editing")) { r.innerHTML = cmtView(slug); r.hidden = !state.notes[slug]; } });
+  setCmb(slug, false);
+  renderTop();
+  const qs = document.getElementById("qs");
+  if (!qs.hidden) document.getElementById("qStat") && updateQStat();
+}
+function saveNote(region){
+  const slug = region.dataset.slug, t = region.querySelector("textarea").value.trim();
+  if (t) state.notes[slug] = {t, at: Date.now()}; else delete state.notes[slug];
+  save(); closeEditor(region); refreshNotes(slug);
+  if (!document.getElementById("qs").hidden && qFilter.notes && !t) drawQ();
+}
 function markCount(){ return Object.values(state.marks).filter(Boolean).length; }
 document.addEventListener("click", e => {
+  const c = e.target.closest(".cmb, .cmt-save, .cmt-cancel, .cmt-del, .cmt-edit");
+  if (c) {
+    e.preventDefault(); e.stopPropagation();
+    if (c.classList.contains("cmb")) {
+      const region = c.closest(".probline, .pqrow").nextElementSibling;
+      if (region.classList.contains("editing")) closeEditor(region); else openEditor(region);
+      return;
+    }
+    const region = c.closest(".cmt");
+    if (c.classList.contains("cmt-edit")) openEditor(region);
+    else if (c.classList.contains("cmt-save")) saveNote(region);
+    else if (c.classList.contains("cmt-cancel")) closeEditor(region);
+    else if (c.classList.contains("cmt-del")) { region.querySelector("textarea").value = ""; saveNote(region); }
+    return;
+  }
   const b = e.target.closest(".bm"); if (!b) return;
   e.preventDefault(); e.stopPropagation();
   const slug = b.dataset.slug, on = !state.marks[slug];
@@ -268,14 +364,16 @@ function renderTop(){
     (cur ? `<div class="status">${esc(cur.title)}</div>` : todayDay < 1 ? `<div class="status">Day 1: ${esc(PLAN.days[0].title)}</div>` : "") +
     `<div class="bar"><i style="width:${done/30*100}%"></i></div>` +
     `<div class="meta">${done}/30 days · ${doneP}/${totalP} problems</div>` +
-    `<button type="button" class="bmlink" id="openMarks">${BM_ICON}<span>${markCount()} bookmarked</span> →</button>`;
-  document.getElementById("openMarks").onclick = () => { filter = 5; qFilter.marks = true; renderTabs(); renderBoard(); document.getElementById("tabs").scrollIntoView({behavior: "smooth"}); };
+    `<div class="toplinks"><button type="button" class="bmlink" id="openMarks">${BM_ICON}<span>${markCount()} bookmarked</span> →</button>` +
+    `<button type="button" class="bmlink" id="openNotes">${CM_ICON}<span>${noteCount()} comment${noteCount() === 1 ? "" : "s"}</span> →</button></div>`;
+  document.getElementById("openMarks").onclick = () => { filter = 5; qFilter.marks = true; qFilter.notes = false; renderTabs(); renderBoard(); document.getElementById("tabs").scrollIntoView({behavior: "smooth"}); };
+  document.getElementById("openNotes").onclick = () => { filter = 6; qFilter.marks = false; qFilter.notes = true; renderTabs(); renderBoard(); document.getElementById("tabs").scrollIntoView({behavior: "smooth"}); };
 }
 function renderTabs(){
   const t = document.getElementById("tabs");
   const opts = [[0,"All 30 days"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns: how to approach"]];
   t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
-  t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; if (filter === 5) qFilter.marks = true; if (filter === 6) qFilter.marks = false; renderTabs(); renderBoard(); });
+  t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; if (filter === 5) qFilter.marks = true; if (filter === 6) { qFilter.marks = false; qFilter.notes = false; } renderTabs(); renderBoard(); });
 }
 function noteHTML(d, i){
   const r = ((d.day * 37) % 7 - 3) * 0.45;
@@ -314,7 +412,7 @@ function openSheet(day){
     ${d.problems.length ? `<h4>Problems</h4>${d.problems.map(([n,slug,diff]) => {
         const k = slug + "@" + d.day;
         return `<div class="probline"><label class="prob"><input type="checkbox" id="p-${k}" data-k="${k}" ${state.probs[k] ? "checked":""}>
-          <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener">${esc(n)}</a><span class="tag ${diff}">${diff}</span></label>${bm(slug, n)}</div>${solHTML(slug, d.day)}`; }).join("")}` : ""}
+          <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener">${esc(n)}</a><span class="tag ${diff}">${diff}</span></label><span class="acts">${cmb(slug, n)}${bm(slug, n)}</span></div>${cmtRegion(slug, "s-" + slug + "-" + d.day)}${solHTML(slug, d.day)}`; }).join("")}` : ""}
     ${d.project ? `<h4>NexusKV build</h4><div class="build">${esc(d.project.replace(/^NexusKV: /,""))}</div>` : ""}
     <h4>Sticky notes</h4><div class="pnote"><ul>${d.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>
     <label class="donebox"><input type="checkbox" id="done-${d.day}" ${state.days[d.day] ? "checked":""}> Mark Day ${d.day} complete</label>`;
@@ -365,7 +463,7 @@ function renderProj(){
       <div class="chips">${P.stack.map(x => `<span>${esc(x)}</span>`).join("")}</div></div>
     <div><div class="eyebrow">Build milestones</div><ul class="ms">${PLAN.days.filter(d => d.project).map(d =>
       `<li><b>Day ${d.day}</b><span>${esc(d.project.replace(/^NexusKV: /,""))}</span></li>`).join("")}</ul></div>`;
-  document.getElementById("foot").textContent = `Last updated ${__UPDATED__}. Progress ticks and bookmarks are saved in this browser only.`;
+  document.getElementById("foot").textContent = `Last updated ${__UPDATED__}. Progress ticks, bookmarks and comments are saved in this browser only.`;
 }
 function renderKit(){
   document.getElementById("kit").innerHTML = `<div class="eyebrow">Toolkit</div><h2>20 patterns and how to approach them</h2>
@@ -390,12 +488,12 @@ function openPattern(i){
     <h4>Common mistakes</h4><p style="margin:0">${esc(P.pitfalls)}</p>
     <h4>Complexity</h4><p style="margin:0;font:14px var(--mono)">${esc(P.complexity)}</p>
     <h4>Questions solved with this pattern (${PLAN.pattern_q[n].length})</h4>
-    <p class="pqnote">Tap a question to open it on LeetCode, or the bookmark to save it for revision. “Day N” questions are in your plan; “Extra” ones are additional practice.</p>
+    <p class="pqnote">Tap a question to open it on LeetCode, the speech bubble to add your own comment, or the bookmark to save it for revision. “Day N” questions are in your plan; “Extra” ones are additional practice.</p>
     <div class="pq">${PLAN.pattern_q[n].map(q => {
       const k = q.day ? q.slug + "@" + q.day : "", done = k && state.probs[k], sol = PLAN.solutions[q.slug];
       return `<div class="pqrow${done ? " done" : ""}"><a class="pqlink" href="https://leetcode.com/problems/${q.slug}/" target="_blank" rel="noopener">
         <span class="pqname">${done ? "✓ " : ""}${esc(q.name)}</span>
-        <span class="pqmeta">${sol ? `<span class="pqsol">${sol.length} approaches</span>` : ""}<span class="pqday ${q.day ? "" : "x"}">${q.day ? "Day " + q.day : "Extra"}</span><span class="tag ${q.diff}">${q.diff}</span></span></a>${bm(q.slug, q.name)}</div>`; }).join("")}</div>
+        <span class="pqmeta">${sol ? `<span class="pqsol">${sol.length} approaches</span>` : ""}<span class="pqday ${q.day ? "" : "x"}">${q.day ? "Day " + q.day : "Extra"}</span><span class="tag ${q.diff}">${q.diff}</span></span></a><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div>${cmtRegion(q.slug, "p-" + q.slug)}`; }).join("")}</div>
     <div class="pnav">${i > 0 ? `<button type="button" id="pPrev">← ${esc(PLAN.patterns[i-1][0])}</button>` : "<span></span>"}
       ${i < PLAN.patterns.length - 1 ? `<button type="button" id="pNext">${esc(PLAN.patterns[i+1][0])} →</button>` : ""}</div>`;
   s.hidden = false; document.getElementById("scrim").hidden = false; s.scrollTop = 0;
@@ -404,7 +502,8 @@ function openPattern(i){
   if (pv) pv.onclick = () => openPattern(i - 1);
   if (nx) nx.onclick = () => openPattern(i + 1);
 }
-let qFilter = {text: "", diff: "", only: false, marks: false};
+let qFilter = {text: "", diff: "", only: false, marks: false, notes: false};
+const matchText = (name, slug) => !qFilter.text || name.toLowerCase().includes(qFilter.text) || (state.notes[slug] && state.notes[slug].t.toLowerCase().includes(qFilter.text));
 function renderQuestions(){
   const root = document.getElementById("qs");
   const total = PLAN.days.reduce((a, d) => a + d.problems.length, 0);
@@ -415,32 +514,45 @@ function renderQuestions(){
     root.innerHTML = `<div class="eyebrow">Practice list</div><h2>Questions, day by day</h2>
       <p class="lead">Every question in the plan, in the order you meet it. Expand a question to see all approaches from brute force to optimal, each with time and space complexity and Java code.</p>
       <div class="qtools">
-        <label class="qsearch"><span class="sr">Search questions</span><input type="search" id="qText" placeholder="Search a question, e.g. Two Sum"></label>
+        <label class="qsearch"><span class="sr">Search questions</span><input type="search" id="qText" placeholder="Search questions and your comments, e.g. Two Sum or overflow"></label>
         <label><span class="sr">Difficulty</span><select id="qDiff"><option value="">All difficulties</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label>
         <label class="qonly"><input type="checkbox" id="qOnly"> Only questions with approaches</label>
         <label class="qonly"><input type="checkbox" id="qMarks"> <span id="qMarksLabel">Only bookmarked</span></label>
+        <label class="qonly"><input type="checkbox" id="qNotes"> <span id="qNotesLabel">Only with comments</span></label>
       </div>
       <div class="qstat" id="qStat"></div>
       <div id="qList"></div>`;
     root.querySelector("#qText").oninput = e => { qFilter.text = e.target.value.trim().toLowerCase(); drawQ(); };
     root.querySelector("#qDiff").onchange = e => { qFilter.diff = e.target.value; drawQ(); };
     root.querySelector("#qOnly").onchange = e => { qFilter.only = e.target.checked; drawQ(); };
-    root.querySelector("#qMarks").onchange = e => { qFilter.marks = e.target.checked; filter = qFilter.marks ? 5 : 6; renderTabs(); drawQ(); };
+    root.querySelector("#qMarks").onchange = e => { qFilter.marks = e.target.checked; filter = qFilter.marks ? 5 : 6; renderTabs(); renderQuestions(); };
+    root.querySelector("#qNotes").onchange = e => { qFilter.notes = e.target.checked; renderQuestions(); };
   }
   document.getElementById("qMarks").checked = qFilter.marks;
   document.getElementById("qMarksLabel").textContent = `Only bookmarked (${markCount()})`;
-  root.querySelector("h2").textContent = qFilter.marks ? "Bookmarked questions" : "Questions, day by day";
+  document.getElementById("qNotes").checked = qFilter.notes;
+  document.getElementById("qNotesLabel").textContent = `Only with comments (${noteCount()})`;
+  root.querySelector("h2").textContent = qFilter.marks ? "Bookmarked questions" : qFilter.notes ? "Questions with your comments" : "Questions, day by day";
   root.querySelector(".lead").textContent = qFilter.marks
     ? "Questions you saved to revise. Search them, open the approaches again, and remove the bookmark once you can solve it without notes."
-    : "Every question in the plan, in the order you meet it. Expand a question to see all approaches from brute force to optimal, each with time and space complexity and Java code. Tap the bookmark on any question to save it for revision.";
-  document.getElementById("qStat").textContent = `${total} questions · ${withSol} with full approaches so far (${nApp} Java solutions) · ${Object.values(state.probs).filter(Boolean).length} solved by you · ${markCount()} bookmarked`;
+    : qFilter.notes
+    ? "Every question you wrote a comment on. Search matches your comment text too, so you can find a question by the trick or mistake you noted."
+    : "Every question in the plan, in the order you meet it. Expand a question to see all approaches from brute force to optimal, each with time and space complexity and Java code. Tap the speech bubble to write your own comment, or the bookmark to save it for revision.";
+  updateQStat();
   drawQ();
+}
+function updateQStat(){
+  const total = PLAN.days.reduce((a, d) => a + d.problems.length, 0);
+  const withSol = PLAN.days.reduce((a, d) => a + d.problems.filter(p => PLAN.solutions[p[1]]).length, 0);
+  const nApp = Object.values(PLAN.solutions).reduce((a, x) => a + x.length, 0);
+  document.getElementById("qStat").textContent = `${total} questions · ${withSol} with full approaches so far (${nApp} Java solutions) · ${Object.values(state.probs).filter(Boolean).length} solved by you · ${markCount()} bookmarked · ${noteCount()} comment${noteCount() === 1 ? "" : "s"}`;
+  const nl = document.getElementById("qNotesLabel"); if (nl) nl.textContent = `Only with comments (${noteCount()})`;
 }
 function drawQ(){
   const list = document.getElementById("qList"); let shown = 0, n = 0;
   const html = PLAN.days.map(d => {
     const rows = d.problems.map(p => ({p, i: ++n})).filter(({p: [name, slug, diff]}) =>
-      (!qFilter.text || name.toLowerCase().includes(qFilter.text)) && (!qFilter.diff || diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[slug]) && (!qFilter.marks || state.marks[slug]));
+      matchText(name, slug) && (!qFilter.diff || diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[slug]) && (!qFilter.marks || state.marks[slug]) && (!qFilter.notes || state.notes[slug]));
     if (!rows.length) return "";
     shown += rows.length;
     const taught = TAUGHT.includes(d.day);
@@ -450,26 +562,28 @@ function drawQ(){
         return `<div class="qrow"><div class="probline">
           <label class="prob"><input type="checkbox" id="q-${k}" data-k="${k}" ${state.probs[k] ? "checked" : ""}>
             <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener"><span class="qn">${i}.</span> ${esc(name)}</a>
-            <span class="tag ${diff}">${diff}</span></label>${bm(slug, name)}
-          </div>${solHTML(slug, d.day, "q")}
+            <span class="tag ${diff}">${diff}</span></label><span class="acts">${cmb(slug, name)}${bm(slug, name)}</span>
+          </div>${cmtRegion(slug, "q-" + slug + "-" + d.day)}${solHTML(slug, d.day, "q")}
         </div>`; }).join("")}
     </section>`;
   }).join("");
   let extraHTML = "";
-  if (qFilter.marks) {
+  if (qFilter.marks || qFilter.notes) {
     const inPlan = new Set(PLAN.days.flatMap(d => d.problems.map(p => p[1]))), seen = new Set();
-    const extras = Object.values(PLAN.pattern_q).flat().filter(q => !inPlan.has(q.slug) && state.marks[q.slug] && !seen.has(q.slug) && seen.add(q.slug))
-      .filter(q => (!qFilter.text || q.name.toLowerCase().includes(qFilter.text)) && (!qFilter.diff || q.diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[q.slug]));
+    const extras = Object.values(PLAN.pattern_q).flat().filter(q => !inPlan.has(q.slug) && (!qFilter.marks || state.marks[q.slug]) && (!qFilter.notes || state.notes[q.slug]) && !seen.has(q.slug) && seen.add(q.slug))
+      .filter(q => matchText(q.name, q.slug) && (!qFilter.diff || q.diff === qFilter.diff) && (!qFilter.only || PLAN.solutions[q.slug]));
     if (extras.length) {
       const pats = slug => Object.entries(PLAN.pattern_q).filter(([, qs]) => qs.some(q => q.slug === slug)).map(([p]) => p).join(", ");
-      extraHTML = `<section class="qday"><h3><span class="qd">Extra</span>Bookmarked practice from the Patterns tab</h3>
+      extraHTML = `<section class="qday"><h3><span class="qd">Extra</span>${qFilter.marks ? "Bookmarked" : "Commented"} practice from the Patterns tab</h3>
         ${extras.map(q => `<div class="qrow"><div class="probline"><div class="prob"><span></span>
           <a href="https://leetcode.com/problems/${q.slug}/" target="_blank" rel="noopener">${esc(q.name)} <span class="qn">· ${esc(pats(q.slug))}</span></a>
-          <span class="tag ${q.diff}">${q.diff}</span></div>${bm(q.slug, q.name)}</div></div>`).join("")}</section>`;
+          <span class="tag ${q.diff}">${q.diff}</span></div><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div>${cmtRegion(q.slug, "x-" + q.slug)}</div>`).join("")}</section>`;
       shown += extras.length;
     }
   }
-  const empty = qFilter.marks && !markCount()
+  const empty = qFilter.notes && !noteCount() && !qFilter.marks
+    ? `<div class="qempty">${CM_ICON}<p><b>No comments yet.</b> Tap the speech bubble next to any question to write your own note: the trick, a mistake you made, or what to revise.</p></div>`
+    : qFilter.marks && !markCount()
     ? `<div class="qempty">${BM_ICON}<p><b>No bookmarks yet.</b> Tap the bookmark next to any question (here, in a day's lesson sheet, or in a pattern's question list) to save it for revision.</p></div>`
     : `<p class="lead">No questions match. Clear the search or filters.</p>`;
   list.innerHTML = (html + extraHTML) || empty;
