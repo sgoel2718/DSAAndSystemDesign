@@ -39,6 +39,7 @@ h1{font:700 clamp(30px,5vw,44px)/1.05 var(--hand);margin:4px 0 6px;text-wrap:bal
 .bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
 .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s}
 .meta{font:12px var(--mono);color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.meta.sub2{margin-top:2px;font-size:11px;opacity:.8}
 nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 8px}
 nav button{font:500 13px var(--sans);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 14px;border-radius:99px;cursor:pointer}
 nav button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -367,9 +368,10 @@ let filter = 0;
 
 function renderTop(){
   const done = PLAN.days.filter(d => state.days[d.day]).length;
-  const totalP = PLAN.days.reduce((a,d) => a + d.problems.length, 0);
   const planKeys = new Set(PLAN.days.flatMap(d => d.problems.map(p => p[1] + "@" + d.day)));
-  const doneP = Object.entries(state.probs).filter(([k, v]) => v && planKeys.has(k)).length;
+  const mineKeys = new Set(Object.entries(PLAN.mine).flatMap(([day, rs]) => rs.map(r => r.slug + "@" + day)));
+  const totalP = planKeys.size + mineKeys.size;
+  const doneP = Object.entries(state.probs).filter(([k, v]) => v && (planKeys.has(k) || mineKeys.has(k))).length;
   let label = todayDay < 1 ? `Starts ${dateOf(1)}` : todayDay > 30 ? "Plan complete window" : `Today is Day ${todayDay}`;
   const cur = PLAN.days.find(d => d.day === todayDay);
   document.getElementById("today").innerHTML =
@@ -377,6 +379,7 @@ function renderTop(){
     (cur ? `<div class="status">${esc(cur.title)}</div>` : todayDay < 1 ? `<div class="status">Day 1: ${esc(PLAN.days[0].title)}</div>` : "") +
     `<div class="bar"><i style="width:${done/30*100}%"></i></div>` +
     `<div class="meta">${done}/30 days · ${doneP}/${totalP} problems</div>` +
+    `<div class="meta sub2">${planKeys.size} plan + ${mineKeys.size} from your list</div>` +
     `<div class="toplinks"><button type="button" class="bmlink" id="openMarks">${BM_ICON}<span>${markCount()} bookmarked</span> →</button>` +
     `<button type="button" class="bmlink" id="openNotes">${CM_ICON}<span>${noteCount()} comment${noteCount() === 1 ? "" : "s"}</span> →</button></div>`;
   document.getElementById("openMarks").onclick = () => { filter = 5; qFilter.marks = true; qFilter.notes = false; renderTabs(); renderBoard(); document.getElementById("tabs").scrollIntoView({behavior: "smooth"}); };
