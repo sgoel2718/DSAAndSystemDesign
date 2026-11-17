@@ -232,6 +232,20 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .qrow{min-width:0}
 .qn{font:12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
 @media (max-width:520px){.sol,.sol-none{margin-left:0}}
+.pp{margin-top:20px}
+.pp h2{font:700 26px var(--hand);margin:0 0 4px}
+.pp .lead{color:var(--muted);margin:0 0 12px;max-width:72ch}.pp .lead a{color:var(--accent)}
+.pptable{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.pptable table{border-collapse:collapse;width:100%;min-width:900px;font-size:13.5px}
+.pptable th,.pptable td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+.pptable thead th{position:sticky;top:0;background:var(--bg);font:600 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.pptable td:nth-child(3){min-width:260px}
+.pptable td:nth-child(n+4){max-width:280px;overflow-wrap:anywhere;font:12px var(--mono)}
+.pptable td a{color:var(--accent);text-decoration:none}.pptable td a:hover{text-decoration:underline}
+.pptable .rn{width:44px;text-align:right;color:var(--muted);font:12px var(--mono);background:var(--bg)}
+.pptable .pptitle td:not(.rn){font-weight:600}
+.pptable .pphead td:not(.rn){font-weight:600}
+.pptable .ppsec td:not(.rn){font-weight:600;background:color-mix(in srgb,var(--n1) 55%,var(--panel))}
 footer{margin-top:40px;color:var(--muted);font-size:13px}
 @media (max-width:720px){header,.proj{grid-template-columns:1fr}.today{min-width:0}}
 @media (prefers-reduced-motion:reduce){.note,.bar i{transition:none}.note{transform:none}}
@@ -251,6 +265,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
   <section class="proj" id="proj"></section>
   <section class="kit" id="kit"></section>
   <section class="qs" id="qs" hidden></section>
+  <section class="pp" id="pp" hidden></section>
   <section class="sd" id="sd" hidden></section>
   <footer id="foot"></footer>
 </div>
@@ -387,7 +402,7 @@ function renderTop(){
 }
 function renderTabs(){
   const t = document.getElementById("tabs");
-  const opts = [[0,"All 30 days"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns: how to approach"]];
+  const opts = [[0,"All 30 days"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[10,"Padho with Pratyush Practice Sheet"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns: how to approach"]];
   t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; if (filter === 5) qFilter.marks = true; if (filter === 6) { qFilter.marks = false; qFilter.notes = false; } renderTabs(); renderBoard(); });
 }
@@ -404,9 +419,10 @@ function noteHTML(d, i){
 }
 function renderBoard(){
   const b = document.getElementById("board");
-  const kitView = filter === 8, sdView = filter === 7, qView = filter === 6 || filter === 5, other = kitView || sdView || qView;
+  const kitView = filter === 8, sdView = filter === 7, qView = filter === 6 || filter === 5, ppView = filter === 10, other = kitView || sdView || qView || ppView;
   b.hidden = other; document.getElementById("proj").hidden = other;
-  document.getElementById("kit").hidden = !kitView; document.getElementById("sd").hidden = !sdView; document.getElementById("qs").hidden = !qView;
+  document.getElementById("kit").hidden = !kitView; document.getElementById("sd").hidden = !sdView; document.getElementById("pp").hidden = !ppView;
+  if (ppView) renderPP(); document.getElementById("qs").hidden = !qView;
   if (qView) renderQuestions();
   if (other) { b.innerHTML = ""; return; }
   b.innerHTML = PLAN.weeks.filter(w => !filter || filter === 9 || filter === w.n).map(w => {
@@ -625,6 +641,22 @@ function drawQ(){
   list.innerHTML = (html + extraHTML) || empty;
   list.querySelectorAll(".prob input").forEach(i => i.onchange = () => { state.probs[i.dataset.k] = i.checked; save(); renderTop(); renderQuestions(); });
   wireCopy(list);
+}
+function renderPP(){
+  const root = document.getElementById("pp");
+  if (root.dataset.built) return;
+  root.dataset.built = "1";
+  const P = PLAN.pp, isHead = r => !r[2] && !r[3] && !r[4] && /pattern/i.test(r[1]);
+  const cell = v => /^https?:\/\//.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v)}</a>` : esc(v);
+  root.innerHTML = `<div class="eyebrow">Practice sheet</div><h2>Padho with Pratyush Practice Sheet</h2>
+    <p class="lead">Copied as it is from your Google Sheet: same rows, order, text and links. <a href="${P.source}" target="_blank" rel="noopener">Open the original sheet</a></p>
+    <div class="pptable"><table>
+      <thead><tr><th class="rn" scope="col"><span class="sr">Row</span></th>${P.header.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
+      <tbody>
+        <tr class="pptitle"><td class="rn">1</td><td colspan="5">${esc(P.title)}</td></tr>
+        <tr class="pphead"><td class="rn">2</td>${P.header.map(h => `<td>${esc(h)}</td>`).join("")}</tr>
+        ${P.rows.map((r, i) => `<tr${isHead(r) ? ' class="ppsec"' : ""}><td class="rn">${i + 3}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}
+      </tbody></table></div>`;
 }
 function renderSD(){
   const S = PLAN.sd, rot = i => ((i*31)%5-2)*0.5;
