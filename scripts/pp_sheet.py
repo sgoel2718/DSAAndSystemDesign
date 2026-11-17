@@ -108,3 +108,34 @@ ROWS = [
 ]
 
 assert len(ROWS) == 98  # sheet rows 3..100 (row 1 = title, row 2 = header)
+
+
+
+def row_keys(days, mine_by_day, sheet_new):
+    """For each row, the progress keys ('slug@day') it ticks on the site. Section-header rows get []."""
+    import re
+    plan_day = {}
+    for d in days:
+        for _, slug, _ in d["problems"]:
+            plan_day.setdefault(slug, d["day"])
+    mine_day = {r["slug"]: day for day, rs in mine_by_day.items() for r in rs}
+    url_slug = {url: slug for rows in sheet_new.values() for _, slug, _, url in rows if url}
+    out = []
+    for r in ROWS:
+        links = [u for u in r[2:] if u]
+        if not links:
+            out.append(["reverse-string@" + str(mine_day["reverse-string"])] if r[1] == "Reverse a String" else [])
+            continue
+        keys = []
+        for u in links:
+            m = re.match(r"https://leetcode\.com/problems/([^/?#]+)", u)
+            slug = m.group(1) if m else url_slug.get(u)
+            if slug is None:
+                continue                      # e.g. the ideserve.co.in alternative link for the same problem
+            day = plan_day.get(slug, mine_day.get(slug))
+            assert day is not None, (r[1], slug)
+            k = f"{slug}@{day}"
+            if k not in keys:
+                keys.append(k)
+        out.append(keys)
+    return out
