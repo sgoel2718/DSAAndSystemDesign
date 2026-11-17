@@ -615,7 +615,7 @@ assert all(n in PLAYBOOK for n, _, _ in PATTERNS), [n for n, _, _ in PATTERNS if
 def as_json():
     return json.dumps(dict(start=START, weeks=WEEKS, days=DAYS, schedule=DAILY_SCHEDULE, project=PROJECT, extras=EXTRAS, resources=RESOURCES,
                            patterns=PATTERNS, java=JAVA_CHEATSHEET, revision=REVISION, companies=COMPANIES,
-                           playbook=PLAYBOOK, solutions=SOLUTIONS, pp=dict(title=_pp.TITLE, header=_pp.HEADER, rows=_pp.ROWS, source=_pp.SOURCE), pattern_q=PATTERN_Q, mine={str(k): v for k, v in MINE_BY_DAY.items()}, pwp=dict(url=_pwp.SHEET_URL, sections=PWP), sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
+                           playbook=PLAYBOOK, solutions=SOLUTIONS, pp=dict(header=_pp.HEADER, rows=_pp.ROWS, source=_pp.SOURCE), pattern_q=PATTERN_Q, mine={str(k): v for k, v in MINE_BY_DAY.items()}, pwp=dict(url=_pwp.SHEET_URL, sections=PWP), sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
 
 if __name__ == "__main__":
     print(len(DAYS), sum(len(d["problems"]) for d in DAYS))

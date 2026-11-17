@@ -653,9 +653,8 @@ function renderPP(){
     <div class="pptable"><table>
       <thead><tr><th class="rn" scope="col"><span class="sr">Row</span></th>${P.header.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
       <tbody>
-        <tr class="pptitle"><td class="rn">1</td><td colspan="5">${esc(P.title)}</td></tr>
-        <tr class="pphead"><td class="rn">2</td>${P.header.map(h => `<td>${esc(h)}</td>`).join("")}</tr>
-        ${P.rows.map((r, i) => `<tr${isHead(r) ? ' class="ppsec"' : ""}><td class="rn">${i + 3}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}
+        <tr class="pphead"><td class="rn">1</td>${P.header.map(h => `<td>${esc(h)}</td>`).join("")}</tr>
+        ${P.rows.map((r, i) => `<tr${isHead(r) ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}
       </tbody></table></div>`;
 }
 function renderSD(){
