@@ -19,6 +19,7 @@ My 30-day plan to prepare for Google, Microsoft and Amazon interviews, entirely 
 - Pattern playbook: for each of 20 patterns, when to use it, step-by-step approach, Java template, common mistakes, complexity
 - "How to approach questions" for every day's topic
 - Every problem taught gets all its approaches (brute force to optimal) with time and space complexity and Java code, compiled and tested by `scripts/check_solutions.py`
+- Bookmark any question (day sheets, Questions tab, pattern lists) and revise them from the Bookmarks tab with search and difficulty filters
 - Java DSA syntax cheat sheet
 - Flagship project: **NexusKV**, a distributed key-value store in Java (LSM-tree storage, WAL, Bloom filters, consistent hashing, replication, leader election)
 
