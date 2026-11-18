@@ -18,6 +18,8 @@ IN_PLAN = {
  "Graph BFS / DFS": ["number-of-islands", "clone-graph", "rotting-oranges", "pacific-atlantic-water-flow", "surrounded-regions", "open-the-lock", "word-ladder",
                      "is-graph-bipartite", "bus-routes", "shortest-path-visiting-all-nodes", "reconstruct-itinerary", "critical-connections-in-a-network"],
  "Topological sort": ["course-schedule", "course-schedule-ii", "verifying-an-alien-dictionary", "longest-increasing-path-in-a-matrix"],
+ "Shortest paths & MST": ["network-delay-time", "cheapest-flights-within-k-stops", "path-with-minimum-effort", "swim-in-rising-water",
+                          "min-cost-to-connect-all-points"],
  "Union-Find": ["number-of-provinces", "redundant-connection", "min-cost-to-connect-all-points", "number-of-islands", "swim-in-rising-water", "path-with-minimum-effort"],
  "Two heaps": ["find-median-from-data-stream"],
  "Top-K / K-way merge": ["kth-largest-element-in-an-array", "top-k-frequent-elements", "kth-largest-element-in-a-stream", "last-stone-weight", "k-closest-points-to-origin",
@@ -25,7 +27,7 @@ IN_PLAN = {
  "Modified binary search": ["binary-search", "search-in-rotated-sorted-array", "find-minimum-in-rotated-sorted-array", "koko-eating-bananas", "search-a-2d-matrix",
                             "median-of-two-sorted-arrays", "time-based-key-value-store", "snapshot-array", "random-pick-with-weight", "two-sum-ii-input-array-is-sorted"],
  "Backtracking": ["subsets", "permutations", "combination-sum", "generate-parentheses", "word-search", "n-queens", "word-search-ii"],
- "Dynamic programming": ["climbing-stairs", "house-robber", "house-robber-ii", "decode-ways", "coin-change", "partition-equal-subset-sum", "longest-increasing-subsequence",
+ "Dynamic programming": ["best-time-to-buy-and-sell-stock", "climbing-stairs", "house-robber", "house-robber-ii", "decode-ways", "coin-change", "partition-equal-subset-sum", "longest-increasing-subsequence",
                          "word-break", "maximum-subarray", "unique-paths", "minimum-path-sum", "longest-common-subsequence", "edit-distance", "palindromic-substrings",
                          "longest-palindromic-substring", "best-time-to-buy-and-sell-stock-with-cooldown", "distinct-subsequences", "regular-expression-matching",
                          "house-robber-iii", "target-sum", "burst-balloons", "counting-bits"],
@@ -151,6 +153,69 @@ SHEET_NEW = {
    ("Maximum Candies Allocated to K Children", "maximum-candies-allocated-to-k-children", "Medium", None),
    ("Allocate Minimum Pages", "gfg-allocate-minimum-pages", "Medium", GFG + "problems/allocate-minimum-number-of-pages0937/1")],
 }
+# Second half of the sheet (rows 101-213), added 18 Nov 2026
+SHEET_NEW["Modified binary search"] += [
+   ("Search a 2D Matrix II", "search-a-2d-matrix-ii", "Medium", None),
+   ("Kth Smallest Element in a Sorted Matrix", "kth-smallest-element-in-a-sorted-matrix", "Medium", None),
+   ("Kth Smallest Number in Multiplication Table", "kth-smallest-number-in-multiplication-table", "Hard", None)]
+SHEET_NEW["Top-K / K-way merge"] = [
+   ("Kth Smallest Element", "gfg-kth-smallest-element", "Medium", GFG + "problems/kth-smallest-element5635/1"),
+   ("Find K Closest Elements", "find-k-closest-elements", "Medium", None),
+   ("The K Weakest Rows in a Matrix", "the-k-weakest-rows-in-a-matrix", "Easy", None),
+   ("Merge K Sorted Arrays", "gfg-merge-k-sorted-arrays", "Medium", GFG + "problems/merge-k-sorted-arrays/1"),
+   ("Minimum Number of Refueling Stops", "minimum-number-of-refueling-stops", "Hard", None),
+   ("IPO", "ipo", "Hard", None),
+   ("Course Schedule III", "course-schedule-iii", "Hard", None)]
+SHEET_NEW["Backtracking"] = [
+   ("Fibonacci Number", "fibonacci-number", "Easy", None),
+   ("Palindrome String", "gfg-palindrome-string", "Easy", GFG + "problems/palindrome-string0817/1"),
+   ("Check if an Array is Sorted", "gfg-check-if-an-array-is-sorted", "Easy", GFG + "problems/check-if-an-array-is-sorted0701/1"),
+   ("Sum of Digits", "gfg-sum-of-digits", "Easy", GFG + "problems/sum-of-digits1742/1"),
+   ("Remove All Occurrences of a Character in a String", "gfg-remove-all-occurrences-of-a-character", "Easy",
+    GFG + "problems/remove-all-occurrences-of-a-character-in-a-string/1")]
+SHEET_NEW["Tree DFS / BFS"] = [
+   ("Binary Tree Inorder Traversal", "binary-tree-inorder-traversal", "Easy", None),
+   ("Binary Tree Preorder Traversal", "binary-tree-preorder-traversal", "Easy", None),
+   ("Binary Tree Postorder Traversal", "binary-tree-postorder-traversal", "Easy", None),
+   ("Binary Tree Level Order Traversal II", "binary-tree-level-order-traversal-ii", "Medium", None),
+   ("Symmetric Tree", "symmetric-tree", "Easy", None),
+   ("Flip Equivalent Binary Trees", "flip-equivalent-binary-trees", "Medium", None),
+   ("Search in a Binary Search Tree", "search-in-a-binary-search-tree", "Easy", None),
+   ("Lowest Common Ancestor of Deepest Leaves", "lowest-common-ancestor-of-deepest-leaves", "Medium", None),
+   ("Two Sum IV - Input is a BST", "two-sum-iv-input-is-a-bst", "Easy", None),
+   ("Minimum Depth of Binary Tree", "minimum-depth-of-binary-tree", "Easy", None),
+   ("Check Completeness of a Binary Tree", "check-completeness-of-a-binary-tree", "Medium", None),
+   ("Recover Binary Search Tree", "recover-binary-search-tree", "Medium", None),
+   ("Path Sum", "path-sum", "Easy", None),
+   ("Sum Root to Leaf Numbers", "sum-root-to-leaf-numbers", "Medium", None),
+   ("Construct Binary Tree from Inorder and Postorder Traversal", "construct-binary-tree-from-inorder-and-postorder-traversal", "Medium", None)]
+SHEET_NEW["Graph BFS / DFS"] = [
+   ("Print Adjacency List", "gfg-print-adjacency-list", "Easy", GFG + "problems/print-adjacency-list-1587115620/1"),
+   ("DFS of Graph", "gfg-dfs-of-graph", "Easy", GFG + "problems/depth-first-traversal-for-a-graph/1"),
+   ("BFS of Graph", "gfg-bfs-of-graph", "Easy", GFG + "problems/bfs-traversal-of-graph/1"),
+   ("Detect Cycle in an Undirected Graph", "gfg-detect-cycle-in-an-undirected-graph", "Medium", GFG + "problems/detect-cycle-in-an-undirected-graph/1"),
+   ("Shortest Path in Undirected Graph (unit distance)", "gfg-shortest-path-unit-distance", "Medium",
+    GFG + "problems/shortest-path-in-undirected-graph-having-unit-distance/1")]
+SHEET_NEW["Topological sort"] = [
+   ("Detect Cycle in a Directed Graph", "gfg-detect-cycle-in-a-directed-graph", "Medium", GFG + "problems/detect-cycle-in-a-directed-graph/1"),
+   ("Topological Sort", "gfg-topological-sort", "Medium", GFG + "problems/topological-sort/1")]
+SHEET_NEW["Shortest paths & MST"] = [
+   ("Dijkstra's Algorithm", "gfg-dijkstra", "Medium", GFG + "problems/implementing-dijkstra-set-1-adjacency-matrix/1"),
+   ("Bellman-Ford (Distance from the Source)", "gfg-bellman-ford", "Medium", GFG + "problems/distance-from-the-source-bellman-ford-algorithm/1"),
+   ("Minimum Spanning Tree (Prim)", "gfg-prim-mst", "Medium", GFG + "problems/minimum-spanning-tree/1")]
+SHEET_NEW["Dynamic programming"] = [
+   ("Fibonacci Number", "fibonacci-number", "Easy", None),
+   ("0 - 1 Knapsack Problem", "gfg-0-1-knapsack", "Medium", GFG + "problems/0-1-knapsack-problem0945/1"),
+   ("Subset Sum Problem", "gfg-subset-sum", "Medium", GFG + "problems/subset-sum-problem-1611555638/1"),
+   ("Target Sum", "gfg-target-sum", "Medium", GFG + "problems/target-sum-1626326450/1"),
+   ("Best Time to Buy and Sell Stock II", "best-time-to-buy-and-sell-stock-ii", "Medium", None),
+   ("Best Time to Buy and Sell Stock III", "best-time-to-buy-and-sell-stock-iii", "Hard", None),
+   ("Best Time to Buy and Sell Stock IV", "best-time-to-buy-and-sell-stock-iv", "Hard", None),
+   ("Minimum Cost to Cut a Stick", "minimum-cost-to-cut-a-stick", "Hard", None)]
+SHEET_NEW["Greedy"] = [
+   ("Lemonade Change", "lemonade-change", "Easy", None),
+   ("Fractional Knapsack", "gfg-fractional-knapsack", "Medium", GFG + "problems/fractional-knapsack-1587115620/1")]
+
 # Questions from the sheet that were already listed under that pattern (marked "your list")
 SHEET_EXISTING = {
  "Two pointers": ["two-sum-ii-input-array-is-sorted", "remove-duplicates-from-sorted-array", "3sum", "sort-colors", "4sum"],
@@ -163,9 +228,25 @@ SHEET_EXISTING = {
  "Merge intervals": ["merge-intervals", "insert-interval", "interval-list-intersections"],
  "In-place list reversal": ["reverse-linked-list", "reverse-linked-list-ii", "swap-nodes-in-pairs", "reverse-nodes-in-k-group", "rotate-list"],
  "Stack & monotonic stack": ["valid-parentheses", "next-greater-element-ii", "daily-temperatures", "remove-k-digits"],
- "Modified binary search": ["binary-search", "find-first-and-last-position-of-element-in-sorted-array", "find-peak-element",
+ "Modified binary search": ["search-a-2d-matrix", "median-of-two-sorted-arrays",
+                            "binary-search", "find-first-and-last-position-of-element-in-sorted-array", "find-peak-element",
                             "find-minimum-in-rotated-sorted-array", "search-in-rotated-sorted-array", "koko-eating-bananas",
                             "capacity-to-ship-packages-within-d-days", "split-array-largest-sum"],
+ "Top-K / K-way merge": ["kth-largest-element-in-an-array", "top-k-frequent-elements", "top-k-frequent-words", "k-closest-points-to-origin",
+                         "kth-smallest-element-in-a-sorted-matrix", "last-stone-weight", "task-scheduler", "reorganize-string"],
+ "Two heaps": ["find-median-from-data-stream", "sliding-window-median"],
+ "Backtracking": ["generate-parentheses", "letter-combinations-of-a-phone-number", "permutations", "combination-sum", "palindrome-partitioning"],
+ "Tree DFS / BFS": ["binary-tree-level-order-traversal", "binary-tree-zigzag-level-order-traversal", "invert-binary-tree", "same-tree",
+                    "subtree-of-another-tree", "lowest-common-ancestor-of-a-binary-tree", "lowest-common-ancestor-of-a-binary-search-tree",
+                    "kth-smallest-element-in-a-bst", "maximum-depth-of-binary-tree", "balanced-binary-tree", "diameter-of-binary-tree",
+                    "validate-binary-search-tree", "path-sum-ii", "binary-tree-maximum-path-sum",
+                    "construct-binary-tree-from-preorder-and-inorder-traversal", "convert-sorted-array-to-binary-search-tree"],
+ "Graph BFS / DFS": ["number-of-islands", "rotting-oranges", "is-graph-bipartite", "surrounded-regions", "word-ladder"],
+ "Union-Find": ["number-of-provinces"],
+ "Shortest paths & MST": ["network-delay-time", "path-with-minimum-effort", "swim-in-rising-water", "cheapest-flights-within-k-stops"],
+ "Dynamic programming": ["climbing-stairs", "house-robber", "longest-increasing-subsequence", "longest-common-subsequence", "unique-paths",
+                         "best-time-to-buy-and-sell-stock"],
+ "Greedy": ["jump-game", "assign-cookies"],
 }
 
 
@@ -201,9 +282,13 @@ def build(days):
 # Which plan day teaches each pattern from Shubham's sheet (so the Questions tab can show them day-wise)
 SHEET_DAY = {"Two pointers": 2, "Sliding window": 2, "Kadane's algorithm": 2, "Prefix sum + hash map": 2, "Hash maps": 3,
              "Modified binary search": 5, "Fast & slow pointers": 6, "In-place list reversal": 6, "Stack & monotonic stack": 7,
-             "Merge intervals": 15}
+             "Merge intervals": 15, "Backtracking": 4, "Top-K / K-way merge": 10, "Two heaps": 10, "Tree DFS / BFS": 8,
+             "Graph BFS / DFS": 12, "Topological sort": 12, "Union-Find": 13, "Shortest paths & MST": 13,
+             "Dynamic programming": 16, "Greedy": 15}
 SHEET_ORDER = ["Two pointers", "Fast & slow pointers", "Sliding window", "Kadane's algorithm", "Prefix sum + hash map",
-               "Merge intervals", "In-place list reversal", "Stack & monotonic stack", "Hash maps", "Modified binary search"]
+               "Merge intervals", "In-place list reversal", "Stack & monotonic stack", "Hash maps", "Modified binary search",
+               "Top-K / K-way merge", "Two heaps", "Backtracking", "Tree DFS / BFS", "Graph BFS / DFS", "Topological sort",
+               "Union-Find", "Shortest paths & MST", "Dynamic programming", "Greedy"]
 
 
 def mine_by_day(days, pattern_q):

@@ -914,7 +914,7 @@ function renderPP(){
             const detail = nApp ? `<tr class="ppsolrow" id="pps-${i}" hidden><td class="rn"></td><td colspan="7"><div class="ppsolwrap">
                 ${withSol.map(([sl, day]) => `${withSol.length > 1 ? `<div class="ppsolname">${esc(names[sl] || sl)}</div>` : ""}${solHTML(sl, +day, "pp" + i)}`).join("")}
               </div></td></tr>` : "";
-            return `<tr id="ppr-${i}"${keys.length ? "" : ' class="ppsec"'}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol">${btn}</td></tr>${detail}`;
+            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol">${btn}</td></tr>${detail}`;
           }).join("")}
         </tbody></table></div>`;
     root.querySelectorAll(".ppap").forEach(b => b.onclick = () => {

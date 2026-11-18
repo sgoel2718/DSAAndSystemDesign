@@ -500,6 +500,7 @@ PATTERNS = [
  ("Tree DFS / BFS", "Paths, depths, level views, LCA", "Binary Tree Maximum Path Sum"),
  ("Graph BFS / DFS", "Grids, islands, shortest unweighted path", "Rotting Oranges"),
  ("Topological sort", "Dependencies, ordering, course prerequisites", "Course Schedule II"),
+ ("Shortest paths & MST", "Weighted shortest path (Dijkstra, Bellman-Ford) or connect everything at minimum cost (Prim, Kruskal)", "Network Delay Time"),
  ("Union-Find", "Dynamic connectivity, grouping, redundant edges", "Number of Provinces"),
  ("Two heaps", "Running median, balancing two halves", "Find Median from Data Stream"),
  ("Top-K / K-way merge", "K largest/closest/frequent, merging sorted lists", "Merge k Sorted Lists"),
@@ -615,7 +616,7 @@ assert all(n in PLAYBOOK for n, _, _ in PATTERNS), [n for n, _, _ in PATTERNS if
 def as_json():
     return json.dumps(dict(start=START, weeks=WEEKS, days=DAYS, schedule=DAILY_SCHEDULE, project=PROJECT, extras=EXTRAS, resources=RESOURCES,
                            patterns=PATTERNS, java=JAVA_CHEATSHEET, revision=REVISION, companies=COMPANIES,
-                           playbook=PLAYBOOK, solutions=SOLUTIONS, pp=dict(header=_pp.HEADER, rows=_pp.ROWS, source=_pp.SOURCE, keys=_pp.row_keys(DAYS, MINE_BY_DAY, __import__('pattern_questions').SHEET_NEW)), pattern_q=PATTERN_Q, mine={str(k): v for k, v in MINE_BY_DAY.items()}, pwp=dict(url=_pwp.SHEET_URL, sections=PWP), sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
+                           playbook=PLAYBOOK, solutions=SOLUTIONS, pp=dict(header=_pp.HEADER, rows=_pp.ROWS, source=_pp.SOURCE, heads=_pp.header_rows(), keys=_pp.row_keys(DAYS, MINE_BY_DAY, __import__('pattern_questions').SHEET_NEW)), pattern_q=PATTERN_Q, mine={str(k): v for k, v in MINE_BY_DAY.items()}, pwp=dict(url=_pwp.SHEET_URL, sections=PWP), sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
 
 if __name__ == "__main__":
     print(len(DAYS), sum(len(d["problems"]) for d in DAYS))

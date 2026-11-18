@@ -225,6 +225,29 @@ while (!q.isEmpty()) {
 return order.size() == n;   // false => cycle""",
   pitfalls="Reversing the edge direction for prerequisites [a, b] (b comes before a).",
   complexity="O(V + E)."),
+"Shortest paths & MST": dict(
+  steps=["Unweighted graph: plain BFS gives shortest paths. Non-negative weights: Dijkstra. Negative weights or 'at most k edges': Bellman-Ford.",
+         "Dijkstra: dist[src] = 0, push (0, src) on a min-heap; pop the closest node, skip it if the popped distance is stale, relax every edge.",
+         "Bellman-Ford: relax every edge V - 1 times; one more round that still improves means a negative cycle.",
+         "Minimum spanning tree: Prim grows one tree from a start node with a min-heap of crossing edges; Kruskal sorts edges and joins components with Union-Find."],
+  template="""int[] dist = new int[n];
+Arrays.fill(dist, Integer.MAX_VALUE);
+dist[src] = 0;
+PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));
+pq.offer(new int[]{0, src});
+while (!pq.isEmpty()) {
+    int[] top = pq.poll();
+    int d = top[0], u = top[1];
+    if (d > dist[u]) continue;                 // stale entry
+    for (int[] e : adj.get(u)) {               // e = {v, weight}
+        if (d + e[1] < dist[e[0]]) {
+            dist[e[0]] = d + e[1];
+            pq.offer(new int[]{dist[e[0]], e[0]});
+        }
+    }
+}""",
+  pitfalls="Using Dijkstra with negative edges; forgetting to skip stale heap entries; integer overflow when adding to Integer.MAX_VALUE.",
+  complexity="Dijkstra O((V + E) log V); Bellman-Ford O(V x E); Prim / Kruskal O(E log E)."),
 "Union-Find": dict(
   steps=["Signal: groups that merge over time, 'are these connected?', counting components, redundant edge.",
          "Start with each node as its own parent.",
