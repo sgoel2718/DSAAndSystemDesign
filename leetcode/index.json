@@ -1,0 +1,21 @@
+{
+ "problems": {
+  "3sum": {
+   "files": {
+    "java": {
+     "at": 1795119892,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1) extra (sort aside)",
+     "path": "leetcode/3sum/3sum.java",
+     "runtime": "Time O(n\u00b2)"
+    }
+   },
+   "first": 1795119892,
+   "last": 1795119892,
+   "title": "3Sum"
+  }
+ },
+ "seen": 0,
+ "updated": 1795119892
+}
