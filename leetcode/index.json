@@ -14,8 +14,23 @@
    "first": 1795119892,
    "last": 1795119892,
    "title": "3Sum"
+  },
+  "3sum-closest": {
+   "files": {
+    "java": {
+     "at": 1795120860,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1) extra (sort aside)",
+     "path": "leetcode/3sum-closest/3sum-closest.java",
+     "runtime": "Time O(n\u00b2)"
+    }
+   },
+   "first": 1795120860,
+   "last": 1795120860,
+   "title": "3Sum Closest"
   }
  },
  "seen": 0,
- "updated": 1795119892
+ "updated": 1795120860
 }
