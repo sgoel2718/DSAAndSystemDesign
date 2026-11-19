@@ -648,9 +648,19 @@ function selectCode(b){
 }
 /* ---------- LeetCode sync: reads the GitHub repo that LeetHub-3.0 pushes your accepted submissions to ---------- */
 const SKEY = "dsa30-lcsync-v1";
-let SYNC = {repo: "", branch: "", files: {}, at: 0, autotick: true, err: ""};
+let SYNC = {repo: "sgoel2718/DSAAndSystemDesign", branch: "", files: {}, at: 0, autotick: true, err: ""};
 try { const v = JSON.parse(localStorage.getItem(SKEY)); if (v) SYNC = Object.assign(SYNC, v); } catch(e) {}
 const saveSync = () => { try { localStorage.setItem(SKEY, JSON.stringify(SYNC)); } catch(e) {} };
+const LCLANG = {java: "Java", python3: "Python", python: "Python", cpp: "C++", c: "C", javascript: "JavaScript", typescript: "TypeScript", csharp: "C#", golang: "Go", kotlin: "Kotlin", rust: "Rust", swift: "Swift", mysql: "SQL", mssql: "SQL", oraclesql: "SQL", postgresql: "SQL", ruby: "Ruby", scala: "Scala", php: "PHP", dart: "Dart"};
+function parseIndex(ix){
+  const known = new Set(Object.values(keyInfo()).map(q => q.slug)), files = {};
+  Object.entries(ix.problems || {}).forEach(([slug, p]) => {
+    const code = Object.values(p.files || {}).map(f => ({path: f.path, lang: LCLANG[f.lang] || f.lang, at: f.at * 1000, runtime: f.runtime, memory: f.memory}));
+    code.sort((a, b) => (b.lang === "Java") - (a.lang === "Java"));
+    files[slug] = {known: known.has(slug), first: p.first * 1000, code};
+  });
+  return files;
+}
 const LANGS = {java: "Java", py: "Python", cpp: "C++", c: "C", js: "JavaScript", ts: "TypeScript", cs: "C#", go: "Go", kt: "Kotlin", rs: "Rust", swift: "Swift", sql: "SQL", rb: "Ruby", scala: "Scala", php: "PHP", dart: "Dart"};
 const rawURL = path => `https://raw.githubusercontent.com/${SYNC.repo}/${encodeURIComponent(SYNC.branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
 const blobURL = path => `https://github.com/${SYNC.repo}/blob/${encodeURIComponent(SYNC.branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
@@ -677,15 +687,27 @@ async function syncLC(manual){
       if (r.status === 404) throw new Error("Repo not found. Check the name, and that the repo is public.");
       if (r.status === 403 || r.status === 429) throw new Error("GitHub rate limit reached (60 checks an hour). Try again later.");
       if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); });
-    const info = await gh("");
-    SYNC.branch = info.default_branch;
-    const t = await gh("/git/trees/" + encodeURIComponent(SYNC.branch) + "?recursive=1");
     const before = new Set(Object.keys(SYNC.files));
-    SYNC.files = parseTree(t.tree || []); SYNC.at = Date.now(); SYNC.err = "";
+    // 1) the GitHub Action layout: leetcode/index.json (has the real accepted times). 2) fallback: any LeetHub-style repo tree.
+    const ix = await fetch(`https://raw.githubusercontent.com/${SYNC.repo}/HEAD/leetcode/index.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null).catch(() => null);
+    if (ix) { SYNC.branch = "HEAD"; SYNC.files = parseIndex(ix); SYNC.source = "action"; SYNC.updated = (ix.updated || 0) * 1000; }
+    else if (SYNC.repo === "sgoel2718/DSAAndSystemDesign") { SYNC.files = {}; SYNC.source = "none"; SYNC.err = ""; SYNC.at = Date.now(); saveSync(); refreshSubs(); if (filter === 11) renderTracker(); return; }
+    else {
+      const info = await gh("");
+      SYNC.branch = info.default_branch;
+      const t = await gh("/git/trees/" + encodeURIComponent(SYNC.branch) + "?recursive=1");
+      SYNC.files = parseTree(t.tree || []); SYNC.source = "tree";
+    }
+    SYNC.at = Date.now(); SYNC.err = "";
     let ticked = 0;
-    if (SYNC.autotick) Object.entries(keyInfo()).forEach(([k, q]) => { if (SYNC.files[q.slug] && !state.probs[k]) { setSolved(k, true); ticked++; } });
+    if (SYNC.autotick) Object.entries(keyInfo()).forEach(([k, q]) => {
+      const f = SYNC.files[q.slug]; if (!f) return;
+      const cur = state.probs[k];
+      if (!cur) { state.probs[k] = f.first || Date.now(); ticked++; }
+      else if (f.first && (cur === true || cur > f.first)) state.probs[k] = f.first;   // use LeetCode's real accepted date
+    });
     SYNC.last = {fresh: Object.keys(SYNC.files).filter(x => !before.has(x)).length, ticked};
-    saveSync(); if (ticked) save();
+    saveSync(); save();
   } catch (e) { SYNC.err = e.message || String(e); saveSync(); }
   refreshSubs();
   renderTop();
@@ -697,7 +719,7 @@ function subHTML(slug, mode){
   const r = SYNC.files[slug]; if (!r) return "";
   if (mode === "link") return `<a class="mysublink" href="${blobURL(r.code[0].path)}" target="_blank" rel="noopener">My code ↗</a>`;
   return `<details class="mysub" data-slug="${slug}"><summary><span class="mysubdot" aria-hidden="true"></span>My LeetCode submission<span class="chip">${r.code.map(c => c.lang).filter((v, i, a) => a.indexOf(v) === i).join(" · ")}</span></summary>
-    <div class="mysubbody">${r.code.map((c, i) => `<div class="codewrap"><div class="codebar"><span>${esc(c.lang)} · ${esc(c.path.split("/").pop())}</span><span class="cbtns">
+    <div class="mysubbody">${r.code.map((c, i) => `<div class="codewrap"><div class="codebar"><span>${esc(c.lang)}${c.at ? " · accepted " + new Date(c.at).toLocaleDateString("en-IN", {day: "2-digit", month: "short", year: "numeric"}) : ""}${c.runtime ? " · " + esc(c.runtime) : ""}${c.memory ? " · " + esc(c.memory) : ""}</span><span class="cbtns">
       <a class="copy" href="${blobURL(c.path)}" target="_blank" rel="noopener">Open on GitHub</a><button type="button" class="copy subcopy" data-i="${i}">Copy</button></span></div>
       <pre class="code java" data-path="${esc(c.path)}">Loading…</pre></div>`).join("")}</div></details>`;
 }
@@ -721,7 +743,8 @@ function syncCard(){
   const n = Object.keys(SYNC.files).length, known = Object.values(SYNC.files).filter(r => r.known).length;
   const ago = SYNC.at ? Math.round((Date.now() - SYNC.at) / 60000) : null;
   const status = !SYNC.repo ? "Not connected yet." : SYNC.err ? "⚠ " + esc(SYNC.err)
-    : SYNC.at ? `<b>${n}</b> submissions found in <a href="https://github.com/${esc(SYNC.repo)}" target="_blank" rel="noopener">${esc(SYNC.repo)}</a>, <b>${known}</b> of them are questions on this site. Last checked ${ago < 1 ? "just now" : ago + " min ago"}.${SYNC.last && SYNC.last.ticked ? ` Marked <b>${SYNC.last.ticked}</b> as solved.` : ""}` : "Not synced yet.";
+    : SYNC.source === "none" ? "No LeetCode submissions pulled yet. Finish the one-time setup below, then press Sync now a minute after the first run."
+    : SYNC.at ? `<b>${n}</b> solved questions found in <a href="https://github.com/${esc(SYNC.repo)}" target="_blank" rel="noopener">${esc(SYNC.repo)}</a>, <b>${known}</b> of them are questions on this site. Last checked ${ago < 1 ? "just now" : ago + " min ago"}${SYNC.updated ? `, LeetCode last pulled ${new Date(SYNC.updated).toLocaleString("en-IN", {day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"})}` : ""}.${SYNC.last && SYNC.last.ticked ? ` Marked <b>${SYNC.last.ticked}</b> as solved.` : ""}` : "Not synced yet.";
   return `<div class="trcard sync"><div class="trhead"><h3>LeetCode sync</h3>${SYNC.repo ? `<button type="button" class="syncbtn" id="syncNow">Sync now</button>` : ""}</div>
     <p class="synclead">Your accepted LeetCode code shows up under each question as <b>My LeetCode submission</b>, and the question is ticked as solved.</p>
     <form class="syncform" id="syncForm"><label for="syncRepo">GitHub repo</label>
@@ -729,13 +752,13 @@ function syncCard(){
       <button type="submit" class="syncbtn">${SYNC.repo ? "Save" : "Connect"}</button></form>
     <label class="syncopt"><input type="checkbox" id="syncTick"${SYNC.autotick ? " checked" : ""}> Tick a question as solved when its submission is found</label>
     <p class="syncst" id="syncStatus" role="status">${status}</p>
-    <details class="syncsetup"${SYNC.repo ? "" : " open"}><summary>One-time setup (5 minutes)</summary><ol>
-      <li>On GitHub, create a <b>public</b> repo, for example <code>LeetCode-Solutions</code> (public so this site can read it without a password).</li>
-      <li>Install the Chrome extension <b>LeetHub-3.0</b> and sign in with GitHub when it asks.</li>
-      <li>In LeetHub's setup, choose <b>Link an existing repository</b> and pick that repo.</li>
-      <li>Solve on LeetCode as usual. Each <b>Accepted</b> submission is pushed to the repo by itself.</li>
-      <li>Type the repo above as <code>owner/name</code> and press Connect. The site re-checks every time you open it (at most every 10 minutes), or press Sync now.</li>
-    </ol></details></div>`;
+    <details class="syncsetup"${SYNC.at && !SYNC.err && Object.keys(SYNC.files).length ? "" : " open"}><summary>One-time setup (about 3 minutes, no extension)</summary><ol>
+      <li>Log in to <a href="https://leetcode.com" target="_blank" rel="noopener">leetcode.com</a> in Chrome, press <b>F12</b>, open <b>Application → Cookies → https://leetcode.com</b>.</li>
+      <li>Copy the values of <code>LEETCODE_SESSION</code> and <code>csrftoken</code>. They are your login: never paste them anywhere except the next step.</li>
+      <li>In GitHub open <a href="https://github.com/sgoel2718/DSAAndSystemDesign/settings/secrets/actions" target="_blank" rel="noopener">your repo → Settings → Secrets and variables → Actions</a> and add two secrets: <code>LEETCODE_SESSION</code> and <code>LEETCODE_CSRF_TOKEN</code>.</li>
+      <li>Open <a href="https://github.com/sgoel2718/DSAAndSystemDesign/actions" target="_blank" rel="noopener">Actions → Sync LeetCode submissions → Run workflow</a>. The first run pulls your whole history; after that it runs every 3 hours by itself.</li>
+      <li>If a run fails with "session expired" (LeetCode logs you out every few weeks), repeat steps 1–3 with fresh values.</li>
+    </ol></ol></details></div>`;
 }
 function wireSync(root){
   const f = root.querySelector("#syncForm"); if (!f) return;
