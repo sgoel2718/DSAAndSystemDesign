@@ -1,6 +1,6 @@
 /* ================= System Design section (separate group from DSA) ================= */
 const SDX = PLAN.sdx;
-const SD_TABS = [[20, "Start here"], ...SDX.tabs.map((t, i) => [21 + i, t.label]), [28, "Interactive labs"], [29, "HLD questions"], [30, "LLD questions (Java)"], [33, "Questions by company"], [31, "Interview Q&A"], [32, "Cheat sheet"], [7, "30-day plan: SD days"]];
+const SD_TABS = [[20, "Start here"], ...SDX.tabs.map((t, i) => [21 + i, t.label]), [28, "Interactive labs"], [29, "HLD questions"], [30, "LLD questions (Java)"], [33, "Questions by company"], [31, "Interview Q&A"], [32, "Cheat sheet"], [7, "30-day plan: SD days"], [34, "✎ My notes & bookmarks"]];
 const SD_TAB_OF = {};               // concept id -> filter number
 SDX.tabs.forEach((t, i) => t.sections.forEach(s => s.ids.forEach(id => SD_TAB_OF[id] = 21 + i)));
 SDX.hld.forEach(h => SD_TAB_OF[h.id] = 29); SDX.lld.forEach(l => SD_TAB_OF[l.id] = 30);
@@ -8,8 +8,9 @@ SD_TAB_OF["hld-framework"] = 32;
 const SD_TITLE = id => (SDX.concepts[id] || SDX.hld.find(h => h.id === id) || SDX.lld.find(l => l.id === id) || {title: id === "hld-framework" ? "HLD interview framework" : id}).title;
 if (!state.sd) state.sd = {c: {}, h: {}, l: {}};
 let SDV = {level: "All", q: "", open: new Set(), practice: false, qaTopic: "All", qaShowAll: false, company: "All", coPick: "Amazon", freq: "All"};
-try { const g = localStorage.getItem("dsa30-group"); if (g === "sd") { SDV.group = "sd"; } } catch (e) {}
-const isSD = f => f >= 20 || f === 7;
+try { const g = localStorage.getItem("dsa30-group"); if (g === "sd") { SDV.group = "sd"; GROUP = "sd"; } } catch (e) {}
+let GROUP = "dsa";
+const isSD = f => f === 34 ? GROUP === "sd" : (f >= 20 || f === 7);
 
 /* ---------- markdown-lite ---------- */
 function mdInline(s){
@@ -122,7 +123,7 @@ function sdWireToolbar(root){
 }
 function sdGo(id){
   const f = SD_TAB_OF[id]; if (!f) return;
-  filter = f; SDV.q = ""; SDV.open.add(id); renderTabs(); renderBoard();
+  filter = f; GROUP = "sd"; SDV.q = ""; SDV.open.add(id); renderTabs(); renderBoard();
   requestAnimationFrame(() => { const el = document.getElementById("sdc-" + id); if (el) { el.scrollIntoView({block: "start"}); const h = el.querySelector(".sdch"); if (h) h.focus({preventScroll: true}); } });
 }
 const lvOK = l => SDV.level === "All" || l === SDV.level;
@@ -134,7 +135,7 @@ function conceptCard(c){
   return `<article class="sdc${learned ? " learned" : ""}" id="sdc-${c.id}">
     <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${c.id}" data-id="${c.id}">
       <span class="sdct"><b>${esc(c.title)}</b>${doneMark(learned)}</span>${lvBadge(c.level)}
-      <span class="sdwhat">${mdInline(c.what)}</span></button>
+      <span class="sdwhat">${mdInline(c.what)}</span></button>${tmActs("sd:" + c.id, c.title, "sd")}${state.tn["sd:" + c.id] ? tmNoteArea("sd:" + c.id) : ""}
     <div class="sdcb" id="sdb-${c.id}"${open ? "" : " hidden"}>${open ? conceptBody(c) : ""}</div></article>`;
 }
 function conceptBody(c){
@@ -180,7 +181,7 @@ function hldCard(h){
   return `<article class="sdc${done ? " learned" : ""}" id="sdc-${h.id}">
     <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${h.id}" data-id="${h.id}">
       <span class="sdct"><b>${esc(h.title)}</b>${doneMark(done)}</span><span class="sdbadges">${freqBadge(h.freq)}${lvBadge(h.level)}</span>
-      <span class="sdwhat"><span class="sdco">Asked at ${h.companies.map(esc).join(" · ")}</span> — tests ${mdInline(h.tests)}</span></button>
+      <span class="sdwhat"><span class="sdco">Asked at ${h.companies.map(esc).join(" · ")}</span> — tests ${mdInline(h.tests)}</span></button>${tmActs("sd:" + h.id, h.title, "hld")}${state.tn["sd:" + h.id] ? tmNoteArea("sd:" + h.id) : ""}
     <div class="sdcb" id="sdb-${h.id}"${open ? "" : " hidden"}>${open ? hldBody(h) : ""}</div></article>`;
 }
 function hldBody(h){
@@ -217,7 +218,7 @@ function lldCard(l){
   return `<article class="sdc${done ? " learned" : ""}" id="sdc-${l.id}">
     <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${l.id}" data-id="${l.id}">
       <span class="sdct"><b>${esc(l.title)}</b>${doneMark(done)}</span><span class="sdbadges">${freqBadge(l.freq)}${lvBadge(l.level)}</span>
-      <span class="sdwhat"><span class="sdco">Asked at ${l.companies.map(esc).join(" · ")}</span> — patterns: ${esc(l.patterns.join(", "))}</span></button>
+      <span class="sdwhat"><span class="sdco">Asked at ${l.companies.map(esc).join(" · ")}</span> — patterns: ${esc(l.patterns.join(", "))}</span></button>${tmActs("sd:" + l.id, l.title, "lld")}${state.tn["sd:" + l.id] ? tmNoteArea("sd:" + l.id) : ""}
     <div class="sdcb" id="sdb-${l.id}"${open ? "" : " hidden"}>${open ? lldBody(l) : ""}</div></article>`;
 }
 function lldBody(l){
@@ -277,7 +278,7 @@ function renderQA(root){
     ${sdToolbar("Search questions or a company", `${qaCoSelect()}<label class="sdco-sel">How often <select id="sdFreq">${["All", "Very common", "Common", "Sometimes"].map(f => `<option${SDV.freq === f ? " selected" : ""}>${f}</option>`).join("")}</select></label><label class="sdpract"><input type="checkbox" id="sdSort"${SDV.qaSort === "freq" ? " checked" : ""}> Most asked first</label><button type="button" class="sdtog" id="sdShowAll">${SDV.qaShowAll ? "Hide all answers" : "Show all answers"}</button>`)}
     <div class="sdtopics" role="group" aria-label="Topic">${topics.map(t => `<button type="button" data-tp="${esc(t)}" aria-pressed="${SDV.qaTopic === t}">${esc(t)}</button>`).join("")}</div>
     <p class="sdcount">${list.length} questions</p>
-    <div class="sdqa">${list.map((x, i) => `<details class="sdq"${SDV.qaShowAll ? " open" : ""}><summary><span class="sdqn">${i + 1}</span><span class="sdqq">${mdInline(x.q)}<span class="sdqco">Asked at ${x.companies.map(esc).join(" · ")}</span></span><span class="sdbadges">${freqBadge(x.freq)}${lvBadge(x.level)}<span class="sdqt">${esc(x.topic)}</span></span></summary><div class="sdqa-a">${md(x.a)}</div></details>`).join("") || `<p class="qempty">No questions match.</p>`}</div>`;
+    <div class="sdqa">${list.map((x, i) => `<details class="sdq" id="qa-${x.id}"${SDV.qaShowAll || state.tn["qa:" + x.id] ? " open" : ""}><summary><span class="sdqn">${i + 1}</span><span class="sdqq">${mdInline(x.q)}<span class="sdqco">Asked at ${x.companies.map(esc).join(" · ")}</span></span><span class="sdbadges">${freqBadge(x.freq)}${lvBadge(x.level)}<span class="sdqt">${esc(x.topic)}</span>${tmActs("qa:" + x.id, x.q, "qa")}</span></summary>${state.tn["qa:" + x.id] ? tmNoteArea("qa:" + x.id) : ""}<div class="sdqa-a">${md(x.a)}</div></details>`).join("") || `<p class="qempty">No questions match.</p>`}</div>`;
   sdWireToolbar(root);
   root.querySelector("#sdShowAll").onclick = () => { SDV.qaShowAll = !SDV.qaShowAll; renderSDX(); };
   root.querySelector("#sdCo").onchange = e => { SDV.company = e.target.value; renderSDX(); };
@@ -354,6 +355,7 @@ function renderSDX(){
   else if (filter === 31) renderQA(root);
   else if (filter === 32) renderCheat(root);
   else if (filter === 33) renderCompanies(root);
+  else if (filter === 34) renderNotes(root);
 }
 document.addEventListener("click", e => {
   const root = document.getElementById("sdx"); if (!root || root.hidden || !root.contains(e.target)) return;

@@ -570,12 +570,13 @@ function renderTop(){
 }
 function renderTabs(){
   const t = document.getElementById("tabs");
+  if (filter !== 34) GROUP = (filter >= 20 || filter === 7) ? "sd" : "dsa";
   const sd = isSD(filter);
   const g = document.getElementById("groups");
   g.innerHTML = `<button type="button" data-g="dsa" aria-pressed="${!sd}">DSA <small>30-day plan</small></button><button type="button" data-g="sd" aria-pressed="${sd}">System Design <small>basic → advanced</small></button>`;
   g.querySelectorAll("button").forEach(b => b.onclick = () => { const toSD = b.dataset.g === "sd"; if (toSD === isSD(filter)) return;
-    filter = toSD ? 20 : 0; try { localStorage.setItem("dsa30-group", b.dataset.g); } catch (e) {} renderTabs(); renderBoard(); });
-  const opts = sd ? SD_TABS : [[0,"All 30 days"],[11,"Progress tracker"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[10,"Padho with Pratyush Practice Sheet"],[9,"Build days"],[8,"Patterns: how to approach"]];
+    filter = toSD ? 20 : 0; GROUP = toSD ? "sd" : "dsa"; try { localStorage.setItem("dsa30-group", b.dataset.g); } catch (e) {} renderTabs(); renderBoard(); });
+  const opts = sd ? SD_TABS : [[0,"All 30 days"],[11,"Progress tracker"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[10,"Padho with Pratyush Practice Sheet"],[9,"Build days"],[8,"Patterns: how to approach"],[34,"✎ My notes & bookmarks"]];
   t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; if (filter === 5) qFilter.marks = true; if (filter === 6) { qFilter.marks = false; qFilter.notes = false; } renderTabs(); renderBoard(); });
 }
@@ -611,7 +612,7 @@ function openSheet(day){
   const d = PLAN.days.find(x => x.day === day), s = document.getElementById("sheet");
   s.innerHTML = `<button type="button" class="close" id="closeSheet">Close</button>
     <div class="eyebrow">Day ${d.day} · ${dateOf(d.day)} · Week ${d.week}</div>
-    <h2 id="sheetTitle">${esc(d.title)}</h2>
+    <h2 id="sheetTitle">${esc(d.title)}</h2>${tmActs("day:" + d.day, "Day " + d.day + ": " + d.title, "day", true)}${state.tn["day:" + d.day] ? tmNoteArea("day:" + d.day) : ""}
     <div class="status">${TAUGHT.includes(d.day) ? `Lesson taught · <a href="https://github.com/sgoel2718/DSAAndSystemDesign/tree/main/days/day-${String(d.day).padStart(2,"0")}" target="_blank" rel="noopener" style="color:var(--accent)">notes and Java code on GitHub</a>` : "Lesson not taught yet: say “Day " + d.day + "” in chat"}</div>
     <h4>Concepts</h4><ul>${d.concepts.map(c => `<li>${esc(c)}</li>`).join("")}</ul>
     ${d.approach.length ? `<h4>How to approach questions</h4><ol class="appr">${d.approach.map(a => `<li>${esc(a)}</li>`).join("")}</ol>` : ""}
@@ -974,7 +975,7 @@ function openPattern(i){
   const [n, sig, ex] = PLAN.patterns[i], P = PLAN.playbook[n], s = document.getElementById("sheet");
   s.innerHTML = `<button type="button" class="close" id="closeSheet">Close</button>
     <div class="eyebrow">Pattern ${i + 1} of ${PLAN.patterns.length}</div>
-    <h2 id="sheetTitle">${esc(n)}</h2>
+    <h2 id="sheetTitle">${esc(n)}</h2>${tmActs("pat:" + n, "Pattern: " + n, "pat", true)}${state.tn["pat:" + n] ? tmNoteArea("pat:" + n) : ""}
     <h4>When to use it</h4><p style="margin:0">${esc(sig)}</p>
     <h4>How to approach</h4><ol class="appr">${P.steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
     <h4>Java template</h4><pre class="code">${esc(P.template)}</pre>

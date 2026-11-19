@@ -47,7 +47,8 @@ def build():
                 concepts[c["id"]] = c
     hld = HLD1 + HLD2 + HLD3
     lld = LLD1 + LLD2 + LLD3
-    qa = [tag(q) for q in QA + QA2]
+    import hashlib
+    qa = [dict(tag(q), id=hashlib.md5(q["q"].encode()).hexdigest()[:8]) for q in QA + QA2]
     assert len({q["q"] for q in qa}) == len(qa), "duplicate Q&A"
     ids = set(concepts) | {h["id"] for h in hld} | {l["id"] for l in lld} | {"hld-framework"}
     assert len({h["id"] for h in hld}) == len(hld) and len({l["id"] for l in lld}) == len(lld)
