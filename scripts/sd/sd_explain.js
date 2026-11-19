@@ -11,7 +11,7 @@ const expPop = document.createElement("div");
 expPop.className = "exppop"; expPop.hidden = true; expPop.setAttribute("role", "dialog"); expPop.setAttribute("aria-label", "Explanation");
 const selTool = document.createElement("div");
 selTool.className = "seltool"; selTool.hidden = true; selTool.setAttribute("role", "toolbar"); selTool.setAttribute("aria-label", "Selected text");
-selTool.innerHTML = `<span class="hlgroup"><button type="button" class="hlbtn" data-hc="y" aria-label="Highlight yellow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l-5 5v4h4l5-5M14 6l4 4M9 11l5-5 4 4-5 5z"/></svg>Highlight</button><button type="button" class="hldot g" data-hc="g" aria-label="Highlight green"></button><button type="button" class="hldot p" data-hc="p" aria-label="Highlight pink"></button></span>`;
+selTool.innerHTML = `<span class="hlgroup"><button type="button" class="hlbtn" data-hc="y" aria-label="Highlight yellow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l-5 5v4h4l5-5M14 6l4 4M9 11l5-5 4 4-5 5z"/></svg>Highlight</button><button type="button" class="hldot g" data-hc="g" aria-label="Highlight green"></button><button type="button" class="hldot p" data-hc="p" aria-label="Highlight pink"></button></span><button type="button" class="hlrmbtn" hidden aria-label="Remove highlight from the selected text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16l-3-3 9-9 6 6-7 7H9z"/></svg>Remove highlight</button>`;
 selTool.prepend(expBtn); expBtn.hidden = false;
 document.body.append(selTool, expPop);
 
@@ -32,6 +32,8 @@ function placeBtn(s){
   const x = Math.min(window.scrollX + s.rect.right - 10, window.scrollX + document.documentElement.clientWidth - 110);
   const touch = matchMedia("(pointer: coarse)").matches;
   const y = window.scrollY + (touch ? s.rect.bottom + 34 : s.rect.bottom + 8);   // below the native touch menu
+  const marked = typeof selectedHighlightIds === "function" ? selectedHighlightIds() : [];
+  selTool.querySelector(".hlrmbtn").hidden = !marked.length;
   selTool.style.left = Math.max(window.scrollX + 8, Math.min(x - 120, window.scrollX + document.documentElement.clientWidth - 330)) + "px"; selTool.style.top = y + "px"; selTool.hidden = false;
 }
 let expTimer;
@@ -41,6 +43,7 @@ document.addEventListener("selectionchange", () => {
 });
 selTool.addEventListener("mousedown", e => e.preventDefault());      // keep the selection
 expBtn.addEventListener("click", () => { const s = EXP.last || expSelection(); selTool.hidden = true; if (s) explain(s); });
+selTool.querySelector(".hlrmbtn").addEventListener("click", () => { selTool.hidden = true; removeSelectedHighlights(); });
 selTool.querySelectorAll("[data-hc]").forEach(b => b.addEventListener("click", () => { selTool.hidden = true; addHighlight(b.dataset.hc); }));
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !expPop.hidden) closeExp(); });
 document.addEventListener("mousedown", e => { if (!expPop.hidden && !expPop.contains(e.target) && !selTool.contains(e.target)) closeExp(); });

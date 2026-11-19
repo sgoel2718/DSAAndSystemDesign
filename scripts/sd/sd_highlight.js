@@ -93,3 +93,15 @@ const hlObs = new MutationObserver(ms => { if (!state.hl.length) return; clearTi
   const roots = new Set(); ms.forEach(m => { if (m.target && m.target.nodeType === 1) roots.add(m.target); });
   roots.forEach(r => { if (r.isConnected && !r.closest(".seltool, .exppop, .hlmenu")) applyHighlights(r); }); }, 30); });
 function startHighlights(){ applyHighlights(document.body); hlObs.observe(document.body, {childList: true, subtree: true}); }
+
+/* highlights touched by the current selection (or containing it) */
+function selectedHighlightIds(){
+  const sel = getSelection(); if (!sel || !sel.rangeCount) return [];
+  const r = sel.getRangeAt(0), ids = new Set();
+  const inMark = n => { const e = n.nodeType === 1 ? n : n.parentElement; const m = e && e.closest("mark[data-hl]"); if (m) ids.add(m.dataset.hl); };
+  inMark(r.startContainer); inMark(r.endContainer);
+  const root = r.commonAncestorContainer.nodeType === 1 ? r.commonAncestorContainer : r.commonAncestorContainer.parentElement;
+  if (root) root.querySelectorAll("mark[data-hl]").forEach(m => { if (r.intersectsNode(m)) ids.add(m.dataset.hl); });
+  return [...ids];
+}
+function removeSelectedHighlights(){ selectedHighlightIds().forEach(removeHighlight); getSelection().removeAllRanges(); }

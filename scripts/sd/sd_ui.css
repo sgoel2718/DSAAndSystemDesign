@@ -287,3 +287,7 @@ mark.hl.hlflash{outline:2px solid var(--accent);outline-offset:2px}
 .hlmenu button{font:600 13px var(--sans);border:0;background:none;color:var(--ink);padding:6px 10px;border-radius:8px;cursor:pointer}
 .hlmenu button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
 .nvhl{margin:6px 0 2px;font-size:14.5px;line-height:1.6}.nvcount{font:600 12px var(--mono);color:var(--muted);margin-left:6px}
+.hlrmbtn{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--sans);background:transparent;color:#ffb4b4;border:0;border-left:1px solid color-mix(in srgb,var(--bg) 30%,transparent);border-radius:0 99px 99px 0;padding:6px 10px;cursor:pointer}
+.hlrmbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.hlrmbtn[hidden]{display:none}
+mark.hl[data-hl]:hover{outline:1px dashed color-mix(in srgb,var(--ink) 40%,transparent)}
