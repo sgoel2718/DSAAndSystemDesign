@@ -29,8 +29,23 @@
    "first": 1795120860,
    "last": 1795120860,
    "title": "3Sum Closest"
+  },
+  "gfg-count-triplets-with-sum-smaller-than-x": {
+   "files": {
+    "java": {
+     "at": 1795121752,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1) extra (sort aside)",
+     "path": "leetcode/gfg-count-triplets-with-sum-smaller-than-x/gfg-count-triplets-with-sum-smaller-than-x.java",
+     "runtime": "Time O(n\u00b2)"
+    }
+   },
+   "first": 1795121752,
+   "last": 1795121752,
+   "title": "Count Triplets with Sum Smaller than X"
   }
  },
  "seen": 0,
- "updated": 1795120860
+ "updated": 1795121752
 }
