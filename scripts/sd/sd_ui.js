@@ -144,7 +144,9 @@ function conceptBody(c){
     ${c.example ? `<div class="sdbox ex"><b>Real-world example</b><p>${mdInline(c.example)}</p></div>` : ""}
     ${c.diagram ? diagramSVG(c.diagram, c.title) : ""}
     ${c.lab ? `<div class="sdlabhost" data-lab="${c.lab}"><button type="button" class="sdlabbtn" data-lab="${c.lab}">▶ Try the interactive lab: ${esc(LAB_TITLES[c.lab])}</button></div>` : ""}
-    ${c.tips.length ? `<div class="sdbox tip"><b>In the interview</b><ul>${c.tips.map(t => `<li>${mdInline(t)}</li>`).join("")}</ul></div>` : ""}
+    ${c.say && c.say.length ? `<div class="sdbox tip sdsay"><b>In the interview: what to say</b>${c.say.map(x => `<div class="sayit">
+      <p class="sayq">${x.p.startsWith("Interviewer: ") ? `<span class="sayw">Interviewer asks</span>${mdInline(x.p.slice(13))}` : `<span class="sayw">Tip</span>${mdInline(x.p)}`}</p>
+      <blockquote class="saya"><span class="sayw">Your answer</span>${mdInline(x.a.replace(/^"|"$/g, ""))}</blockquote></div>`).join("")}</div>` : ""}
     ${c.see.length ? `<div class="sdsee"><span>Related:</span>${c.see.map(s => `<button type="button" class="sdlink" data-go="${s}">${esc(SD_TITLE(s))}</button>`).join("")}</div>` : ""}
     <label class="sdlearn"><input type="checkbox" data-learn="${c.id}"${state.sd.c[c.id] ? " checked" : ""}> I understand this concept</label>`;
 }
@@ -193,7 +195,7 @@ function hldBody(h){
     <ol class="sdflow">${h.flow.map(f => `<li>${mdInline(f)}</li>`).join("")}</ol>
     <h4>6 · Deep dives</h4><ul class="sddeep">${h.deep.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul>
     ${h.tradeoffs.length ? `<h4>7 · Trade-offs to say out loud</h4><ul>${h.tradeoffs.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul>` : ""}
-    ${h.followups.length ? `<div class="sdbox tip"><b>Likely follow-up questions</b><ul>${h.followups.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div>` : ""}`;
+    ${h.followups.length ? `<div class="sdbox tip sdsay"><b>Likely follow-up questions: what to say</b>${h.followups.map(f => `<div class="sayit"><p class="sayq"><span class="sayw">Interviewer asks</span>${mdInline(f.q)}</p><blockquote class="saya"><span class="sayw">Your answer</span>${mdInline(f.a)}</blockquote></div>`).join("")}</div>` : ""}`;
   return `<h4>1 · Requirements</h4><div class="sdreq"><div><b>Functional</b><ul>${h.functional.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div>
       <div><b>Non-functional</b><ul>${h.nonfunctional.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div></div>
     ${SDV.practice ? `<details class="sdans"><summary>Try it yourself first: design it on paper for 30 minutes, then open the model answer</summary>${ans}</details>` : ans}

@@ -235,3 +235,10 @@ nav#tabs{margin-top:12px}
 @media (max-width:720px){.sdc>.sdch{padding-right:76px}.padgrid{grid-template-columns:1fr}}
 .sdq summary{flex-wrap:wrap}
 @media (max-width:720px){.sdq summary .sdbadges{width:100%;justify-content:flex-start;padding-left:32px}.sdq summary .sdbadges .tmacts{margin-left:auto}}
+
+.sdsay .sayit{padding:8px 0;border-top:1px dashed color-mix(in srgb,var(--lab3) 45%,var(--line))}
+.sdsay .sayit:first-of-type{border-top:0}
+.sayq{margin:0 0 6px;font-weight:500}
+.sayw{display:inline-block;font:600 10.5px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:8px}
+.saya{margin:0;padding:8px 12px;background:var(--panel);border-left:3px solid var(--ce);border-radius:0 8px 8px 0;font-size:14.5px;line-height:1.55}
+.saya .sayw{display:block;margin-bottom:2px;color:var(--ce)}

@@ -45,6 +45,21 @@ def build():
             for c in cs:
                 assert c["id"] not in concepts, "duplicate concept " + c["id"]
                 concepts[c["id"]] = c
+    from sd_say1 import SAY1
+    from sd_say2 import SAY2
+    for cid, c in concepts.items():
+        say = SAY1.get(cid) or SAY2.get(cid)
+        assert say, "no interview answer for " + cid
+        if cid in SAY1: assert [p for p, _ in SAY1[cid]] == c["tips"], "tips mismatch " + cid
+        c["say"] = [dict(p=p, a=a) for p, a in say]
+    assert not (set(SAY1) | set(SAY2)) - set(concepts), (set(SAY1) | set(SAY2)) - set(concepts)
+    from sd_follow import FOLLOW
+    hld_all = HLD1 + HLD2 + HLD3
+    for h in hld_all:
+        fu = FOLLOW.get(h["id"]); assert fu, "no follow-ups for " + h["id"]
+        if h["followups"] and isinstance(h["followups"][0], str): assert [q for q, _ in fu] == h["followups"], "follow-up mismatch " + h["id"]
+        h["followups"] = [dict(q=q, a=a) for q, a in fu]
+    assert not set(FOLLOW) - {h["id"] for h in hld_all}
     hld = HLD1 + HLD2 + HLD3
     lld = LLD1 + LLD2 + LLD3
     import hashlib
