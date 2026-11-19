@@ -1,13 +1,13 @@
 /* ================= System Design section (separate group from DSA) ================= */
 const SDX = PLAN.sdx;
-const SD_TABS = [[20, "Start here"], ...SDX.tabs.map((t, i) => [21 + i, t.label]), [28, "Interactive labs"], [29, "HLD questions"], [30, "LLD questions (Java)"], [31, "Interview Q&A"], [32, "Cheat sheet"], [7, "30-day plan: SD days"]];
+const SD_TABS = [[20, "Start here"], ...SDX.tabs.map((t, i) => [21 + i, t.label]), [28, "Interactive labs"], [29, "HLD questions"], [30, "LLD questions (Java)"], [33, "Questions by company"], [31, "Interview Q&A"], [32, "Cheat sheet"], [7, "30-day plan: SD days"]];
 const SD_TAB_OF = {};               // concept id -> filter number
 SDX.tabs.forEach((t, i) => t.sections.forEach(s => s.ids.forEach(id => SD_TAB_OF[id] = 21 + i)));
 SDX.hld.forEach(h => SD_TAB_OF[h.id] = 29); SDX.lld.forEach(l => SD_TAB_OF[l.id] = 30);
 SD_TAB_OF["hld-framework"] = 32;
 const SD_TITLE = id => (SDX.concepts[id] || SDX.hld.find(h => h.id === id) || SDX.lld.find(l => l.id === id) || {title: id === "hld-framework" ? "HLD interview framework" : id}).title;
 if (!state.sd) state.sd = {c: {}, h: {}, l: {}};
-let SDV = {level: "All", q: "", open: new Set(), practice: false, qaTopic: "All", qaShowAll: false};
+let SDV = {level: "All", q: "", open: new Set(), practice: false, qaTopic: "All", qaShowAll: false, company: "All", coPick: "Amazon"};
 try { const g = localStorage.getItem("dsa30-group"); if (g === "sd") { SDV.group = "sd"; } } catch (e) {}
 const isSD = f => f >= 20 || f === 7;
 
@@ -94,6 +94,12 @@ function seqSVG(d, label){
 
 /* ---------- shared bits ---------- */
 const lvBadge = l => `<span class="sdlv ${l[0]}">${l}</span>`;
+const freqBadge = f => f ? `<span class="sdfq ${f === "Very common" ? "v" : f === "Common" ? "c" : "s"}" title="How often this question appears in interview reports and prep lists">${f === "Very common" ? "★★★" : f === "Common" ? "★★" : "★"} ${f}</span>` : "";
+const SD_COMPANIES = (() => { const m = {}; [...SDX.hld, ...SDX.lld].forEach(q => q.companies.forEach(c => m[c] = (m[c] || 0) + 1));
+  return Object.entries(m).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])); })();
+const coOK = q => SDV.company === "All" || q.companies.includes(SDV.company);
+const coSelect = () => `<label class="sdco-sel">Company <select id="sdCo"><option value="All">All companies</option>${SD_COMPANIES.map(([c, n]) => `<option value="${esc(c)}"${SDV.company === c ? " selected" : ""}>${esc(c)} (${n})</option>`).join("")}</select></label>`;
+const FREQ_ORDER = {"Very common": 0, "Common": 1, "Sometimes": 2, "": 3};
 const doneMark = on => on ? `<span class="sddone" title="Learned">✓</span>` : "";
 function sdCounts(){
   const c = Object.keys(SDX.concepts).length, cl = Object.keys(state.sd.c).filter(k => state.sd.c[k] && SDX.concepts[k]).length;
@@ -170,8 +176,8 @@ function hldCard(h){
   const open = SDV.open.has(h.id), done = !!state.sd.h[h.id];
   return `<article class="sdc${done ? " learned" : ""}" id="sdc-${h.id}">
     <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${h.id}" data-id="${h.id}">
-      <span class="sdct"><b>${esc(h.title)}</b>${doneMark(done)}</span>${lvBadge(h.level)}
-      <span class="sdwhat"><span class="sdco">${h.companies.map(esc).join(" · ")}</span> — tests ${mdInline(h.tests)}</span></button>
+      <span class="sdct"><b>${esc(h.title)}</b>${doneMark(done)}</span><span class="sdbadges">${freqBadge(h.freq)}${lvBadge(h.level)}</span>
+      <span class="sdwhat"><span class="sdco">Asked at ${h.companies.map(esc).join(" · ")}</span> — tests ${mdInline(h.tests)}</span></button>
     <div class="sdcb" id="sdb-${h.id}"${open ? "" : " hidden"}>${open ? hldBody(h) : ""}</div></article>`;
 }
 function hldBody(h){
@@ -190,15 +196,16 @@ function hldBody(h){
     <label class="sdlearn"><input type="checkbox" data-hld="${h.id}"${state.sd.h[h.id] ? " checked" : ""}> I have practised this design</label>`;
 }
 function renderHLD(root){
-  const q = SDV.q.trim().toLowerCase(), list = SDX.hld.filter(h => lvOK(h.level) && hit(q, h.title, h.tests, h.companies.join(" "), h.deep.join(" ")));
+  const q = SDV.q.trim().toLowerCase(), list = SDX.hld.filter(h => lvOK(h.level) && coOK(h) && hit(q, h.title, h.tests, h.companies.join(" "), h.deep.join(" ")));
   const c = sdCounts();
   root.innerHTML = `<div class="eyebrow">System design · interview questions</div><h2>High-level design questions</h2>
     <p class="lead">${SDX.hld.length} design questions asked at Google, Amazon, Microsoft, Meta, Uber, Flipkart and other product companies, from basic to advanced. Each has a full model answer in the 7-step interview format with an architecture diagram.</p>
     <div class="sdprog"><div class="trbar"><i style="width:${c.hl / c.h * 100}%"></i></div><span><b>${c.hl}</b> of ${c.h} designs practised</span></div>
-    ${sdToolbar("Search designs, e.g. chat, payment, Google", `<label class="sdpract"><input type="checkbox" id="sdPractice"${SDV.practice ? " checked" : ""}> Practice mode (hide answers)</label>`)}
+    ${sdToolbar("Search designs, e.g. chat, payment, Google", `${coSelect()}<label class="sdpract"><input type="checkbox" id="sdPractice"${SDV.practice ? " checked" : ""}> Practice mode (hide answers)</label>`)}
     <div class="sdlist wide">${list.length ? list.map(hldCard).join("") : `<p class="qempty">No designs match.</p>`}</div>`;
   sdWireToolbar(root);
   root.querySelector("#sdPractice").onchange = e => { SDV.practice = e.target.checked; renderSDX(); };
+  root.querySelector("#sdCo").onchange = e => { SDV.company = e.target.value; renderSDX(); };
 }
 
 /* ---------- LLD ---------- */
@@ -206,8 +213,8 @@ function lldCard(l){
   const open = SDV.open.has(l.id), done = !!state.sd.l[l.id];
   return `<article class="sdc${done ? " learned" : ""}" id="sdc-${l.id}">
     <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${l.id}" data-id="${l.id}">
-      <span class="sdct"><b>${esc(l.title)}</b>${doneMark(done)}</span>${lvBadge(l.level)}
-      <span class="sdwhat"><span class="sdco">${l.companies.map(esc).join(" · ")}</span> — patterns: ${esc(l.patterns.join(", "))}</span></button>
+      <span class="sdct"><b>${esc(l.title)}</b>${doneMark(done)}</span><span class="sdbadges">${freqBadge(l.freq)}${lvBadge(l.level)}</span>
+      <span class="sdwhat"><span class="sdco">Asked at ${l.companies.map(esc).join(" · ")}</span> — patterns: ${esc(l.patterns.join(", "))}</span></button>
     <div class="sdcb" id="sdb-${l.id}"${open ? "" : " hidden"}>${open ? lldBody(l) : ""}</div></article>`;
 }
 function lldBody(l){
@@ -219,15 +226,40 @@ function lldBody(l){
     <label class="sdlearn"><input type="checkbox" data-lld="${l.id}"${state.sd.l[l.id] ? " checked" : ""}> I have coded this myself</label>`;
 }
 function renderLLD(root){
-  const q = SDV.q.trim().toLowerCase(), list = SDX.lld.filter(l => lvOK(l.level) && hit(q, l.title, l.patterns.join(" "), l.companies.join(" "), l.code));
+  const q = SDV.q.trim().toLowerCase(), list = SDX.lld.filter(l => lvOK(l.level) && coOK(l) && hit(q, l.title, l.patterns.join(" "), l.companies.join(" "), l.code));
   const c = sdCounts();
   root.innerHTML = `<div class="eyebrow">System design · machine coding</div><h2>Low-level design questions (Java)</h2>
     <p class="lead">${SDX.lld.length} object-oriented design / machine-coding problems. Every solution is complete Java that compiles and runs, applying SOLID and design patterns. Read the method in <button type="button" class="sdlink" data-go="lld-approach">How to answer an LLD round</button>.</p>
     <div class="sdprog"><div class="trbar"><i style="width:${c.ll / c.l * 100}%"></i></div><span><b>${c.ll}</b> of ${c.l} coded</span></div>
-    ${sdToolbar("Search, e.g. parking, Strategy, Amazon", `<label class="sdpract"><input type="checkbox" id="sdPractice"${SDV.practice ? " checked" : ""}> Practice mode (hide code)</label>`)}
+    ${sdToolbar("Search, e.g. parking, Strategy, Amazon", `${coSelect()}<label class="sdpract"><input type="checkbox" id="sdPractice"${SDV.practice ? " checked" : ""}> Practice mode (hide code)</label>`)}
     <div class="sdlist wide">${list.length ? list.map(lldCard).join("") : `<p class="qempty">No problems match.</p>`}</div>`;
   sdWireToolbar(root);
   root.querySelector("#sdPractice").onchange = e => { SDV.practice = e.target.checked; renderSDX(); };
+  root.querySelector("#sdCo").onchange = e => { SDV.company = e.target.value; renderSDX(); };
+}
+
+/* ---------- Questions by company ---------- */
+function renderCompanies(root){
+  if (SDV.q.trim()) { renderSearch(root); return; }
+  const pick = SDV.coPick, byF = (a, b) => FREQ_ORDER[a.freq] - FREQ_ORDER[b.freq] || "BIA".indexOf(a.level[0]) - "BIA".indexOf(b.level[0]);
+  const hs = SDX.hld.filter(h => h.companies.includes(pick) && lvOK(h.level)).sort(byF), ls = SDX.lld.filter(l => l.companies.includes(pick) && lvOK(l.level)).sort(byF);
+  const MAJOR = ["Google", "Amazon", "Microsoft", "Meta", "Uber", "Apple", "Flipkart", "Swiggy"];
+  const row = (q, kind) => `<tr><th scope="row"><button type="button" class="sdlink" data-go="${q.id}">${esc((t => t[0].toUpperCase() + t.slice(1))(q.title.replace(/^Design (a |an )?/, "")))}</button></th><td>${kind}</td><td>${freqBadge(q.freq)}</td>${MAJOR.map(c => `<td class="mk">${q.companies.includes(c) ? '<span aria-label="yes">●</span>' : '<span class="no" aria-label="no">·</span>'}</td>`).join("")}<td class="oth">${esc(q.companies.filter(c => !MAJOR.includes(c)).join(", "))}</td></tr>`;
+  const all = [...SDX.hld.map(q => [q, "HLD"]), ...SDX.lld.map(q => [q, "LLD"])].filter(([q]) => lvOK(q.level)).sort((a, b) => byF(a[0], b[0]));
+  root.innerHTML = `<div class="eyebrow">System design · company-wise</div><h2>Which questions are asked at which company</h2>
+    <p class="lead">Pick a company to see the HLD and LLD questions reported in its interviews, most frequently asked first. The table below shows every question against the big companies at a glance.</p>
+    <div class="sdbox tip"><b>How to read this</b><p>Company tags come from public candidate reports (LeetCode Discuss, Glassdoor, Blind, GeeksforGeeks interview experiences) and prep lists. <b>★★★ Very common</b> = in the top 10 most-repeated design questions across prep sources (PracHub, Nov 2026); <b>★★ Common</b> = top 20; <b>★ Sometimes</b> = top 30. Companies change their question pools, so treat this as a strong guide, not a guarantee, and prepare the ★★★ ones first.</p></div>
+    ${sdToolbar("Search all of system design", "")}
+    <div class="sdcos" role="group" aria-label="Company">${SD_COMPANIES.map(([c, n]) => `<button type="button" data-co="${esc(c)}" aria-pressed="${pick === c}">${esc(c)} <small>${n}</small></button>`).join("")}</div>
+    <h3 class="sdcoh">${esc(pick)}: ${hs.length} HLD · ${ls.length} LLD questions</h3>
+    ${hs.length ? `<h3 class="sdsec">High-level design</h3><div class="sdlist wide">${hs.map(hldCard).join("")}</div>` : ""}
+    ${ls.length ? `<h3 class="sdsec">Low-level design (Java)</h3><div class="sdlist wide">${ls.map(lldCard).join("")}</div>` : ""}
+    <h3 class="sdsec">All questions × companies</h3>
+    <div class="tscroll"><table class="sdt sdmatrix"><thead><tr><th scope="col">Question</th><th scope="col">Type</th><th scope="col">How often</th>${MAJOR.map(c => `<th scope="col">${c}</th>`).join("")}<th scope="col">Also asked at</th></tr></thead>
+      <tbody>${all.map(([q, k]) => row(q, k)).join("")}</tbody></table></div>
+    <p class="labnote">Sources: <a href="https://prachub.com/resources/top-30-system-design-questions-ranked-by-how-often-they-re-asked" target="_blank" rel="noopener">PracHub frequency ranking</a> · <a href="https://www.designgurus.io/blog/system-design-interviews-at-google-meta-amazon" target="_blank" rel="noopener">DesignGurus company guides</a> · <a href="https://leetcode.com/discuss/interview-experience/" target="_blank" rel="noopener">LeetCode Discuss interview experiences</a> · <a href="https://workat.tech/machine-coding" target="_blank" rel="noopener">workat.tech machine coding</a></p>`;
+  sdWireToolbar(root);
+  root.querySelectorAll(".sdcos button").forEach(b => b.onclick = () => { SDV.coPick = b.dataset.co; renderSDX(); });
 }
 
 /* ---------- Q&A ---------- */
@@ -257,7 +289,7 @@ function renderStart(root){
     <p class="lead">Everything you need for system design interviews at Google, Microsoft, Amazon and other product companies, explained for someone who has never designed a system. Read the concepts in order, try the interactive labs, then practise HLD and LLD questions out loud.</p>
     <div class="sdstats">
       <div><b>${c.cl}<span>/${c.c}</span></b>concepts learned</div><div><b>${c.hl}<span>/${c.h}</span></b>HLD designs practised</div>
-      <div><b>${c.ll}<span>/${c.l}</span></b>LLD problems coded</div><div><b>${SDX.qa.length}</b>interview Q&amp;As</div><div><b>7</b>interactive labs</div></div>
+      <div><b>${c.ll}<span>/${c.l}</span></b>LLD problems coded</div><div><b>${SDX.qa.length}</b>interview Q&amp;As</div><div><b>${SD_COMPANIES.length}</b>companies tagged</div></div>
     <div class="sdbox tip"><b>How to use this section</b><ol>
       <li><b>Learn</b>: work through Stages 1 → 3 below. Open each concept card, read the explanation, analogy and diagram, then tick <i>I understand this concept</i>.</li>
       <li><b>Play</b>: the Interactive labs let you see caching, rate limiting, consistent hashing, load balancing, quorums and feed fan-out working.</li>
@@ -311,6 +343,7 @@ function renderSDX(){
   else if (filter === 30) renderLLD(root);
   else if (filter === 31) renderQA(root);
   else if (filter === 32) renderCheat(root);
+  else if (filter === 33) renderCompanies(root);
 }
 document.addEventListener("click", e => {
   const root = document.getElementById("sdx"); if (!root || root.hidden || !root.contains(e.target)) return;

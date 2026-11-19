@@ -66,6 +66,17 @@ def build():
     for _, _, lst in M.ROADMAP:
         for i in lst:
             assert i in ids, "roadmap missing " + i
+    # How often each question shows up across public prep lists (PracHub's count of 11 sources, Nov 2026):
+    # 'Very common' = top 10, 'Common' = 11-20, 'Sometimes' = the rest of the top 30.
+    very = ["urlshortener-hld", "chat-hld", "newsfeed-hld", "twitter-hld", "youtube-hld", "uber-hld", "autocomplete-hld", "ratelimiter-hld", "dropbox-hld", "crawler-hld", "notification-hld"]
+    common = ["proximity-hld", "instagram-hld", "ticketmaster-hld", "cache-hld", "payment-hld", "googledocs-hld", "maps-hld", "adclick-hld", "metrics-hld", "jobscheduler-hld"]
+    some = ["mq-hld", "fooddelivery-hld", "stockexchange-hld", "llmserving-hld", "hotel-hld", "kvstore-hld", "leaderboard-hld", "idgen-hld", "s3-hld", "tinder-hld"]
+    for h in hld:
+        h["freq"] = "Very common" if h["id"] in very else "Common" if h["id"] in common else "Sometimes" if h["id"] in some else ""
+    lvery = ["parkinglot-lld", "lru-lld", "splitwise-lld", "bookmyshow-lld", "elevator-lld", "ratelimiter-lld"]
+    lcommon = ["vending-lld", "snakeladder-lld", "tictactoe-lld", "library-lld", "logger-lld", "kvstore-lld", "pubsub-lld", "atm-lld", "taskscheduler-lld"]
+    for l in lld:
+        l["freq"] = "Very common" if l["id"] in lvery else "Common" if l["id"] in lcommon else "Sometimes"
     tabs = [dict(key=k, label=l, intro=i, sections=[dict(name=n, ids=[c["id"] for c in cs]) for n, cs in secs]) for k, l, i, secs in CONCEPT_TABS]
     return dict(tabs=tabs, concepts=concepts, hld=hld, lld=lld, qa=QA,
                 roadmap=[dict(name=n, why=w, ids=l) for n, w, l in M.ROADMAP],

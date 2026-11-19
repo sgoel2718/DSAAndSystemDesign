@@ -195,7 +195,7 @@ H("instagram-hld", "Design Instagram", "Intermediate",
   ["Pre-signed uploads keep app servers out of the data path.", "Multiple resolutions per device.", "Stories: TTL storage + separate tray feed.", "Hot posts: cache like counts; shard counters."]),
 
 H("chat-hld", "Design a chat system (WhatsApp / Messenger / Slack)", "Intermediate",
-  ["Meta", "Microsoft", "Amazon", "Google", "Slack"],
+  ["Meta", "Microsoft", "Amazon", "Google", "Slack", "OpenAI"],
   "Persistent connections, message ordering, offline delivery, presence, group chat.",
   ["1:1 and group chat (up to ~500 members)", "Online/last-seen status", "Sent/delivered/read receipts", "Media sharing", "Multi-device sync"],
   ["Low latency (< 100 ms delivery when online)", "No message loss; ordered per conversation", "Highly available", "End-to-end encryption (WhatsApp)"],
