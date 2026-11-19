@@ -9,19 +9,20 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: a dotted engineering-pad board; one sticky note per day grouped by week; click a note to open its full lesson sheet. */
-:root{
+/* difficulty chart colours: validated (light on white, dark on panel) with the dataviz palette checker */
+:root{--ce:#1f8a5b;--cm:#c08400;--ch:#c2366b;
   --bg:#eef1f4; --dot:#c9d1da; --ink:#1b2430; --muted:#5d6877; --panel:#ffffff; --line:#d5dce4;
   --accent:#1f5f8b; --warm:#b4441f;
   --n1:#fff1a8; --n2:#c9ecd6; --n3:#ffd6c2; --n4:#d6e4ff; --note-ink:#2a2a22;
   --easy:#2e7d4f; --med:#a06e00; --hard:#b4441f;
   --hand:"Kalam","Comic Sans MS",cursive; --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ce:#33a877;--cm:#bb8a22;--ch:#e45f93;
   --bg:#151a21; --dot:#2a323d; --ink:#e6ebf1; --muted:#9aa6b4; --panel:#1d242e; --line:#2f3946;
   --accent:#7fb6dd; --warm:#f08a63;
   --n1:#5c5222; --n2:#22493a; --n3:#5a3324; --n4:#263c63; --note-ink:#f3efe2;
   --easy:#6fcf97; --med:#e8b84a; --hard:#f08a63; color-scheme:dark}}
-:root[data-theme="dark"]{
+:root[data-theme="dark"]{--ce:#33a877;--cm:#bb8a22;--ch:#e45f93;
   --bg:#151a21; --dot:#2a323d; --ink:#e6ebf1; --muted:#9aa6b4; --panel:#1d242e; --line:#2f3946;
   --accent:#7fb6dd; --warm:#f08a63;
   --n1:#5c5222; --n2:#22493a; --n3:#5a3324; --n4:#263c63; --note-ink:#f3efe2;
@@ -336,6 +337,54 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .vzspeed select{font:13px var(--sans);padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
 @media (max-width:760px){.vzgrid{grid-template-columns:1fr}.vzcode{max-height:30vh}.vzstate{max-height:none}.vzhead h2{font-size:20px}}
 @media (prefers-reduced-motion:reduce){.cell{transition:none}}
+.tr{margin-top:20px;display:grid;gap:16px}
+.tr h2{font:700 26px var(--hand);margin:0}
+.tr .lead{color:var(--muted);margin:0;max-width:70ch}
+.trtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.trtile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.trl{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.trn{display:flex;align-items:baseline;gap:6px;margin:2px 0 8px;font-variant-numeric:tabular-nums}
+.trn b{font:700 30px/1 var(--mono)}.trn span{font:14px var(--mono);color:var(--muted)}
+.trbar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}.trbar i{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.trtile.e .trbar i{background:var(--ce)}.trtile.m .trbar i{background:var(--cm)}.trtile.h .trbar i{background:var(--ch)}
+.trtile.e .trl::before,.trtile.m .trl::before,.trtile.h .trl::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:0}
+.trtile.e .trl::before{background:var(--ce)}.trtile.m .trl::before{background:var(--cm)}.trtile.h .trl::before{background:var(--ch)}
+.trpct{font:12px var(--mono);color:var(--muted);margin-top:4px}
+.trstats{display:flex;flex-wrap:wrap;gap:8px}
+.trstats span{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-size:13.5px;color:var(--muted)}
+.trstats b{color:var(--ink);font:600 14px var(--mono);margin-right:3px}
+.trcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;position:relative;min-width:0}
+.trcard h3{font:600 15px var(--sans);margin:0 0 8px}
+.trhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.trhead h3{margin:0}
+.trrange{display:flex;gap:4px}
+.trrange button{font:500 12.5px var(--sans);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:99px;padding:4px 11px;cursor:pointer}
+.trrange button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.trrange button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.trlegend{display:flex;gap:14px;margin:8px 0 2px;font-size:13px;color:var(--muted)}
+.trlegend i,.trtip i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.trlegend .e i,.trtip .e i{background:var(--ce)}.trlegend .m i,.trtip .m i{background:var(--cm)}.trlegend .h i,.trtip .h i{background:var(--ch)}
+.trchart{overflow-x:auto}.trchart svg{width:100%;min-width:520px;height:auto;display:block}
+.trchart .gl{stroke:var(--line);stroke-width:1}.trchart .base{stroke:var(--muted);stroke-width:1}
+.trchart .ax{fill:var(--muted);font:11px var(--mono)}.trchart .ax.today{fill:var(--ink);font-weight:600}
+.trchart .vl{fill:var(--ink);font:600 11px var(--mono)}
+.trchart .e{fill:var(--ce)}.trchart .m{fill:var(--cm)}.trchart .h{fill:var(--ch)}
+.trchart .hit{fill:transparent;cursor:default}.trchart .hit.on,.trchart .hit:focus{fill:color-mix(in srgb,var(--ink) 6%,transparent);outline:none}
+.trtip{position:absolute;transform:translate(-50%,-100%);background:var(--ink);color:var(--bg);border-radius:8px;padding:7px 10px;font-size:12.5px;display:grid;gap:2px;pointer-events:none;white-space:nowrap;z-index:2}
+.trtip b{font-weight:600}
+.trlog{display:grid}
+.trlh,.trrow summary{display:grid;grid-template-columns:minmax(0,1fr) repeat(4,64px);gap:8px;align-items:center;padding:7px 4px;font-variant-numeric:tabular-nums}
+.trlh{font:600 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+.trlh span:not(.dt),.trrow summary span:not(.dt){text-align:right}
+.trrow{border-bottom:1px solid var(--line)}
+.trrow summary{cursor:pointer;list-style:none;font:13.5px var(--mono)}
+.trrow summary::-webkit-details-marker{display:none}
+.trrow summary .dt{font-family:var(--sans)}.trrow summary .dt::before{content:"▸ ";color:var(--muted)}
+.trrow[open] summary .dt::before{content:"▾ "}
+.trrow summary .tt{font-weight:600}
+.trrow summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.trrow ul{margin:0 0 10px;padding-left:22px;font-size:14px;display:grid;gap:3px}
+@media (max-width:720px){.trtiles{grid-template-columns:repeat(2,minmax(0,1fr))}.trlh,.trrow summary{grid-template-columns:minmax(0,1fr) repeat(4,44px);gap:4px}}
 footer{margin-top:40px;color:var(--muted);font-size:13px}
 @media (max-width:720px){header,.proj{grid-template-columns:1fr}.today{min-width:0}}
 @media (prefers-reduced-motion:reduce){.note,.bar i{transition:none}.note{transform:none}}
@@ -356,6 +405,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
   <section class="kit" id="kit"></section>
   <section class="qs" id="qs" hidden></section>
   <section class="pp" id="pp" hidden></section>
+  <section class="tr" id="tr" hidden></section>
   <section class="sd" id="sd" hidden></section>
   <footer id="foot"></footer>
 </div>
@@ -435,6 +485,10 @@ function saveNote(region){
   save(); closeEditor(region); refreshNotes(slug);
   if (!document.getElementById("qs").hidden && qFilter.notes && !t) drawQ();
 }
+function setSolved(k, on){
+  if (on) { if (!state.probs[k]) state.probs[k] = Date.now(); }   // keep the first time it was solved
+  else delete state.probs[k];
+}
 function markCount(){ return Object.values(state.marks).filter(Boolean).length; }
 document.addEventListener("click", e => {
   const vb = e.target.closest(".vizbtn");
@@ -495,7 +549,7 @@ function renderTop(){
 }
 function renderTabs(){
   const t = document.getElementById("tabs");
-  const opts = [[0,"All 30 days"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[10,"Padho with Pratyush Practice Sheet"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns: how to approach"]];
+  const opts = [[0,"All 30 days"],[11,"Progress tracker"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[10,"Padho with Pratyush Practice Sheet"],[7,"System Design handbook"],[9,"Build days"],[8,"Patterns: how to approach"]];
   t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; if (filter === 5) qFilter.marks = true; if (filter === 6) { qFilter.marks = false; qFilter.notes = false; } renderTabs(); renderBoard(); });
 }
@@ -512,9 +566,10 @@ function noteHTML(d, i){
 }
 function renderBoard(){
   const b = document.getElementById("board");
-  const kitView = filter === 8, sdView = filter === 7, qView = filter === 6 || filter === 5, ppView = filter === 10, other = kitView || sdView || qView || ppView;
+  const kitView = filter === 8, sdView = filter === 7, qView = filter === 6 || filter === 5, ppView = filter === 10, trView = filter === 11, other = kitView || sdView || qView || ppView || trView;
   b.hidden = other; document.getElementById("proj").hidden = other;
-  document.getElementById("kit").hidden = !kitView; document.getElementById("sd").hidden = !sdView; document.getElementById("pp").hidden = !ppView;
+  document.getElementById("kit").hidden = !kitView; document.getElementById("sd").hidden = !sdView; document.getElementById("pp").hidden = !ppView; document.getElementById("tr").hidden = !trView;
+  if (trView) renderTracker();
   if (ppView) renderPP(); document.getElementById("qs").hidden = !qView;
   if (qView) renderQuestions();
   if (other) { b.innerHTML = ""; return; }
@@ -543,7 +598,7 @@ function openSheet(day){
     <h4>Sticky notes</h4><div class="pnote"><ul>${d.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>
     <label class="donebox"><input type="checkbox" id="done-${d.day}" ${state.days[d.day] ? "checked":""}> Mark Day ${d.day} complete</label>`;
   s.hidden = false; document.getElementById("scrim").hidden = false;
-  s.querySelectorAll(".prob input").forEach(i => i.onchange = () => { state.probs[i.dataset.k] = i.checked; save(); renderTop(); renderBoard(); });
+  s.querySelectorAll(".prob input").forEach(i => i.onchange = () => { setSolved(i.dataset.k, i.checked); save(); renderTop(); renderBoard(); });
   s.querySelector(`#done-${d.day}`).onchange = e => { state.days[d.day] = e.target.checked; save(); renderTop(); renderBoard(); };
   wireCopy(s);
   const c = document.getElementById("closeSheet"); c.onclick = closeSheet; c.focus();
@@ -746,7 +801,7 @@ function renderProj(){
       <div class="chips">${P.stack.map(x => `<span>${esc(x)}</span>`).join("")}</div></div>
     <div><div class="eyebrow">Build milestones</div><ul class="ms">${PLAN.days.filter(d => d.project).map(d =>
       `<li><b>Day ${d.day}</b><span>${esc(d.project.replace(/^NexusKV: /,""))}</span></li>`).join("")}</ul></div>`;
-  document.getElementById("foot").textContent = `Last updated ${"18 Nov 2026"}. Progress ticks, bookmarks and comments are saved in this browser only.`;
+  document.getElementById("foot").textContent = `Last updated ${"19 Nov 2026"}. Progress ticks, bookmarks and comments are saved in this browser only.`;
 }
 function renderKit(){
   document.getElementById("kit").innerHTML = `<div class="eyebrow">Toolkit</div><h2>${PLAN.patterns.length} patterns and how to approach them</h2>
@@ -891,7 +946,7 @@ function drawQ(){
     ? `<div class="qempty">${BM_ICON}<p><b>No bookmarks yet.</b> Tap the bookmark next to any question (here, in a day's lesson sheet, or in a pattern's question list) to save it for revision.</p></div>`
     : `<p class="lead">No questions match. Clear the search or filters.</p>`;
   list.innerHTML = (html + extraHTML) || empty;
-  list.querySelectorAll(".prob input").forEach(i => i.onchange = () => { state.probs[i.dataset.k] = i.checked; save(); renderTop(); renderQuestions(); });
+  list.querySelectorAll(".prob input").forEach(i => i.onchange = () => { setSolved(i.dataset.k, i.checked); save(); renderTop(); renderQuestions(); });
   wireCopy(list);
 }
 function renderPP(){
@@ -928,7 +983,7 @@ function renderPP(){
     });
     wireCopy(root);
     root.querySelectorAll(".ppck").forEach(c => c.onchange = () => {
-      PLAN.pp.keys[+c.dataset.i].forEach(k => { if (c.checked) state.probs[k] = true; else delete state.probs[k]; });
+      PLAN.pp.keys[+c.dataset.i].forEach(k => setSolved(k, c.checked));
       save(); renderTop(); ppSync();
     });
   }
@@ -948,6 +1003,127 @@ function ppSync(){
   });
   const pg = document.getElementById("ppProg");
   if (pg) pg.innerHTML = `<b>${done}</b> of ${rows} questions done<span class="bar"><i style="width:${rows ? done / rows * 100 : 0}%"></i></span><span class="pphint">Ticks sync with the Questions tab, day sheets and the counter at the top.</span>`;
+}
+/* ---------- Progress tracker: questions solved per day, by difficulty ---------- */
+let TR = {range: (typeof matchMedia === "function" && matchMedia("(max-width: 720px)").matches) ? 14 : 30};
+function keyInfo(){
+  if (keyInfo.m) return keyInfo.m;
+  const m = {};
+  PLAN.days.forEach(d => d.problems.forEach(([name, slug, diff]) => m[slug + "@" + d.day] = {name, slug, diff, day: d.day}));
+  Object.entries(PLAN.mine).forEach(([day, rs]) => rs.forEach(r => m[r.slug + "@" + day] = {name: r.name, slug: r.slug, diff: r.diff, day: +day, mine: true}));
+  return (keyInfo.m = m);
+}
+const dkey = t => { const d = new Date(t); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const dlabel = (k, opt) => new Date(k + "T00:00:00").toLocaleDateString("en-IN", opt || {day: "2-digit", month: "short"});
+function trackerData(){
+  const info = keyInfo(), byDay = {}, legacy = {Easy: 0, Medium: 0, Hard: 0, list: []}, tot = {Easy: 0, Medium: 0, Hard: 0}, all = {Easy: 0, Medium: 0, Hard: 0};
+  Object.values(info).forEach(q => all[q.diff]++);
+  Object.entries(state.probs).forEach(([k, v]) => {
+    const q = info[k]; if (!v || !q) return;
+    tot[q.diff]++;
+    if (typeof v !== "number") { legacy[q.diff]++; legacy.list.push(q); return; }
+    const dk = dkey(v);
+    const b = byDay[dk] || (byDay[dk] = {Easy: 0, Medium: 0, Hard: 0, list: []});
+    b[q.diff]++; b.list.push(Object.assign({at: v}, q));
+  });
+  return {byDay, legacy, tot, all};
+}
+function renderTracker(){
+  const root = document.getElementById("tr"), D = trackerData(), today = dkey(Date.now());
+  const days = Object.keys(D.byDay).sort(), sum = b => b.Easy + b.Medium + b.Hard;
+  const totalSolved = D.tot.Easy + D.tot.Medium + D.tot.Hard, totalAll = D.all.Easy + D.all.Medium + D.all.Hard;
+  // streak: consecutive days with >= 1 solve ending today (or yesterday)
+  let streak = 0; { const d = new Date(); if (!D.byDay[today]) d.setDate(d.getDate() - 1);
+    while (D.byDay[dkey(d.getTime())]) { streak++; d.setDate(d.getDate() - 1); } }
+  const best = days.reduce((a, k) => sum(D.byDay[k]) > (a ? sum(D.byDay[a]) : 0) ? k : a, null);
+  let week = 0; for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); const b = D.byDay[dkey(d.getTime())]; if (b) week += sum(b); }
+  const tile = (label, cls, n, of) => `<div class="trtile ${cls}"><div class="trl">${label}</div><div class="trn"><b>${n}</b><span>/ ${of}</span></div>
+    <div class="trbar"><i style="width:${of ? n / of * 100 : 0}%"></i></div><div class="trpct">${of ? Math.round(n / of * 100) : 0}% done</div></div>`;
+  // chart window
+  const end = new Date(); end.setHours(0, 0, 0, 0);
+  let start = new Date(end);
+  if (TR.range === 0) { start = days.length ? new Date(days[0] + "T00:00:00") : new Date(PLAN.start + "T00:00:00"); const ps = new Date(PLAN.start + "T00:00:00"); if (ps < start) start = ps; }
+  else start.setDate(start.getDate() - (TR.range - 1));
+  const win = []; for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) win.push(dkey(d.getTime()));
+  root.innerHTML = `<div class="eyebrow">Progress</div><h2>Progress tracker</h2>
+    <p class="lead">Every question you tick as solved, anywhere on the site, is counted on the day you ticked it.</p>
+    <div class="trtiles">${tile("Solved", "all", totalSolved, totalAll)}${tile("Easy", "e", D.tot.Easy, D.all.Easy)}${tile("Medium", "m", D.tot.Medium, D.all.Medium)}${tile("Hard", "h", D.tot.Hard, D.all.Hard)}</div>
+    <div class="trstats">
+      <span><b>${D.byDay[today] ? sum(D.byDay[today]) : 0}</b> today</span>
+      <span><b>${week}</b> in the last 7 days</span>
+      <span><b>${streak}</b> day streak</span>
+      <span><b>${best ? sum(D.byDay[best]) : 0}</b> best day${best ? ` (${dlabel(best)})` : ""}</span>
+      <span><b>${days.length ? (days.reduce((a, k) => a + sum(D.byDay[k]), 0) / days.length).toFixed(1) : "0"}</b> per active day</span>
+    </div>
+    <div class="trcard">
+      <div class="trhead"><h3>Solved per day</h3>
+        <div class="trrange" role="group" aria-label="Date range">${[[14, "14 days"], [30, "30 days"], [0, "All time"]].map(([v, l]) =>
+          `<button type="button" data-r="${v}" aria-pressed="${TR.range === v}">${l}</button>`).join("")}</div></div>
+      <div class="trlegend"><span class="e"><i></i>Easy</span><span class="m"><i></i>Medium</span><span class="h"><i></i>Hard</span></div>
+      <div class="trchart" id="trChart">${trChart(win, D.byDay, today)}</div>
+      <div class="trtip" id="trTip" hidden></div>
+    </div>
+    <div class="trcard"><h3>Daily log</h3>${trLog(days, D)}</div>`;
+  root.querySelectorAll(".trrange button").forEach(b => b.onclick = () => { TR.range = +b.dataset.r; renderTracker(); });
+  const tip = document.getElementById("trTip"), chart = document.getElementById("trChart");
+  chart.querySelectorAll(".hit").forEach(h => {
+    const show = () => {
+      const k = h.dataset.d, b = D.byDay[k] || {Easy: 0, Medium: 0, Hard: 0};
+      tip.innerHTML = `<b>${dlabel(k, {weekday: "short", day: "2-digit", month: "short"})}</b><span>${sum(b)} solved</span>
+        <span class="e"><i></i>Easy ${b.Easy}</span><span class="m"><i></i>Medium ${b.Medium}</span><span class="h"><i></i>Hard ${b.Hard}</span>`;
+      tip.hidden = false;
+      const r = h.getBoundingClientRect(), c = chart.parentElement.getBoundingClientRect();
+      tip.style.left = Math.min(Math.max(r.left - c.left + r.width / 2, 70), c.width - 70) + "px";
+      tip.style.top = (r.top - c.top - 8) + "px";
+      chart.querySelectorAll(".hit").forEach(x => x.classList.toggle("on", x === h));
+    };
+    h.addEventListener("mouseenter", show); h.addEventListener("focus", show);
+    h.addEventListener("mouseleave", () => { tip.hidden = true; h.classList.remove("on"); });
+    h.addEventListener("blur", () => { tip.hidden = true; h.classList.remove("on"); });
+  });
+}
+function trChart(win, byDay, today){
+  const W = 760, H = 230, L = 34, R = 10, T = 14, B = 34, n = win.length;
+  const vals = win.map(k => byDay[k] || {Easy: 0, Medium: 0, Hard: 0});
+  const maxV = Math.max(1, ...vals.map(b => b.Easy + b.Medium + b.Hard));
+  const step = maxV <= 5 ? 1 : maxV <= 10 ? 2 : maxV <= 25 ? 5 : 10, top = Math.ceil(maxV / step) * step;
+  const y = v => T + (H - T - B) * (1 - v / top), slot = (W - L - R) / n, bw = Math.max(3, Math.min(22, slot * 0.62));
+  const labelEvery = n <= 16 ? 1 : n <= 31 ? 3 : Math.ceil(n / 10);
+  let g = "";
+  for (let v = 0; v <= top; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${L - 6}" y="${y(v) + 4}" class="ax" text-anchor="end">${v}</text>`;
+  win.forEach((k, i) => {
+    const b = vals[i], x = L + slot * i + (slot - bw) / 2;
+    let base = 0, segs = "";
+    [["Easy", "e"], ["Medium", "m"], ["Hard", "h"]].forEach(([d, c], si, arr) => {
+      const v = b[d]; if (!v) return;
+      const y0 = y(base), y1 = y(base + v), gap = base > 0 ? 2 : 0, hgt = Math.max(1, y0 - y1 - gap);
+      const isTop = !arr.slice(si + 1).some(([dd]) => b[dd]);
+      segs += isTop
+        ? `<path class="${c}" d="M${x},${y0 - gap} V${y1 + 4} Q${x},${y1} ${x + 4},${y1} H${x + bw - 4} Q${x + bw},${y1} ${x + bw},${y1 + 4} V${y0 - gap} Z"/>`
+        : `<rect class="${c}" x="${x}" y="${y1}" width="${bw}" height="${hgt}"/>`;
+      base += v;
+    });
+    const tot = b.Easy + b.Medium + b.Hard;
+    if (tot && n <= 31) segs += `<text x="${x + bw / 2}" y="${y(tot) - 5}" class="vl" text-anchor="middle">${tot}</text>`;
+    if (i % labelEvery === 0 || k === today) g += `<text x="${x + bw / 2}" y="${H - B + 16}" class="ax${k === today ? " today" : ""}" text-anchor="middle">${k === today ? "Today" : dlabel(k)}</text>`;
+    g += segs + `<rect class="hit" data-d="${k}" x="${L + slot * i}" y="${T}" width="${slot}" height="${H - T - B}" tabindex="0" aria-label="${dlabel(k)}: ${tot} solved, ${b.Easy} easy, ${b.Medium} medium, ${b.Hard} hard"/>`;
+  });
+  g += `<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" class="base"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Questions solved per day, stacked by difficulty">${g}</svg>`;
+}
+function trLog(days, D){
+  const sum = b => b.Easy + b.Medium + b.Hard;
+  const rows = days.slice().reverse().map(k => {
+    const b = D.byDay[k];
+    return `<details class="trrow"><summary><span class="dt">${dlabel(k, {weekday: "short", day: "2-digit", month: "short", year: "numeric"})}</span>
+      <span class="tt">${sum(b)}</span><span class="e">${b.Easy}</span><span class="m">${b.Medium}</span><span class="h">${b.Hard}</span></summary>
+      <ul>${b.list.sort((p, q) => p.at - q.at).map(q => `<li><span class="tag ${q.diff}">${q.diff}</span> ${esc(q.name)} <span class="qn">· Day ${q.day}${q.mine ? " · your list" : ""} · ${new Date(q.at).toLocaleTimeString("en-IN", {hour: "2-digit", minute: "2-digit"})}</span></li>`).join("")}</ul></details>`;
+  }).join("");
+  const L = D.legacy, ln = L.Easy + L.Medium + L.Hard;
+  const legacy = ln ? `<details class="trrow"><summary><span class="dt">Before tracking started</span><span class="tt">${ln}</span><span class="e">${L.Easy}</span><span class="m">${L.Medium}</span><span class="h">${L.Hard}</span></summary>
+      <ul>${L.list.map(q => `<li><span class="tag ${q.diff}">${q.diff}</span> ${esc(q.name)}</li>`).join("")}</ul></details>` : "";
+  if (!rows && !legacy) return `<div class="qempty"><p><b>Nothing solved yet.</b> Tick the checkbox next to any question (day sheets, Questions tab or the Practice Sheet tab) and it will show up here under today's date.</p></div>`;
+  return `<div class="trlog"><div class="trlh"><span class="dt">Date</span><span class="tt">Total</span><span class="e">Easy</span><span class="m">Medium</span><span class="h">Hard</span></div>${rows}${legacy}</div>`;
 }
 function renderSD(){
   const S = PLAN.sd, rot = i => ((i*31)%5-2)*0.5;
@@ -977,4 +1153,3 @@ function onScroll(){ totop.hidden = window.scrollY < 300; }
 window.addEventListener("scroll", onScroll, {passive:true}); onScroll();
 totop.onclick = () => window.scrollTo({top:0, behavior: reduce ? "auto" : "smooth"});
 </script>
-</html>
