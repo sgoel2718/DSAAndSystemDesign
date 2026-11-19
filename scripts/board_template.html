@@ -386,6 +386,7 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .mysub summary{cursor:pointer;padding:7px 10px;font:600 13.5px var(--sans);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mysubdot{width:8px;height:8px;border-radius:50%;background:var(--ce)}
 .mysubbody{padding:0 10px 10px;display:grid;gap:8px}
+.ppmine{margin-left:6px;border-color:var(--ce)!important}
 .mysublink{display:inline-block;margin-left:6px;font:600 12px var(--sans);white-space:nowrap}
 .mysubslot.link{display:inline}
 .sync .synclead{margin:6px 0 10px;color:var(--muted);font-size:14px}
@@ -715,6 +716,9 @@ async function syncLC(manual){
   if (manual && filter !== 11) renderTracker();
 }
 function subSlot(slug, mode){ return `<div class="mysubslot${mode ? " " + mode : ""}" data-slug="${slug}">${subHTML(slug, mode)}</div>`; }
+function ppSubBtn(slugs, i){
+  return slugs.some(sl => SYNC.files[sl]) ? `<button type="button" class="ppap ppmine" data-i="${i}" aria-controls="pps-${i}">My code</button>` : "";
+}
 function subHTML(slug, mode){
   const r = SYNC.files[slug]; if (!r) return "";
   if (mode === "link") return `<a class="mysublink" href="${blobURL(r.code[0].path)}" target="_blank" rel="noopener">My code ↗</a>`;
@@ -723,7 +727,8 @@ function subHTML(slug, mode){
       <a class="copy" href="${blobURL(c.path)}" target="_blank" rel="noopener">Open on GitHub</a><button type="button" class="copy subcopy" data-i="${i}">Copy</button></span></div>
       <pre class="code java" data-path="${esc(c.path)}">Loading…</pre></div>`).join("")}</div></details>`;
 }
-function refreshSubs(){ document.querySelectorAll(".mysubslot").forEach(el => el.innerHTML = subHTML(el.dataset.slug, el.classList.contains("link") ? "link" : "")); }
+function refreshSubs(){ document.querySelectorAll(".mysubslot").forEach(el => el.innerHTML = el.classList.contains("ppbtn")
+  ? ppSubBtn(el.dataset.slug.split(","), el.dataset.i) : subHTML(el.dataset.slug, el.classList.contains("link") ? "link" : "")); }
 const subCache = {};
 document.addEventListener("toggle", e => {
   const d = e.target; if (!d.classList || !d.classList.contains("mysub") || !d.open) return;
@@ -1106,17 +1111,25 @@ function renderPP(){
             const nApp = withSol.reduce((a, [sl]) => a + PLAN.solutions[sl].length, 0);
             const btn = nApp ? `<button type="button" class="ppap" id="ppap-${i}" data-i="${i}" aria-expanded="false" aria-controls="pps-${i}">${nApp} approaches</button>` : "";
             const names = Object.fromEntries(Object.values(PLAN.pattern_q).flat().map(q => [q.slug, q.name]));
-            const detail = nApp ? `<tr class="ppsolrow" id="pps-${i}" hidden><td class="rn"></td><td colspan="7"><div class="ppsolwrap">
+            const uniq = slugs.filter(([sl], j) => slugs.findIndex(([x]) => x === sl) === j);
+            const detail = keys.length ? `<tr class="ppsolrow" id="pps-${i}" hidden><td class="rn"></td><td colspan="7"><div class="ppsolwrap">
+                ${uniq.map(([sl]) => subSlot(sl, "", "pp")).join("")}
                 ${withSol.map(([sl, day]) => `${withSol.length > 1 ? `<div class="ppsolname">${esc(names[sl] || sl)}</div>` : ""}${solHTML(sl, +day, "pp" + i)}`).join("")}
               </div></td></tr>` : "";
-            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol">${btn}${slugs.map(([sl]) => subSlot(sl, "link")).join("")}</td></tr>${detail}`;
+            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol">${btn}${keys.length ? `<span class="mysubslot ppbtn" data-slug="${uniq.map(([sl]) => sl).join(",")}" data-i="${i}">${ppSubBtn(uniq.map(([sl]) => sl), i)}</span>` : ""}</td></tr>${detail}`;
           }).join("")}
         </tbody></table></div>`;
-    root.querySelectorAll(".ppap").forEach(b => b.onclick = () => {
-      const row = document.getElementById("pps-" + b.dataset.i), open = row.hidden;
-      row.hidden = !open;
-      b.setAttribute("aria-expanded", open);
-      if (open) row.querySelectorAll("details.sol").forEach(d => d.open = true);
+    root.addEventListener("click", e => {
+      const b = e.target.closest(".ppap"); if (!b) return;
+      const row = document.getElementById("pps-" + b.dataset.i), mineBtn = b.classList.contains("ppmine");
+      const want = mineBtn ? "mine" : "sol", open = row.hidden || row.dataset.show !== want;
+      row.hidden = !open; row.dataset.show = open ? want : "";
+      root.querySelectorAll(`.ppap[data-i="${b.dataset.i}"]`).forEach(x => x.setAttribute("aria-expanded", open && x === b));
+      // "My code" shows your submission open on top; "N approaches" opens the approaches
+      row.querySelectorAll("details.sol").forEach(d => d.open = open && !mineBtn);
+      row.querySelectorAll(".sol, .ppsolname").forEach(d => d.hidden = open && mineBtn);
+      row.querySelectorAll("details.mysub").forEach(d => d.open = open && mineBtn);
+      row.querySelectorAll(".mysubslot").forEach(d => d.hidden = open && !mineBtn);
     });
     wireCopy(root);
     root.querySelectorAll(".ppck").forEach(c => c.onchange = () => {
