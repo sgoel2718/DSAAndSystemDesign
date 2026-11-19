@@ -1319,7 +1319,7 @@ function renderSD(){
 /*__SDJS__*/
 if (SDV.group === "sd") filter = 20;
 renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
-startAbbr();
+startAbbr(); startHighlights();
 /* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes; if a newer build is live, reload once */
 const BUILD = "__BUILD__";
 if (location.protocol === "https:" && location.hostname.endsWith("github.io")) {

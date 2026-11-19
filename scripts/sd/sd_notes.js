@@ -85,10 +85,10 @@ function renderNotes(root){
   const probMarks = Object.keys(state.marks).length, probNotes = Object.keys(state.notes).length;
   const kinds = [["All", "Everything"], ["marks", "Bookmarked"], ["notes", "With notes"], ...Object.entries(TM_KINDS)];
   root.innerHTML = `<div class="eyebrow">Your space</div><h2>My notes &amp; bookmarks</h2>
-    <p class="lead">Write anything to revisit later, and find every topic you bookmarked or annotated across DSA and System Design. Tap ☆ to bookmark or ✎ to write a note on any topic card, day lesson, pattern, HLD/LLD question or Q&amp;A.</p>
+    <p class="lead">Write anything to revisit later, and find every topic you bookmarked or annotated across DSA and System Design. Tap ☆ to bookmark or ✎ to write a note on any topic card, day lesson, pattern, HLD/LLD question or Q&amp;A. Select any text and tap <b>Highlight</b> to mark it.</p>
     <div class="sdbar"><label class="sdsearch"><span class="sr">Search notes</span><input type="search" id="nvQ" placeholder="Search your notes and bookmarks" value="${esc(NV.q)}"></label>
       <button type="button" class="sdtog" id="nvExport">Export backup</button><label class="sdtog nvimp">Import backup<input type="file" id="nvImport" accept="application/json" hidden></label></div>
-    <div class="nvstats"><span><b>${state.pad.length}</b> notepad notes</span><span><b>${Object.keys(state.tm).length}</b> bookmarked topics</span><span><b>${Object.keys(state.tn).length}</b> topic notes</span>
+    <div class="nvstats"><span><b>${state.pad.length}</b> notepad notes</span><span><b>${Object.keys(state.tm).length}</b> bookmarked topics</span><span><b>${Object.keys(state.tn).length}</b> topic notes</span><span><b>${state.hl.length}</b> highlights</span>
       <button type="button" class="sdlink" id="nvProb">${probMarks} bookmarked · ${probNotes} commented DSA questions →</button></div>
     <section class="nvsec"><div class="trhead"><h3>Notepad</h3><button type="button" class="sdlabbtn" id="nvNew">+ New note</button></div>
       ${pad.length ? `<div class="padgrid">${pad.map(n => `<article class="padnote" data-pad="${n.id}">
@@ -97,6 +97,12 @@ function renderNotes(root){
         <div class="padfoot"><span>Edited ${new Date(n.up).toLocaleString("en-IN", {day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"})}</span><span class="tmsaved" aria-live="polite"></span>
           <button type="button" class="paddel" data-del="${n.id}">${NV.confirm === n.id ? "Tap again to delete" : "Delete"}</button></div></article>`).join("")}</div>`
         : `<p class="qempty">${q ? "No notes match your search." : "No notes yet. Press <b>+ New note</b> to write your first one."}</p>`}</section>
+    <section class="nvsec"><h3>Highlights <span class="nvcount">${state.hl.length}</span></h3>
+      ${(() => { const hs = state.hl.filter(h => m(h.text) || m(h.title)).sort((a, b) => b.at - a.at);
+        return hs.length ? `<ul class="nvlist">${hs.map(h => `<li class="nvitem"><div class="nvhead"><span class="nvkind">${esc(h.title)}</span><span class="nvdate">${new Date(h.at).toLocaleDateString("en-IN", {day: "2-digit", month: "short"})}</span></div>
+          <p class="nvhl"><mark class="hl hl-${h.color}">${esc(h.text.length > 400 ? h.text.slice(0, 400) + "…" : h.text)}</mark></p>
+          <div class="nvacts"><button type="button" class="sdlink" data-hlgo="${h.id}">Open where it is →</button><button type="button" class="sdlink" data-hlrm="${h.id}">Remove</button></div></li>`).join("")}</ul>`
+          : `<p class="qempty">${q ? "No highlights match." : "No highlights yet. Select any text and tap <b>Highlight</b>."}</p>`; })()}</section>
     <section class="nvsec"><h3>Saved topics</h3>
       <div class="sdtopics" role="group" aria-label="Filter saved topics">${kinds.map(([k, l]) => `<button type="button" data-nk="${k}" aria-pressed="${NV.kind === k}">${esc(l)}</button>`).join("")}</div>
       ${items.length ? `<ul class="nvlist">${items.map(x => `<li class="nvitem">
@@ -113,6 +119,9 @@ function renderNotes(root){
     const el = root.querySelector(`[data-pad="${id}"] .padtitle`); if (el) el.focus(); };
   root.querySelectorAll(".padtitle").forEach(i => i.oninput = () => { const n = state.pad.find(x => x.id === i.closest(".padnote").dataset.pad); n.title = i.value; n.up = Date.now(); save(); });
   root.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (NV.confirm === b.dataset.del) { state.pad = state.pad.filter(x => x.id !== b.dataset.del); NV.confirm = null; save(); } else NV.confirm = b.dataset.del; renderSDX(); });
+  root.querySelectorAll("[data-hlgo]").forEach(b => b.onclick = () => { const h = state.hl.find(x => x.id === b.dataset.hlgo); if (h) { hlGo(h);
+    setTimeout(() => { const mk = document.querySelector(`mark[data-hl="${h.id}"]`); if (mk) { mk.scrollIntoView({block: "center"}); mk.classList.add("hlflash"); setTimeout(() => mk.classList.remove("hlflash"), 1600); } }, 350); } });
+  root.querySelectorAll("[data-hlrm]").forEach(b => b.onclick = () => removeHighlight(b.dataset.hlrm));
   root.querySelectorAll("[data-nk]").forEach(b => b.onclick = () => { NV.kind = b.dataset.nk; renderSDX(); });
   root.querySelectorAll("[data-open]").forEach(b => b.onclick = () => tmGo(b.dataset.open));
   root.querySelectorAll("[data-unmark]").forEach(b => b.onclick = () => { delete state.tm[b.dataset.unmark]; save(); renderSDX(); });
@@ -129,6 +138,7 @@ function renderNotes(root){
   root.querySelector("#nvImport").onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     f.text().then(t => { const d = JSON.parse(t), s = d.state || d;
+      if (Array.isArray(s.hl)) { const have = new Set(state.hl.map(x => x.id)); state.hl.push(...s.hl.filter(x => !have.has(x.id))); }
       ["days", "probs", "marks", "notes", "tm", "tn"].forEach(k => { if (s[k]) state[k] = Object.assign({}, s[k], state[k] || {}); });   // merge, keep current on clash
       if (s.sd) ["c", "h", "l"].forEach(k => state.sd[k] = Object.assign({}, s.sd[k] || {}, state.sd[k]));
       if (Array.isArray(s.pad)) { const have = new Set(state.pad.map(x => x.id)); state.pad.push(...s.pad.filter(x => !have.has(x.id))); }

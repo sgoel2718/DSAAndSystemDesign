@@ -680,6 +680,25 @@ abbr[title]{text-decoration:underline dotted;text-decoration-color:color-mix(in 
 .expkey{margin-top:8px}.expkey summary{cursor:pointer;font-size:13px;color:var(--accent)}
 .expkeyrow{display:flex;gap:6px}.expkeyin{flex:1;min-width:0;font:13px var(--mono);padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
 
+/* ===== highlights & selection toolbar ===== */
+.seltool{position:absolute;z-index:60;display:flex;gap:4px;align-items:center;background:var(--ink);border-radius:99px;padding:4px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.seltool .expbtn{position:static;box-shadow:none;padding:6px 11px}
+.hlgroup{display:inline-flex;align-items:center;gap:4px;border-left:1px solid color-mix(in srgb,var(--bg) 30%,transparent);padding-left:6px}
+.hlbtn{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--sans);background:transparent;color:var(--bg);border:0;border-radius:99px;padding:6px 10px;cursor:pointer}
+.hlbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.hldot{width:18px;height:18px;border-radius:50%;border:2px solid var(--bg);cursor:pointer;padding:0;margin-right:2px}
+.hldot.g{background:#8fe3a8}.hldot.p{background:#f7a8c8}
+.hlbtn:focus-visible,.hldot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+mark.hl{color:inherit;border-radius:3px;padding:0 1px;cursor:pointer;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+mark.hl-y{background:rgba(255,213,79,.55)}mark.hl-g{background:rgba(102,214,137,.45)}mark.hl-p{background:rgba(244,143,177,.5)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) mark.hl-y{background:rgba(255,213,79,.35)}:root:not([data-theme="light"]) mark.hl-g{background:rgba(102,214,137,.3)}:root:not([data-theme="light"]) mark.hl-p{background:rgba(244,143,177,.32)}}
+:root[data-theme="dark"] mark.hl-y{background:rgba(255,213,79,.35)}:root[data-theme="dark"] mark.hl-g{background:rgba(102,214,137,.3)}:root[data-theme="dark"] mark.hl-p{background:rgba(244,143,177,.32)}
+mark.hl.hlflash{outline:2px solid var(--accent);outline-offset:2px}
+.hlmenu{position:absolute;z-index:62;display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.hlmenu button{font:600 13px var(--sans);border:0;background:none;color:var(--ink);padding:6px 10px;border-radius:8px;cursor:pointer}
+.hlmenu button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.nvhl{margin:6px 0 2px;font-size:14.5px;line-height:1.6}.nvcount{font:600 12px var(--mono);color:var(--muted);margin-left:6px}
+
 </style>
 
 <div class="wrap">
@@ -2279,10 +2298,10 @@ function renderNotes(root){
   const probMarks = Object.keys(state.marks).length, probNotes = Object.keys(state.notes).length;
   const kinds = [["All", "Everything"], ["marks", "Bookmarked"], ["notes", "With notes"], ...Object.entries(TM_KINDS)];
   root.innerHTML = `<div class="eyebrow">Your space</div><h2>My notes &amp; bookmarks</h2>
-    <p class="lead">Write anything to revisit later, and find every topic you bookmarked or annotated across DSA and System Design. Tap ☆ to bookmark or ✎ to write a note on any topic card, day lesson, pattern, HLD/LLD question or Q&amp;A.</p>
+    <p class="lead">Write anything to revisit later, and find every topic you bookmarked or annotated across DSA and System Design. Tap ☆ to bookmark or ✎ to write a note on any topic card, day lesson, pattern, HLD/LLD question or Q&amp;A. Select any text and tap <b>Highlight</b> to mark it.</p>
     <div class="sdbar"><label class="sdsearch"><span class="sr">Search notes</span><input type="search" id="nvQ" placeholder="Search your notes and bookmarks" value="${esc(NV.q)}"></label>
       <button type="button" class="sdtog" id="nvExport">Export backup</button><label class="sdtog nvimp">Import backup<input type="file" id="nvImport" accept="application/json" hidden></label></div>
-    <div class="nvstats"><span><b>${state.pad.length}</b> notepad notes</span><span><b>${Object.keys(state.tm).length}</b> bookmarked topics</span><span><b>${Object.keys(state.tn).length}</b> topic notes</span>
+    <div class="nvstats"><span><b>${state.pad.length}</b> notepad notes</span><span><b>${Object.keys(state.tm).length}</b> bookmarked topics</span><span><b>${Object.keys(state.tn).length}</b> topic notes</span><span><b>${state.hl.length}</b> highlights</span>
       <button type="button" class="sdlink" id="nvProb">${probMarks} bookmarked · ${probNotes} commented DSA questions →</button></div>
     <section class="nvsec"><div class="trhead"><h3>Notepad</h3><button type="button" class="sdlabbtn" id="nvNew">+ New note</button></div>
       ${pad.length ? `<div class="padgrid">${pad.map(n => `<article class="padnote" data-pad="${n.id}">
@@ -2291,6 +2310,12 @@ function renderNotes(root){
         <div class="padfoot"><span>Edited ${new Date(n.up).toLocaleString("en-IN", {day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"})}</span><span class="tmsaved" aria-live="polite"></span>
           <button type="button" class="paddel" data-del="${n.id}">${NV.confirm === n.id ? "Tap again to delete" : "Delete"}</button></div></article>`).join("")}</div>`
         : `<p class="qempty">${q ? "No notes match your search." : "No notes yet. Press <b>+ New note</b> to write your first one."}</p>`}</section>
+    <section class="nvsec"><h3>Highlights <span class="nvcount">${state.hl.length}</span></h3>
+      ${(() => { const hs = state.hl.filter(h => m(h.text) || m(h.title)).sort((a, b) => b.at - a.at);
+        return hs.length ? `<ul class="nvlist">${hs.map(h => `<li class="nvitem"><div class="nvhead"><span class="nvkind">${esc(h.title)}</span><span class="nvdate">${new Date(h.at).toLocaleDateString("en-IN", {day: "2-digit", month: "short"})}</span></div>
+          <p class="nvhl"><mark class="hl hl-${h.color}">${esc(h.text.length > 400 ? h.text.slice(0, 400) + "…" : h.text)}</mark></p>
+          <div class="nvacts"><button type="button" class="sdlink" data-hlgo="${h.id}">Open where it is →</button><button type="button" class="sdlink" data-hlrm="${h.id}">Remove</button></div></li>`).join("")}</ul>`
+          : `<p class="qempty">${q ? "No highlights match." : "No highlights yet. Select any text and tap <b>Highlight</b>."}</p>`; })()}</section>
     <section class="nvsec"><h3>Saved topics</h3>
       <div class="sdtopics" role="group" aria-label="Filter saved topics">${kinds.map(([k, l]) => `<button type="button" data-nk="${k}" aria-pressed="${NV.kind === k}">${esc(l)}</button>`).join("")}</div>
       ${items.length ? `<ul class="nvlist">${items.map(x => `<li class="nvitem">
@@ -2307,6 +2332,9 @@ function renderNotes(root){
     const el = root.querySelector(`[data-pad="${id}"] .padtitle`); if (el) el.focus(); };
   root.querySelectorAll(".padtitle").forEach(i => i.oninput = () => { const n = state.pad.find(x => x.id === i.closest(".padnote").dataset.pad); n.title = i.value; n.up = Date.now(); save(); });
   root.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (NV.confirm === b.dataset.del) { state.pad = state.pad.filter(x => x.id !== b.dataset.del); NV.confirm = null; save(); } else NV.confirm = b.dataset.del; renderSDX(); });
+  root.querySelectorAll("[data-hlgo]").forEach(b => b.onclick = () => { const h = state.hl.find(x => x.id === b.dataset.hlgo); if (h) { hlGo(h);
+    setTimeout(() => { const mk = document.querySelector(`mark[data-hl="${h.id}"]`); if (mk) { mk.scrollIntoView({block: "center"}); mk.classList.add("hlflash"); setTimeout(() => mk.classList.remove("hlflash"), 1600); } }, 350); } });
+  root.querySelectorAll("[data-hlrm]").forEach(b => b.onclick = () => removeHighlight(b.dataset.hlrm));
   root.querySelectorAll("[data-nk]").forEach(b => b.onclick = () => { NV.kind = b.dataset.nk; renderSDX(); });
   root.querySelectorAll("[data-open]").forEach(b => b.onclick = () => tmGo(b.dataset.open));
   root.querySelectorAll("[data-unmark]").forEach(b => b.onclick = () => { delete state.tm[b.dataset.unmark]; save(); renderSDX(); });
@@ -2323,6 +2351,7 @@ function renderNotes(root){
   root.querySelector("#nvImport").onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     f.text().then(t => { const d = JSON.parse(t), s = d.state || d;
+      if (Array.isArray(s.hl)) { const have = new Set(state.hl.map(x => x.id)); state.hl.push(...s.hl.filter(x => !have.has(x.id))); }
       ["days", "probs", "marks", "notes", "tm", "tn"].forEach(k => { if (s[k]) state[k] = Object.assign({}, s[k], state[k] || {}); });   // merge, keep current on clash
       if (s.sd) ["c", "h", "l"].forEach(k => state.sd[k] = Object.assign({}, s.sd[k] || {}, state.sd[k]));
       if (Array.isArray(s.pad)) { const have = new Set(state.pad.map(x => x.id)); state.pad.push(...s.pad.filter(x => !have.has(x.id))); }
@@ -2457,7 +2486,11 @@ expBtn.type = "button"; expBtn.className = "expbtn"; expBtn.hidden = true;
 expBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-3.6 10.8c.4.3.6.8.6 1.2v1h6v-1c0-.4.2-.9.6-1.2A6 6 0 0 0 12 3zM9 19h6M10 22h4"/></svg>Explain';
 const expPop = document.createElement("div");
 expPop.className = "exppop"; expPop.hidden = true; expPop.setAttribute("role", "dialog"); expPop.setAttribute("aria-label", "Explanation");
-document.body.append(expBtn, expPop);
+const selTool = document.createElement("div");
+selTool.className = "seltool"; selTool.hidden = true; selTool.setAttribute("role", "toolbar"); selTool.setAttribute("aria-label", "Selected text");
+selTool.innerHTML = `<span class="hlgroup"><button type="button" class="hlbtn" data-hc="y" aria-label="Highlight yellow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l-5 5v4h4l5-5M14 6l4 4M9 11l5-5 4 4-5 5z"/></svg>Highlight</button><button type="button" class="hldot g" data-hc="g" aria-label="Highlight green"></button><button type="button" class="hldot p" data-hc="p" aria-label="Highlight pink"></button></span>`;
+selTool.prepend(expBtn); expBtn.hidden = false;
+document.body.append(selTool, expPop);
 
 function expSelection(){
   const sel = window.getSelection(); if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
@@ -2476,17 +2509,18 @@ function placeBtn(s){
   const x = Math.min(window.scrollX + s.rect.right - 10, window.scrollX + document.documentElement.clientWidth - 110);
   const touch = matchMedia("(pointer: coarse)").matches;
   const y = window.scrollY + (touch ? s.rect.bottom + 34 : s.rect.bottom + 8);   // below the native touch menu
-  expBtn.style.left = Math.max(window.scrollX + 8, x) + "px"; expBtn.style.top = y + "px"; expBtn.hidden = false;
+  selTool.style.left = Math.max(window.scrollX + 8, Math.min(x - 120, window.scrollX + document.documentElement.clientWidth - 330)) + "px"; selTool.style.top = y + "px"; selTool.hidden = false;
 }
 let expTimer;
 document.addEventListener("selectionchange", () => {
   clearTimeout(expTimer);
-  expTimer = setTimeout(() => { const s = expSelection(); if (s) { EXP.last = s; placeBtn(s); } else if (!expBtn.matches(":focus")) expBtn.hidden = true; }, 250);
+  expTimer = setTimeout(() => { const s = expSelection(); if (s) { EXP.last = s; placeBtn(s); } else if (!selTool.contains(document.activeElement)) selTool.hidden = true; }, 250);
 });
-expBtn.addEventListener("mousedown", e => e.preventDefault());       // keep the selection
-expBtn.addEventListener("click", () => { const s = EXP.last || expSelection(); expBtn.hidden = true; if (s) explain(s); });
+selTool.addEventListener("mousedown", e => e.preventDefault());      // keep the selection
+expBtn.addEventListener("click", () => { const s = EXP.last || expSelection(); selTool.hidden = true; if (s) explain(s); });
+selTool.querySelectorAll("[data-hc]").forEach(b => b.addEventListener("click", () => { selTool.hidden = true; addHighlight(b.dataset.hc); }));
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !expPop.hidden) closeExp(); });
-document.addEventListener("mousedown", e => { if (!expPop.hidden && !expPop.contains(e.target) && !expBtn.contains(e.target)) closeExp(); });
+document.addEventListener("mousedown", e => { if (!expPop.hidden && !expPop.contains(e.target) && !selTool.contains(e.target)) closeExp(); });
 function closeExp(){ if (EXP.ctl) EXP.ctl.abort(); expPop.hidden = true; }
 
 /* ---------- relevance search over the site's own notes (works everywhere, offline) ---------- */
@@ -2621,11 +2655,107 @@ function wireExp(s){
   };
 }
 
+/* ================= Highlights: mark text for future reference; re-applied whenever the topic is shown ================= */
+if (!Array.isArray(state.hl)) state.hl = [];      // [{id, key, title, text, color, at}]
+const HL_SKIP = "svg, textarea, input, select, script, style, .tmacts, .seltool, .exppop, .codebar";
+/* where a piece of text lives: a stable key for the card / question / lesson it belongs to */
+function hlUnitOf(node){
+  const el = node.nodeType === 1 ? node : node.parentElement;
+  const sheet = el.closest("#sheet");
+  if (sheet) { const h = sheet.querySelector("#sheetTitle"), eb = sheet.querySelector(".eyebrow");
+    const m = eb && /Day (\d+)/.exec(eb.textContent); return {unit: sheet, key: m ? "day:" + m[1] : "pat:" + (h ? h.textContent : ""), title: (m ? "Day " + m[1] + ": " : "Pattern: ") + (h ? h.textContent : "")}; }
+  const card = el.closest(".sdc[id], .sdq[id]");
+  if (card) { const t = card.querySelector(".sdct b, .sdqq"); return {unit: card, key: card.id, title: t ? t.firstChild.textContent || t.textContent : card.id}; }
+  const other = el.closest(".sdstage, .lab[id], .nvsec, section[id], main[id]");
+  if (other) { const t = other.querySelector("h2, h3"); return {unit: other, key: "sec:" + (other.id || (t && t.textContent) || ""), title: t ? t.textContent : "Section"}; }
+  return null;
+}
+function hlTextMap(unit){
+  const map = [], walker = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT, {acceptNode: n => n.parentElement && n.parentElement.closest(HL_SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT});
+  let norm = "", n, lastSpace = true;
+  while ((n = walker.nextNode())) {
+    const v = n.nodeValue;
+    for (let i = 0; i < v.length; i++) {
+      const ws = /\s/.test(v[i]);
+      if (ws) { if (lastSpace) continue; norm += " "; map.push([n, i]); lastSpace = true; }
+      else { norm += v[i]; map.push([n, i]); lastSpace = false; }
+    }
+  }
+  return {norm, map};
+}
+const hlNorm = t => t.replace(/\s+/g, " ").trim();
+function hlWrap(unit, h){
+  if (unit.querySelector(`mark[data-hl="${h.id}"]`)) return true;
+  const {norm, map} = hlTextMap(unit), q = hlNorm(h.text), at = norm.indexOf(q);
+  if (at < 0 || !q) return false;
+  const pieces = [];                                       // group consecutive chars by text node
+  for (let i = at; i < at + q.length; i++) { const [node, off] = map[i]; const last = pieces[pieces.length - 1];
+    if (last && last.node === node) last.end = off + 1; else pieces.push({node, start: off, end: off + 1}); }
+  pieces.reverse().forEach(({node, start, end}) => {
+    const r = document.createRange(); r.setStart(node, start); r.setEnd(node, end);
+    const m = document.createElement("mark"); m.className = "hl hl-" + h.color; m.dataset.hl = h.id; m.title = "Highlighted · click to remove";
+    try { r.surroundContents(m); } catch (e) {}
+  });
+  return true;
+}
+function applyHighlights(root){
+  if (!state.hl.length) return;
+  const units = new Map();
+  (root.querySelectorAll ? [root, ...root.querySelectorAll(".sdc[id], .sdq[id]")] : []).forEach(el => {
+    const u = el.matches && (el.matches(".sdc[id], .sdq[id]") || el.id === "sheet") ? hlUnitOf(el) : null; if (u) units.set(u.key, u.unit); });
+  const sheet = document.getElementById("sheet"); if (sheet && !sheet.hidden && root.contains && (root === sheet || sheet.contains(root) || root.contains(sheet))) { const u = hlUnitOf(sheet); if (u) units.set(u.key, u.unit); }
+  state.hl.forEach(h => { const u = units.get(h.key) || (h.key.startsWith("sdc-") || h.key.startsWith("qa-") ? document.getElementById(h.key) : null);
+    if (u && root.contains && (root.contains(u) || u.contains(root))) hlWrap(u, h); });
+}
+function addHighlight(color){
+  const sel = getSelection(); if (!sel || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0), u = hlUnitOf(range.commonAncestorContainer);
+  const text = hlNorm(sel.toString());
+  if (!u || text.length < 2) return;
+  const h = {id: "h" + Date.now().toString(36), key: u.key, title: hlNorm(u.title).slice(0, 160), text: text.slice(0, 1500), color, at: Date.now()};
+  if (!hlWrap(u.unit, h)) return;
+  state.hl.push(h); save(); sel.removeAllRanges();
+  if (filter === 34) renderSDX();
+}
+/* click a highlight: small menu to remove or explain */
+const hlMenu = document.createElement("div"); hlMenu.className = "hlmenu"; hlMenu.hidden = true;
+hlMenu.innerHTML = `<button type="button" data-hlact="explain">Explain</button><button type="button" data-hlact="remove">Remove highlight</button>`;
+document.body.append(hlMenu);
+let hlCur = null;
+document.addEventListener("click", e => {
+  const m = e.target.closest && e.target.closest("mark[data-hl]");
+  if (m && getSelection().isCollapsed) { hlCur = m.dataset.hl; const r = m.getBoundingClientRect();
+    hlMenu.style.left = (window.scrollX + Math.max(8, Math.min(r.left, document.documentElement.clientWidth - 220))) + "px"; hlMenu.style.top = (window.scrollY + r.bottom + 6) + "px"; hlMenu.hidden = false; e.stopPropagation(); return; }
+  if (!hlMenu.contains(e.target)) hlMenu.hidden = true;
+}, true);
+hlMenu.addEventListener("click", e => {
+  const b = e.target.closest("[data-hlact]"); if (!b || !hlCur) return;
+  const h = state.hl.find(x => x.id === hlCur); hlMenu.hidden = true;
+  if (b.dataset.hlact === "remove") { removeHighlight(hlCur); return; }
+  const m = document.querySelector(`mark[data-hl="${hlCur}"]`); if (!m || !h) return;
+  const r = m.getBoundingClientRect(); const unit = hlUnitOf(m);
+  explain({text: h.text.slice(0, 400), rect: r, context: (m.closest("li, p, td, .sayit") || m.parentElement).textContent.slice(0, 1500), title: unit ? unit.title : ""});
+});
+function removeHighlight(id){
+  document.querySelectorAll(`mark[data-hl="${id}"]`).forEach(m => { const p = m.parentNode; while (m.firstChild) p.insertBefore(m.firstChild, m); p.removeChild(m); p.normalize(); });
+  state.hl = state.hl.filter(x => x.id !== id); save(); if (filter === 34) renderSDX();
+}
+function hlGo(h){
+  const k = h.key;
+  if (k.startsWith("sdc-")) sdGo(k.slice(4));
+  else if (k.startsWith("qa-")) tmGo("qa:" + k.slice(3));
+  else if (k.startsWith("day:") || k.startsWith("pat:")) tmGo(k);
+}
+const hlObs = new MutationObserver(ms => { if (!state.hl.length) return; clearTimeout(hlObs.t); hlObs.t = setTimeout(() => {
+  const roots = new Set(); ms.forEach(m => { if (m.target && m.target.nodeType === 1) roots.add(m.target); });
+  roots.forEach(r => { if (r.isConnected && !r.closest(".seltool, .exppop, .hlmenu")) applyHighlights(r); }); }, 30); });
+function startHighlights(){ applyHighlights(document.body); hlObs.observe(document.body, {childList: true, subtree: true}); }
+
 if (SDV.group === "sd") filter = 20;
 renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
-startAbbr();
+startAbbr(); startHighlights();
 /* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes; if a newer build is live, reload once */
-const BUILD = "c747a04c65d6";
+const BUILD = "d76d71b7e6b0";
 if (location.protocol === "https:" && location.hostname.endsWith("github.io")) {
   fetch(location.pathname + "?build=" + Date.now(), {cache: "no-store"}).then(r => r.text()).then(t => {
     const m = t.match(/const BUILD = "([0-9a-f]{12})"/);

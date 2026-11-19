@@ -9,7 +9,11 @@ expBtn.type = "button"; expBtn.className = "expbtn"; expBtn.hidden = true;
 expBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-3.6 10.8c.4.3.6.8.6 1.2v1h6v-1c0-.4.2-.9.6-1.2A6 6 0 0 0 12 3zM9 19h6M10 22h4"/></svg>Explain';
 const expPop = document.createElement("div");
 expPop.className = "exppop"; expPop.hidden = true; expPop.setAttribute("role", "dialog"); expPop.setAttribute("aria-label", "Explanation");
-document.body.append(expBtn, expPop);
+const selTool = document.createElement("div");
+selTool.className = "seltool"; selTool.hidden = true; selTool.setAttribute("role", "toolbar"); selTool.setAttribute("aria-label", "Selected text");
+selTool.innerHTML = `<span class="hlgroup"><button type="button" class="hlbtn" data-hc="y" aria-label="Highlight yellow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l-5 5v4h4l5-5M14 6l4 4M9 11l5-5 4 4-5 5z"/></svg>Highlight</button><button type="button" class="hldot g" data-hc="g" aria-label="Highlight green"></button><button type="button" class="hldot p" data-hc="p" aria-label="Highlight pink"></button></span>`;
+selTool.prepend(expBtn); expBtn.hidden = false;
+document.body.append(selTool, expPop);
 
 function expSelection(){
   const sel = window.getSelection(); if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
@@ -28,17 +32,18 @@ function placeBtn(s){
   const x = Math.min(window.scrollX + s.rect.right - 10, window.scrollX + document.documentElement.clientWidth - 110);
   const touch = matchMedia("(pointer: coarse)").matches;
   const y = window.scrollY + (touch ? s.rect.bottom + 34 : s.rect.bottom + 8);   // below the native touch menu
-  expBtn.style.left = Math.max(window.scrollX + 8, x) + "px"; expBtn.style.top = y + "px"; expBtn.hidden = false;
+  selTool.style.left = Math.max(window.scrollX + 8, Math.min(x - 120, window.scrollX + document.documentElement.clientWidth - 330)) + "px"; selTool.style.top = y + "px"; selTool.hidden = false;
 }
 let expTimer;
 document.addEventListener("selectionchange", () => {
   clearTimeout(expTimer);
-  expTimer = setTimeout(() => { const s = expSelection(); if (s) { EXP.last = s; placeBtn(s); } else if (!expBtn.matches(":focus")) expBtn.hidden = true; }, 250);
+  expTimer = setTimeout(() => { const s = expSelection(); if (s) { EXP.last = s; placeBtn(s); } else if (!selTool.contains(document.activeElement)) selTool.hidden = true; }, 250);
 });
-expBtn.addEventListener("mousedown", e => e.preventDefault());       // keep the selection
-expBtn.addEventListener("click", () => { const s = EXP.last || expSelection(); expBtn.hidden = true; if (s) explain(s); });
+selTool.addEventListener("mousedown", e => e.preventDefault());      // keep the selection
+expBtn.addEventListener("click", () => { const s = EXP.last || expSelection(); selTool.hidden = true; if (s) explain(s); });
+selTool.querySelectorAll("[data-hc]").forEach(b => b.addEventListener("click", () => { selTool.hidden = true; addHighlight(b.dataset.hc); }));
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !expPop.hidden) closeExp(); });
-document.addEventListener("mousedown", e => { if (!expPop.hidden && !expPop.contains(e.target) && !expBtn.contains(e.target)) closeExp(); });
+document.addEventListener("mousedown", e => { if (!expPop.hidden && !expPop.contains(e.target) && !selTool.contains(e.target)) closeExp(); });
 function closeExp(){ if (EXP.ctl) EXP.ctl.abort(); expPop.hidden = true; }
 
 /* ---------- relevance search over the site's own notes (works everywhere, offline) ---------- */
