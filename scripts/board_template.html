@@ -382,6 +382,22 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .trrow summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .trrow ul{margin:0 0 10px;padding-left:22px;font-size:14px;display:grid;gap:3px}
 @media (max-width:720px){.trtiles{grid-template-columns:repeat(2,minmax(0,1fr))}.trlh,.trrow summary{grid-template-columns:minmax(0,1fr) repeat(4,44px);gap:4px}}
+.mysub{margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.mysub summary{cursor:pointer;padding:7px 10px;font:600 13.5px var(--sans);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mysubdot{width:8px;height:8px;border-radius:50%;background:var(--ce)}
+.mysubbody{padding:0 10px 10px;display:grid;gap:8px}
+.mysublink{display:inline-block;margin-left:6px;font:600 12px var(--sans);white-space:nowrap}
+.mysubslot.link{display:inline}
+.sync .synclead{margin:6px 0 10px;color:var(--muted);font-size:14px}
+.syncform{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.syncform label{font:600 13px var(--sans)}
+.syncform input{flex:1 1 220px;min-width:0;font:14px var(--mono);padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.syncbtn{font:600 13px var(--sans);border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:99px;padding:6px 14px;cursor:pointer}
+.syncbtn:focus-visible,.syncform input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.syncopt{display:flex;gap:6px;align-items:center;margin-top:10px;font-size:13.5px}
+.syncst{margin:8px 0;font-size:14px}
+.syncsetup summary{cursor:pointer;font:600 13.5px var(--sans)}
+.syncsetup ol{margin:8px 0 0;padding-left:20px;display:grid;gap:5px;font-size:14px}
 footer{margin-top:40px;color:var(--muted);font-size:13px}
 @media (max-width:720px){header,.proj{grid-template-columns:1fr}.today{min-width:0}}
 @media (prefers-reduced-motion:reduce){.note,.bar i{transition:none}.note{transform:none}}
@@ -589,7 +605,7 @@ function openSheet(day){
     ${d.problems.length ? `<h4>Problems</h4>${d.problems.map(([n,slug,diff]) => {
         const k = slug + "@" + d.day;
         return `<div class="probline"><label class="prob"><input type="checkbox" id="p-${k}" data-k="${k}" ${state.probs[k] ? "checked":""}>
-          <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener">${esc(n)}</a><span class="tag ${diff}">${diff}</span></label><span class="acts">${cmb(slug, n)}${bm(slug, n)}</span></div>${cmtRegion(slug, "s-" + slug + "-" + d.day)}${solHTML(slug, d.day)}`; }).join("")}` : ""}
+          <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener">${esc(n)}</a><span class="tag ${diff}">${diff}</span></label><span class="acts">${cmb(slug, n)}${bm(slug, n)}</span></div>${cmtRegion(slug, "s-" + slug + "-" + d.day)}${solHTML(slug, d.day)}${subSlot(slug)}`; }).join("")}` : ""}
     ${(PLAN.mine[d.day] || []).length ? `<h4>From your list (${PLAN.mine[d.day].length})</h4><p class="pqnote">Questions from your own sheet for this day's patterns.</p>${PLAN.mine[d.day].map(r => mineRow(r, d.day, "s")).join("")}` : ""}
     ${d.project ? `<h4>NexusKV build</h4><div class="build">${esc(d.project.replace(/^NexusKV: /,""))}</div>` : ""}
     <h4>Sticky notes</h4><div class="pnote"><ul>${d.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>
@@ -629,6 +645,107 @@ function wireCopy(root){
 function selectCode(b){
   const pre = b.parentElement.nextElementSibling, r = document.createRange(); r.selectNodeContents(pre);
   const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = "Press Ctrl+C";
+}
+/* ---------- LeetCode sync: reads the GitHub repo that LeetHub-3.0 pushes your accepted submissions to ---------- */
+const SKEY = "dsa30-lcsync-v1";
+let SYNC = {repo: "", branch: "", files: {}, at: 0, autotick: true, err: ""};
+try { const v = JSON.parse(localStorage.getItem(SKEY)); if (v) SYNC = Object.assign(SYNC, v); } catch(e) {}
+const saveSync = () => { try { localStorage.setItem(SKEY, JSON.stringify(SYNC)); } catch(e) {} };
+const LANGS = {java: "Java", py: "Python", cpp: "C++", c: "C", js: "JavaScript", ts: "TypeScript", cs: "C#", go: "Go", kt: "Kotlin", rs: "Rust", swift: "Swift", sql: "SQL", rb: "Ruby", scala: "Scala", php: "PHP", dart: "Dart"};
+const rawURL = path => `https://raw.githubusercontent.com/${SYNC.repo}/${encodeURIComponent(SYNC.branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
+const blobURL = path => `https://github.com/${SYNC.repo}/blob/${encodeURIComponent(SYNC.branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
+function parseTree(tree){
+  // LeetHub layout: [Easy|Medium|Hard/]0001-two-sum/0001-two-sum.java (+ README.md). Also accepts two-sum/solution.java.
+  const known = new Set(Object.values(keyInfo()).map(q => q.slug)), files = {};
+  tree.forEach(t => {
+    if (t.type !== "blob") return;
+    const parts = t.path.split("/"); if (parts.length < 2) return;
+    const ext = (parts[parts.length - 1].match(/\.([a-z]+)$/i) || [])[1]; if (!ext || !LANGS[ext.toLowerCase()]) return;
+    const folder = parts[parts.length - 2].toLowerCase(), slug = folder.replace(/^\d+[-.]\s*/, "");
+    const id = (folder.match(/^(\d+)/) || [])[1];
+    const rec = files[slug] || (files[slug] = {known: known.has(slug), id: id ? +id : null, code: []});
+    rec.code.push({path: t.path, lang: LANGS[ext.toLowerCase()]});
+  });
+  Object.values(files).forEach(r => r.code.sort((a, b) => (b.lang === "Java") - (a.lang === "Java")));
+  return files;
+}
+async function syncLC(manual){
+  if (!SYNC.repo) return;
+  const st = document.getElementById("syncStatus"); if (st) st.textContent = "Syncing…";
+  try {
+    const gh = u => fetch("https://api.github.com/repos/" + SYNC.repo + u, {headers: {Accept: "application/vnd.github+json"}}).then(r => {
+      if (r.status === 404) throw new Error("Repo not found. Check the name, and that the repo is public.");
+      if (r.status === 403 || r.status === 429) throw new Error("GitHub rate limit reached (60 checks an hour). Try again later.");
+      if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); });
+    const info = await gh("");
+    SYNC.branch = info.default_branch;
+    const t = await gh("/git/trees/" + encodeURIComponent(SYNC.branch) + "?recursive=1");
+    const before = new Set(Object.keys(SYNC.files));
+    SYNC.files = parseTree(t.tree || []); SYNC.at = Date.now(); SYNC.err = "";
+    let ticked = 0;
+    if (SYNC.autotick) Object.entries(keyInfo()).forEach(([k, q]) => { if (SYNC.files[q.slug] && !state.probs[k]) { setSolved(k, true); ticked++; } });
+    SYNC.last = {fresh: Object.keys(SYNC.files).filter(x => !before.has(x)).length, ticked};
+    saveSync(); if (ticked) save();
+  } catch (e) { SYNC.err = e.message || String(e); saveSync(); }
+  refreshSubs();
+  renderTop();
+  if (filter === 11) renderTracker(); else if (filter !== 10 && filter !== 6) renderBoard();
+  if (manual && filter !== 11) renderTracker();
+}
+function subSlot(slug, mode){ return `<div class="mysubslot${mode ? " " + mode : ""}" data-slug="${slug}">${subHTML(slug, mode)}</div>`; }
+function subHTML(slug, mode){
+  const r = SYNC.files[slug]; if (!r) return "";
+  if (mode === "link") return `<a class="mysublink" href="${blobURL(r.code[0].path)}" target="_blank" rel="noopener">My code ↗</a>`;
+  return `<details class="mysub" data-slug="${slug}"><summary><span class="mysubdot" aria-hidden="true"></span>My LeetCode submission<span class="chip">${r.code.map(c => c.lang).filter((v, i, a) => a.indexOf(v) === i).join(" · ")}</span></summary>
+    <div class="mysubbody">${r.code.map((c, i) => `<div class="codewrap"><div class="codebar"><span>${esc(c.lang)} · ${esc(c.path.split("/").pop())}</span><span class="cbtns">
+      <a class="copy" href="${blobURL(c.path)}" target="_blank" rel="noopener">Open on GitHub</a><button type="button" class="copy subcopy" data-i="${i}">Copy</button></span></div>
+      <pre class="code java" data-path="${esc(c.path)}">Loading…</pre></div>`).join("")}</div></details>`;
+}
+function refreshSubs(){ document.querySelectorAll(".mysubslot").forEach(el => el.innerHTML = subHTML(el.dataset.slug, el.classList.contains("link") ? "link" : "")); }
+const subCache = {};
+document.addEventListener("toggle", e => {
+  const d = e.target; if (!d.classList || !d.classList.contains("mysub") || !d.open) return;
+  d.querySelectorAll("pre[data-path]").forEach(pre => {
+    const path = pre.dataset.path;
+    const p = subCache[path] || (subCache[path] = fetch(rawURL(path)).then(r => { if (!r.ok) throw 0; return r.text(); }));
+    p.then(t => { pre.textContent = t; }, () => { delete subCache[path]; pre.textContent = "Could not load this file from GitHub. Use Open on GitHub."; });
+  });
+}, true);
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest(".subcopy"); if (!b) return;
+  const pre = b.closest(".codewrap").querySelector("pre"), text = pre.textContent;
+  const done = () => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1500); };
+  try { navigator.clipboard.writeText(text).then(done, () => selectCode(b)); } catch (er) { selectCode(b); }
+});
+function syncCard(){
+  const n = Object.keys(SYNC.files).length, known = Object.values(SYNC.files).filter(r => r.known).length;
+  const ago = SYNC.at ? Math.round((Date.now() - SYNC.at) / 60000) : null;
+  const status = !SYNC.repo ? "Not connected yet." : SYNC.err ? "⚠ " + esc(SYNC.err)
+    : SYNC.at ? `<b>${n}</b> submissions found in <a href="https://github.com/${esc(SYNC.repo)}" target="_blank" rel="noopener">${esc(SYNC.repo)}</a>, <b>${known}</b> of them are questions on this site. Last checked ${ago < 1 ? "just now" : ago + " min ago"}.${SYNC.last && SYNC.last.ticked ? ` Marked <b>${SYNC.last.ticked}</b> as solved.` : ""}` : "Not synced yet.";
+  return `<div class="trcard sync"><div class="trhead"><h3>LeetCode sync</h3>${SYNC.repo ? `<button type="button" class="syncbtn" id="syncNow">Sync now</button>` : ""}</div>
+    <p class="synclead">Your accepted LeetCode code shows up under each question as <b>My LeetCode submission</b>, and the question is ticked as solved.</p>
+    <form class="syncform" id="syncForm"><label for="syncRepo">GitHub repo</label>
+      <input id="syncRepo" placeholder="sgoel2718/LeetCode-Solutions" value="${esc(SYNC.repo)}" autocomplete="off" spellcheck="false">
+      <button type="submit" class="syncbtn">${SYNC.repo ? "Save" : "Connect"}</button></form>
+    <label class="syncopt"><input type="checkbox" id="syncTick"${SYNC.autotick ? " checked" : ""}> Tick a question as solved when its submission is found</label>
+    <p class="syncst" id="syncStatus" role="status">${status}</p>
+    <details class="syncsetup"${SYNC.repo ? "" : " open"}><summary>One-time setup (5 minutes)</summary><ol>
+      <li>On GitHub, create a <b>public</b> repo, for example <code>LeetCode-Solutions</code> (public so this site can read it without a password).</li>
+      <li>Install the Chrome extension <b>LeetHub-3.0</b> and sign in with GitHub when it asks.</li>
+      <li>In LeetHub's setup, choose <b>Link an existing repository</b> and pick that repo.</li>
+      <li>Solve on LeetCode as usual. Each <b>Accepted</b> submission is pushed to the repo by itself.</li>
+      <li>Type the repo above as <code>owner/name</code> and press Connect. The site re-checks every time you open it (at most every 10 minutes), or press Sync now.</li>
+    </ol></details></div>`;
+}
+function wireSync(root){
+  const f = root.querySelector("#syncForm"); if (!f) return;
+  f.onsubmit = e => { e.preventDefault();
+    const v = root.querySelector("#syncRepo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$|\/$/g, "");
+    if (!/^[\w.-]+\/[\w.-]+$/.test(v)) { root.querySelector("#syncStatus").textContent = "Use the form owner/name, e.g. sgoel2718/LeetCode-Solutions"; return; }
+    if (v !== SYNC.repo) { SYNC.files = {}; SYNC.at = 0; }
+    SYNC.repo = v; saveSync(); syncLC(true); };
+  const b = root.querySelector("#syncNow"); if (b) b.onclick = () => syncLC(true);
+  root.querySelector("#syncTick").onchange = e => { SYNC.autotick = e.target.checked; saveSync(); };
 }
 /* ---------- Step-by-step visualizer: replays a trace recorded from the real Java code ---------- */
 const TRACES = {};
@@ -828,7 +945,7 @@ function openPattern(i){
       const k = q.day ? q.slug + "@" + q.day : "", done = k && state.probs[k], sol = PLAN.solutions[q.slug];
       return `<div class="pqrow${done ? " done" : ""}${q.mine ? " mine" : ""}"><a class="pqlink" href="${q.url}" target="_blank" rel="noopener">
         <span class="pqname">${done ? "✓ " : ""}${esc(q.name)}${q.url.includes("leetcode.com") ? "" : ` <span class="pqsrc">${q.url.includes("geeksforgeeks") ? "GfG" : "web"}</span>`}</span>
-        <span class="pqmeta">${q.mine ? '<span class="pqmine">your list</span>' : ""}${sol ? `<span class="pqsol">${sol.length} approaches</span>` : ""}<span class="pqday ${q.day ? "" : "x"}">${q.day ? "Day " + q.day : "Extra"}</span><span class="tag ${q.diff}">${q.diff}</span></span></a><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div><div class="cmtwrap${q.mine ? " mine" : ""}">${cmtRegion(q.slug, "p-" + q.slug)}${sol ? `<div class="pqsolwrap">${solHTML(q.slug, q.day || 0, "p")}</div>` : ""}</div>`; }).join("")}</div>
+        <span class="pqmeta">${q.mine ? '<span class="pqmine">your list</span>' : ""}${sol ? `<span class="pqsol">${sol.length} approaches</span>` : ""}<span class="pqday ${q.day ? "" : "x"}">${q.day ? "Day " + q.day : "Extra"}</span><span class="tag ${q.diff}">${q.diff}</span></span></a><span class="acts">${cmb(q.slug, q.name)}${bm(q.slug, q.name)}</span></div><div class="cmtwrap${q.mine ? " mine" : ""}">${cmtRegion(q.slug, "p-" + q.slug)}${subSlot(q.slug)}${sol ? `<div class="pqsolwrap">${solHTML(q.slug, q.day || 0, "p")}</div>` : ""}</div>`; }).join("")}</div>
     <div class="pnav">${i > 0 ? `<button type="button" id="pPrev">← ${esc(PLAN.patterns[i-1][0])}</button>` : "<span></span>"}
       ${i < PLAN.patterns.length - 1 ? `<button type="button" id="pNext">${esc(PLAN.patterns[i+1][0])} →</button>` : ""}</div>`;
   s.hidden = false; document.getElementById("scrim").hidden = false; s.scrollTop = 0;
@@ -850,7 +967,7 @@ function mineRow(r, day, ctx){
     <label class="prob"><input type="checkbox" id="${ctx}m-${k}" data-k="${k}" ${state.probs[k] ? "checked" : ""}>
       <a href="${r.url}" target="_blank" rel="noopener">${esc(r.name)}${srcChip(r.url)}</a>
       <span class="mmeta"><span class="mpat">${esc(r.pattern)}</span><span class="tag ${r.diff}">${r.diff}</span></span></label>
-    <span class="acts">${cmb(r.slug, r.name)}${bm(r.slug, r.name)}</span></div>${cmtRegion(r.slug, ctx + "m-" + r.slug + "-" + day)}${PLAN.solutions[r.slug] ? solHTML(r.slug, day, ctx + "m") : ""}</div>`;
+    <span class="acts">${cmb(r.slug, r.name)}${bm(r.slug, r.name)}</span></div>${cmtRegion(r.slug, ctx + "m-" + r.slug + "-" + day)}${PLAN.solutions[r.slug] ? solHTML(r.slug, day, ctx + "m") : ""}${subSlot(r.slug)}</div>`;
 }
 const matchText = (name, slug) => !qFilter.text || name.toLowerCase().includes(qFilter.text) || (state.notes[slug] && state.notes[slug].t.toLowerCase().includes(qFilter.text));
 function renderQuestions(){
@@ -918,7 +1035,7 @@ function drawQ(){
           <label class="prob"><input type="checkbox" id="q-${k}" data-k="${k}" ${state.probs[k] ? "checked" : ""}>
             <a href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener"><span class="qn">${i}.</span> ${esc(name)}</a>
             <span class="mmeta">${MINE_SLUGS.has(slug) ? '<span class="pqmine">your list</span>' : ""}<span class="tag ${diff}">${diff}</span></span></label><span class="acts">${cmb(slug, name)}${bm(slug, name)}</span>
-          </div>${cmtRegion(slug, "q-" + slug + "-" + d.day)}${solHTML(slug, d.day, "q")}
+          </div>${cmtRegion(slug, "q-" + slug + "-" + d.day)}${solHTML(slug, d.day, "q")}${subSlot(slug)}
         </div>`; }).join("")}
       ${mine.length ? `<div class="minehead"><b>From your list</b> · ${mine.length} question${mine.length === 1 ? "" : "s"} for this day's patterns</div>${mine.map(r => mineRow(r, d.day, "q")).join("")}` : ""}
     </section>`;
@@ -969,7 +1086,7 @@ function renderPP(){
             const detail = nApp ? `<tr class="ppsolrow" id="pps-${i}" hidden><td class="rn"></td><td colspan="7"><div class="ppsolwrap">
                 ${withSol.map(([sl, day]) => `${withSol.length > 1 ? `<div class="ppsolname">${esc(names[sl] || sl)}</div>` : ""}${solHTML(sl, +day, "pp" + i)}`).join("")}
               </div></td></tr>` : "";
-            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol">${btn}</td></tr>${detail}`;
+            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol">${btn}${slugs.map(([sl]) => subSlot(sl, "link")).join("")}</td></tr>${detail}`;
           }).join("")}
         </tbody></table></div>`;
     root.querySelectorAll(".ppap").forEach(b => b.onclick = () => {
@@ -1060,7 +1177,8 @@ function renderTracker(){
       <div class="trchart" id="trChart">${trChart(win, D.byDay, today)}</div>
       <div class="trtip" id="trTip" hidden></div>
     </div>
-    <div class="trcard"><h3>Daily log</h3>${trLog(days, D)}</div>`;
+    <div class="trcard"><h3>Daily log</h3>${trLog(days, D)}</div>${syncCard()}`;
+  wireSync(root);
   root.querySelectorAll(".trrange button").forEach(b => b.onclick = () => { TR.range = +b.dataset.r; renderTracker(); });
   const tip = document.getElementById("trTip"), chart = document.getElementById("trChart");
   chart.querySelectorAll(".hit").forEach(h => {
@@ -1144,6 +1262,7 @@ function renderSD(){
   document.querySelectorAll("#sd .snote").forEach(n => n.onclick = () => openSheet(+n.dataset.day));
 }
 renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
+if (SYNC.repo && Date.now() - SYNC.at > 10 * 60000) syncLC();
 const totop = document.getElementById("totop");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function onScroll(){ totop.hidden = window.scrollY < 300; }
