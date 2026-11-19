@@ -2,9 +2,10 @@ import os, re, subprocess, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sd_lld1 import LLD1
 from sd_lld2 import LLD2
+from sd_lld3 import LLD3
 env = dict(os.environ, JAVA_TOOL_OPTIONS="")
 tmp = tempfile.mkdtemp(); bad = 0
-for q in LLD1 + LLD2:
+for q in LLD3 if len(sys.argv) > 1 else LLD1 + LLD2 + LLD3:
     cls = re.search(r"public class (\w+)", q["code"]).group(1)
     d = os.path.join(tmp, cls); os.makedirs(d)
     open(os.path.join(d, cls + ".java"), "w").write(q["code"])

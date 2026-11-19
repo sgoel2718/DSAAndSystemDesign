@@ -7,7 +7,7 @@ SDX.hld.forEach(h => SD_TAB_OF[h.id] = 29); SDX.lld.forEach(l => SD_TAB_OF[l.id]
 SD_TAB_OF["hld-framework"] = 32;
 const SD_TITLE = id => (SDX.concepts[id] || SDX.hld.find(h => h.id === id) || SDX.lld.find(l => l.id === id) || {title: id === "hld-framework" ? "HLD interview framework" : id}).title;
 if (!state.sd) state.sd = {c: {}, h: {}, l: {}};
-let SDV = {level: "All", q: "", open: new Set(), practice: false, qaTopic: "All", qaShowAll: false, company: "All", coPick: "Amazon"};
+let SDV = {level: "All", q: "", open: new Set(), practice: false, qaTopic: "All", qaShowAll: false, company: "All", coPick: "Amazon", freq: "All"};
 try { const g = localStorage.getItem("dsa30-group"); if (g === "sd") { SDV.group = "sd"; } } catch (e) {}
 const isSD = f => f >= 20 || f === 7;
 
@@ -94,12 +94,15 @@ function seqSVG(d, label){
 
 /* ---------- shared bits ---------- */
 const lvBadge = l => `<span class="sdlv ${l[0]}">${l}</span>`;
-const freqBadge = f => f ? `<span class="sdfq ${f === "Very common" ? "v" : f === "Common" ? "c" : "s"}" title="How often this question appears in interview reports and prep lists">${f === "Very common" ? "★★★" : f === "Common" ? "★★" : "★"} ${f}</span>` : "";
+const FREQ_ICON = {"Very common": ["v", "★★★"], "Common": ["c", "★★"], "Sometimes": ["s", "★"], "Less common": ["l", "☆"]};
+const freqBadge = f => f ? `<span class="sdfq ${FREQ_ICON[f][0]}" title="How often this question appears in interview reports and prep lists">${FREQ_ICON[f][1]} ${f}</span>` : "";
 const SD_COMPANIES = (() => { const m = {}; [...SDX.hld, ...SDX.lld].forEach(q => q.companies.forEach(c => m[c] = (m[c] || 0) + 1));
   return Object.entries(m).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])); })();
 const coOK = q => SDV.company === "All" || q.companies.includes(SDV.company);
 const coSelect = () => `<label class="sdco-sel">Company <select id="sdCo"><option value="All">All companies</option>${SD_COMPANIES.map(([c, n]) => `<option value="${esc(c)}"${SDV.company === c ? " selected" : ""}>${esc(c)} (${n})</option>`).join("")}</select></label>`;
-const FREQ_ORDER = {"Very common": 0, "Common": 1, "Sometimes": 2, "": 3};
+const qaCoSelect = () => { const m = {}; SDX.qa.forEach(q => q.companies.forEach(c => m[c] = (m[c] || 0) + 1));
+  return `<label class="sdco-sel">Company <select id="sdCo"><option value="All">All companies</option>${Object.entries(m).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<option value="${esc(c)}"${SDV.company === c ? " selected" : ""}>${esc(c)} (${n})</option>`).join("")}</select></label>`; };
+const FREQ_ORDER = {"Very common": 0, "Common": 1, "Sometimes": 2, "Less common": 3, "": 4};
 const doneMark = on => on ? `<span class="sddone" title="Learned">✓</span>` : "";
 function sdCounts(){
   const c = Object.keys(SDX.concepts).length, cl = Object.keys(state.sd.c).filter(k => state.sd.c[k] && SDX.concepts[k]).length;
@@ -248,12 +251,14 @@ function renderCompanies(root){
   const all = [...SDX.hld.map(q => [q, "HLD"]), ...SDX.lld.map(q => [q, "LLD"])].filter(([q]) => lvOK(q.level)).sort((a, b) => byF(a[0], b[0]));
   root.innerHTML = `<div class="eyebrow">System design · company-wise</div><h2>Which questions are asked at which company</h2>
     <p class="lead">Pick a company to see the HLD and LLD questions reported in its interviews, most frequently asked first. The table below shows every question against the big companies at a glance.</p>
-    <div class="sdbox tip"><b>How to read this</b><p>Company tags come from public candidate reports (LeetCode Discuss, Glassdoor, Blind, GeeksforGeeks interview experiences) and prep lists. <b>★★★ Very common</b> = in the top 10 most-repeated design questions across prep sources (PracHub, Nov 2026); <b>★★ Common</b> = top 20; <b>★ Sometimes</b> = top 30. Companies change their question pools, so treat this as a strong guide, not a guarantee, and prepare the ★★★ ones first.</p></div>
+    <div class="sdbox tip"><b>How to read this</b><p>Company tags come from public candidate reports (LeetCode Discuss, Glassdoor, Blind, GeeksforGeeks interview experiences) and prep lists. <b>★★★ Very common</b> = in the top 10 most-repeated design questions across prep sources (PracHub, Nov 2026); <b>★★ Common</b> = top 20; <b>★ Sometimes</b> = top 30; <b>☆ Less common</b> = asked, but outside the top 30. Q&amp;A frequency marks staple concept questions (CAP, SQL vs NoSQL, caching, sharding…) as ★★★. Companies change their question pools, so treat this as a strong guide, not a guarantee, and prepare the ★★★ ones first.</p></div>
     ${sdToolbar("Search all of system design", "")}
     <div class="sdcos" role="group" aria-label="Company">${SD_COMPANIES.map(([c, n]) => `<button type="button" data-co="${esc(c)}" aria-pressed="${pick === c}">${esc(c)} <small>${n}</small></button>`).join("")}</div>
-    <h3 class="sdcoh">${esc(pick)}: ${hs.length} HLD · ${ls.length} LLD questions</h3>
+    <h3 class="sdcoh">${esc(pick)}: ${hs.length} HLD · ${ls.length} LLD · ${SDX.qa.filter(x => x.companies.includes(pick)).length} Q&amp;A</h3>
     ${hs.length ? `<h3 class="sdsec">High-level design</h3><div class="sdlist wide">${hs.map(hldCard).join("")}</div>` : ""}
     ${ls.length ? `<h3 class="sdsec">Low-level design (Java)</h3><div class="sdlist wide">${ls.map(lldCard).join("")}</div>` : ""}
+    ${(() => { const qs = SDX.qa.filter(x => x.companies.includes(pick) && lvOK(x.level)).sort((a, b) => FREQ_ORDER[a.freq] - FREQ_ORDER[b.freq]);
+      return qs.length ? `<h3 class="sdsec">Conceptual Q&amp;A commonly asked at ${esc(pick)} (${qs.length})</h3><div class="sdqa">${qs.map(x => `<details class="sdq"><summary><span class="sdqq">${mdInline(x.q)}</span><span class="sdbadges">${freqBadge(x.freq)}${lvBadge(x.level)}</span></summary><div class="sdqa-a">${md(x.a)}</div></details>`).join("")}</div>` : ""; })()}
     <h3 class="sdsec">All questions × companies</h3>
     <div class="tscroll"><table class="sdt sdmatrix"><thead><tr><th scope="col">Question</th><th scope="col">Type</th><th scope="col">How often</th>${MAJOR.map(c => `<th scope="col">${c}</th>`).join("")}<th scope="col">Also asked at</th></tr></thead>
       <tbody>${all.map(([q, k]) => row(q, k)).join("")}</tbody></table></div>
@@ -265,15 +270,19 @@ function renderCompanies(root){
 /* ---------- Q&A ---------- */
 function renderQA(root){
   const q = SDV.q.trim().toLowerCase(), topics = ["All", ...new Set(SDX.qa.map(x => x.topic))];
-  const list = SDX.qa.filter(x => lvOK(x.level) && (SDV.qaTopic === "All" || x.topic === SDV.qaTopic) && hit(q, x.q, x.a, x.topic));
+  const list = SDX.qa.filter(x => lvOK(x.level) && coOK(x) && (SDV.freq === "All" || x.freq === SDV.freq) && (SDV.qaTopic === "All" || x.topic === SDV.qaTopic) && hit(q, x.q, x.a, x.topic, x.companies.join(" ")))
+    .sort((a, b) => SDV.freq === "All" && SDV.qaSort === "freq" ? FREQ_ORDER[a.freq] - FREQ_ORDER[b.freq] : 0);
   root.innerHTML = `<div class="eyebrow">System design · rapid fire</div><h2>Interview Q&amp;A</h2>
-    <p class="lead">${SDX.qa.length} short conceptual questions interviewers fire between design steps, with crisp model answers. Say your answer out loud first, then open it.</p>
-    ${sdToolbar("Search questions", `<button type="button" class="sdtog" id="sdShowAll">${SDV.qaShowAll ? "Hide all answers" : "Show all answers"}</button>`)}
+    <p class="lead">${SDX.qa.length} short conceptual questions interviewers fire between design steps, with crisp model answers. Each shows where it is commonly asked and how often (★★★ asked in almost every loop). Say your answer out loud first, then open it.</p>
+    ${sdToolbar("Search questions or a company", `${qaCoSelect()}<label class="sdco-sel">How often <select id="sdFreq">${["All", "Very common", "Common", "Sometimes"].map(f => `<option${SDV.freq === f ? " selected" : ""}>${f}</option>`).join("")}</select></label><label class="sdpract"><input type="checkbox" id="sdSort"${SDV.qaSort === "freq" ? " checked" : ""}> Most asked first</label><button type="button" class="sdtog" id="sdShowAll">${SDV.qaShowAll ? "Hide all answers" : "Show all answers"}</button>`)}
     <div class="sdtopics" role="group" aria-label="Topic">${topics.map(t => `<button type="button" data-tp="${esc(t)}" aria-pressed="${SDV.qaTopic === t}">${esc(t)}</button>`).join("")}</div>
     <p class="sdcount">${list.length} questions</p>
-    <div class="sdqa">${list.map((x, i) => `<details class="sdq"${SDV.qaShowAll ? " open" : ""}><summary><span class="sdqn">${i + 1}</span><span class="sdqq">${mdInline(x.q)}</span>${lvBadge(x.level)}<span class="sdqt">${esc(x.topic)}</span></summary><div class="sdqa-a">${md(x.a)}</div></details>`).join("") || `<p class="qempty">No questions match.</p>`}</div>`;
+    <div class="sdqa">${list.map((x, i) => `<details class="sdq"${SDV.qaShowAll ? " open" : ""}><summary><span class="sdqn">${i + 1}</span><span class="sdqq">${mdInline(x.q)}<span class="sdqco">Asked at ${x.companies.map(esc).join(" · ")}</span></span><span class="sdbadges">${freqBadge(x.freq)}${lvBadge(x.level)}<span class="sdqt">${esc(x.topic)}</span></span></summary><div class="sdqa-a">${md(x.a)}</div></details>`).join("") || `<p class="qempty">No questions match.</p>`}</div>`;
   sdWireToolbar(root);
   root.querySelector("#sdShowAll").onclick = () => { SDV.qaShowAll = !SDV.qaShowAll; renderSDX(); };
+  root.querySelector("#sdCo").onchange = e => { SDV.company = e.target.value; renderSDX(); };
+  root.querySelector("#sdFreq").onchange = e => { SDV.freq = e.target.value; renderSDX(); };
+  root.querySelector("#sdSort").onchange = e => { SDV.qaSort = e.target.checked ? "freq" : ""; renderSDX(); };
   root.querySelectorAll(".sdtopics button").forEach(b => b.onclick = () => { SDV.qaTopic = b.dataset.tp; renderSDX(); });
 }
 
@@ -335,6 +344,7 @@ function renderSearch(root){
 /* ---------- main render + delegated events ---------- */
 function renderSDX(){
   const root = document.getElementById("sdx");
+  if (SDV.lastTab !== filter) { SDV.company = "All"; SDV.freq = "All"; SDV.lastTab = filter; }   // filters are per tab
   if (filter === 20 && SDV.q.trim()) renderSearch(root);
   else if (filter === 20) renderStart(root);
   else if (filter >= 21 && filter <= 27) renderConceptTab(root, SDX.tabs[filter - 21]);

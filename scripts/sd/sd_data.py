@@ -13,6 +13,10 @@ from sd_hld2 import HLD2
 from sd_lld1 import LLD1
 from sd_lld2 import LLD2
 from sd_qa import QA
+from sd_qa2 import QA2
+from sd_qa_tags import tag
+from sd_hld3 import HLD3
+from sd_lld3 import LLD3
 import sd_meta as M
 
 # (tab key, tab label, intro, [(section name, concepts)])
@@ -41,8 +45,10 @@ def build():
             for c in cs:
                 assert c["id"] not in concepts, "duplicate concept " + c["id"]
                 concepts[c["id"]] = c
-    hld = HLD1 + HLD2
-    lld = LLD1 + LLD2
+    hld = HLD1 + HLD2 + HLD3
+    lld = LLD1 + LLD2 + LLD3
+    qa = [tag(q) for q in QA + QA2]
+    assert len({q["q"] for q in qa}) == len(qa), "duplicate Q&A"
     ids = set(concepts) | {h["id"] for h in hld} | {l["id"] for l in lld} | {"hld-framework"}
     assert len({h["id"] for h in hld}) == len(hld) and len({l["id"] for l in lld}) == len(lld)
     labs = {"estimator", "ratelimit", "lb", "cache", "ring", "quorum", "fanout"}
@@ -72,13 +78,13 @@ def build():
     common = ["proximity-hld", "instagram-hld", "ticketmaster-hld", "cache-hld", "payment-hld", "googledocs-hld", "maps-hld", "adclick-hld", "metrics-hld", "jobscheduler-hld"]
     some = ["mq-hld", "fooddelivery-hld", "stockexchange-hld", "llmserving-hld", "hotel-hld", "kvstore-hld", "leaderboard-hld", "idgen-hld", "s3-hld", "tinder-hld"]
     for h in hld:
-        h["freq"] = "Very common" if h["id"] in very else "Common" if h["id"] in common else "Sometimes" if h["id"] in some else ""
+        h["freq"] = "Very common" if h["id"] in very else "Common" if h["id"] in common else "Sometimes" if h["id"] in some else "Less common"
     lvery = ["parkinglot-lld", "lru-lld", "splitwise-lld", "bookmyshow-lld", "elevator-lld", "ratelimiter-lld"]
-    lcommon = ["vending-lld", "snakeladder-lld", "tictactoe-lld", "library-lld", "logger-lld", "kvstore-lld", "pubsub-lld", "atm-lld", "taskscheduler-lld"]
+    lcommon = ["chess-lld", "meetingroom-lld", "vending-lld", "snakeladder-lld", "tictactoe-lld", "library-lld", "logger-lld", "kvstore-lld", "pubsub-lld", "atm-lld", "taskscheduler-lld"]
     for l in lld:
         l["freq"] = "Very common" if l["id"] in lvery else "Common" if l["id"] in lcommon else "Sometimes"
     tabs = [dict(key=k, label=l, intro=i, sections=[dict(name=n, ids=[c["id"] for c in cs]) for n, cs in secs]) for k, l, i, secs in CONCEPT_TABS]
-    return dict(tabs=tabs, concepts=concepts, hld=hld, lld=lld, qa=QA,
+    return dict(tabs=tabs, concepts=concepts, hld=hld, lld=lld, qa=qa,
                 roadmap=[dict(name=n, why=w, ids=l) for n, w, l in M.ROADMAP],
                 framework=M.HLD_FRAMEWORK, levels=M.LEVELS_EXPECT, mistakes=M.MISTAKES, think=M.THINK, dbpick=M.DB_PICK,
                 powers=M.POWERS, numbers=M.QUICK_NUMBERS, companies=M.COMPANIES)
