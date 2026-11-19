@@ -376,7 +376,11 @@ document.addEventListener("change", e => {
   const t = e.target; if (!t.dataset) return;
   const set = (bucket, id) => { if (t.checked) state.sd[bucket][id] = Date.now(); else delete state.sd[bucket][id]; save();
     const card = t.closest(".sdc"); if (card) { card.classList.toggle("learned", t.checked); const tt = card.querySelector(".sdct"); const m = tt.querySelector(".sddone"); if (t.checked && !m) tt.insertAdjacentHTML("beforeend", doneMark(true)); if (!t.checked && m) m.remove(); }
-    const prog = document.querySelector("#sdx .sdprog"); if (prog && filter >= 21 && filter <= 30) { const y = window.scrollY; renderSDX(); window.scrollTo(0, y); } };
+    if (t.checked) SDV.open.delete(id);                                  // done: fold the card up
+    const prog = document.querySelector("#sdx .sdprog");
+    if (prog && filter >= 21 && filter <= 30) { const y = window.scrollY; renderSDX(); window.scrollTo(0, y); }
+    else if (t.checked && card) { const b = card.querySelector(".sdcb"), h = card.querySelector(".sdch"); b.hidden = true; h.setAttribute("aria-expanded", "false"); }
+    if (t.checked) { const c2 = document.getElementById("sdc-" + id); if (c2) { const r = c2.getBoundingClientRect(); if (r.top < 0 || r.top > innerHeight) c2.scrollIntoView({block: "start"}); c2.querySelector(".sdch").focus({preventScroll: true}); } } };
   if (t.dataset.learn) set("c", t.dataset.learn); else if (t.dataset.hld) set("h", t.dataset.hld); else if (t.dataset.lld) set("l", t.dataset.lld);
 });
 
