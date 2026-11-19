@@ -613,10 +613,16 @@ for _d in DAYS:
     _d["approach"] = DAY_APPROACH.get(_d["day"], [])
 assert all(n in PLAYBOOK for n, _, _ in PATTERNS), [n for n, _, _ in PATTERNS if n not in PLAYBOOK]
 
+def _sdx():
+    import os, sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "sd"))
+    import sd_data
+    return sd_data.build()
+
 def as_json():
     return json.dumps(dict(start=START, weeks=WEEKS, days=DAYS, schedule=DAILY_SCHEDULE, project=PROJECT, extras=EXTRAS, resources=RESOURCES,
                            patterns=PATTERNS, java=JAVA_CHEATSHEET, revision=REVISION, companies=COMPANIES,
-                           playbook=PLAYBOOK, solutions=SOLUTIONS, pp=dict(header=_pp.HEADER, rows=_pp.ROWS, source=_pp.SOURCE, heads=_pp.header_rows(), keys=_pp.row_keys(DAYS, MINE_BY_DAY, __import__('pattern_questions').SHEET_NEW)), pattern_q=PATTERN_Q, mine={str(k): v for k, v in MINE_BY_DAY.items()}, pwp=dict(url=_pwp.SHEET_URL, sections=PWP), sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS)), ensure_ascii=False)
+                           playbook=PLAYBOOK, solutions=SOLUTIONS, pp=dict(header=_pp.HEADER, rows=_pp.ROWS, source=_pp.SOURCE, heads=_pp.header_rows(), keys=_pp.row_keys(DAYS, MINE_BY_DAY, __import__('pattern_questions').SHEET_NEW)), pattern_q=PATTERN_Q, mine={str(k): v for k, v in MINE_BY_DAY.items()}, pwp=dict(url=_pwp.SHEET_URL, sections=PWP), sd=dict(framework=SD_FRAMEWORK, blocks=SD_BLOCKS, cases=SD_CASES, lld=SD_LLD, numbers=SD_NUMBERS), sdx=_sdx()), ensure_ascii=False)
 
 if __name__ == "__main__":
     print(len(DAYS), sum(len(d["problems"]) for d in DAYS))
