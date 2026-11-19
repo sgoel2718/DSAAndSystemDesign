@@ -243,7 +243,10 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .pptable td:nth-child(4){min-width:260px}
 .pptable td:nth-child(n+5){max-width:280px;overflow-wrap:anywhere;font:12px var(--mono)}
 .pptable td a{color:var(--accent);text-decoration:none}.pptable td a:hover{text-decoration:underline}
-.pptable .apcol{width:132px;text-align:center}
+.pptable .apcol{width:150px;vertical-align:middle}
+.apbtns{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.apbtns .mysubslot.ppbtn{display:contents}
+.apbtns .ppap{width:100%;text-align:center;display:inline-flex;justify-content:center;align-items:center;gap:2px}
 .ppap{font:500 12.5px var(--sans);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:99px;padding:3px 10px;cursor:pointer;white-space:nowrap}
 .ppap::after{content:" ▸";display:inline-block;transition:transform .15s}
 .ppap[aria-expanded="true"]::after{transform:rotate(90deg)}
@@ -386,7 +389,8 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .mysub summary{cursor:pointer;padding:7px 10px;font:600 13.5px var(--sans);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mysubdot{width:8px;height:8px;border-radius:50%;background:var(--ce)}
 .mysubbody{padding:0 10px 10px;display:grid;gap:8px}
-.ppmine{margin-left:6px;border-color:var(--ce)!important}
+.ppap.ppmine{color:var(--ce);background:color-mix(in srgb,var(--ce) 10%,var(--panel));border-color:color-mix(in srgb,var(--ce) 40%,transparent)}
+.ppap.ppmine:focus-visible{outline-color:var(--ce)}
 .mysublink{display:inline-block;margin-left:6px;font:600 12px var(--sans);white-space:nowrap}
 .mysubslot.link{display:inline}
 .sync .synclead{margin:6px 0 10px;color:var(--muted);font-size:14px}
@@ -717,7 +721,7 @@ async function syncLC(manual){
 }
 function subSlot(slug, mode){ return `<div class="mysubslot${mode ? " " + mode : ""}" data-slug="${slug}">${subHTML(slug, mode)}</div>`; }
 function ppSubBtn(slugs, i){
-  return slugs.some(sl => SYNC.files[sl]) ? `<button type="button" class="ppap ppmine" data-i="${i}" aria-controls="pps-${i}">My code</button>` : "";
+  return slugs.some(sl => SYNC.files[sl]) ? `<button type="button" class="ppap ppmine" data-i="${i}" aria-expanded="false" aria-controls="pps-${i}">My code</button>` : "";
 }
 function subHTML(slug, mode){
   const r = SYNC.files[slug]; if (!r) return "";
@@ -1116,7 +1120,7 @@ function renderPP(){
                 ${uniq.map(([sl]) => subSlot(sl, "", "pp")).join("")}
                 ${withSol.map(([sl, day]) => `${withSol.length > 1 ? `<div class="ppsolname">${esc(names[sl] || sl)}</div>` : ""}${solHTML(sl, +day, "pp" + i)}`).join("")}
               </div></td></tr>` : "";
-            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol">${btn}${keys.length ? `<span class="mysubslot ppbtn" data-slug="${uniq.map(([sl]) => sl).join(",")}" data-i="${i}">${ppSubBtn(uniq.map(([sl]) => sl), i)}</span>` : ""}</td></tr>${detail}`;
+            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol"><div class="apbtns">${btn}${keys.length ? `<span class="mysubslot ppbtn" data-slug="${uniq.map(([sl]) => sl).join(",")}" data-i="${i}">${ppSubBtn(uniq.map(([sl]) => sl), i)}</span>` : ""}</div></td></tr>${detail}`;
           }).join("")}
         </tbody></table></div>`;
     root.addEventListener("click", e => {
@@ -1134,6 +1138,11 @@ function renderPP(){
     wireCopy(root);
     root.querySelectorAll(".ppck").forEach(c => c.onchange = () => {
       PLAN.pp.keys[+c.dataset.i].forEach(k => setSolved(k, c.checked));
+      if (c.checked) {                      // done: fold the row's approaches / code back up
+        const row = document.getElementById("pps-" + c.dataset.i);
+        if (row) { row.hidden = true; row.dataset.show = ""; row.querySelectorAll("details").forEach(d => d.open = false); }
+        root.querySelectorAll(`.ppap[data-i="${c.dataset.i}"]`).forEach(x => x.setAttribute("aria-expanded", "false"));
+      }
       save(); renderTop(); ppSync();
     });
   }
