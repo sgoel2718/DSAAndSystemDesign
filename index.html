@@ -687,12 +687,12 @@ abbr[title]{text-decoration:underline dotted;text-decoration-color:color-mix(in 
 .hlbtn{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--sans);background:transparent;color:var(--bg);border:0;border-radius:99px;padding:6px 10px;cursor:pointer}
 .hlbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
 .hldot{width:18px;height:18px;border-radius:50%;border:2px solid var(--bg);cursor:pointer;padding:0;margin-right:2px}
-.hldot.g{background:#8fe3a8}.hldot.p{background:#f7a8c8}
+.hldot.y{background:#ffef00}.hldot.g{background:#5cff5c}.hldot.p{background:#ff6ec7}
 .hlbtn:focus-visible,.hldot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 mark.hl{color:inherit;border-radius:3px;padding:0 1px;cursor:pointer;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-mark.hl-y{background:rgba(255,213,79,.55)}mark.hl-g{background:rgba(102,214,137,.45)}mark.hl-p{background:rgba(244,143,177,.5)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) mark.hl-y{background:rgba(255,213,79,.35)}:root:not([data-theme="light"]) mark.hl-g{background:rgba(102,214,137,.3)}:root:not([data-theme="light"]) mark.hl-p{background:rgba(244,143,177,.32)}}
-:root[data-theme="dark"] mark.hl-y{background:rgba(255,213,79,.35)}:root[data-theme="dark"] mark.hl-g{background:rgba(102,214,137,.3)}:root[data-theme="dark"] mark.hl-p{background:rgba(244,143,177,.32)}
+mark.hl-y,mark.hl-g,mark.hl-p{color:#111!important}
+mark.hl-y{background:#ffef00}mark.hl-g{background:#5cff5c}mark.hl-p{background:#ff6ec7}
+mark.hl abbr{text-decoration-color:rgba(0,0,0,.45)}
 mark.hl.hlflash{outline:2px solid var(--accent);outline-offset:2px}
 .hlmenu{position:absolute;z-index:62;display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
 .hlmenu button{font:600 13px var(--sans);border:0;background:none;color:var(--ink);padding:6px 10px;border-radius:8px;cursor:pointer}
@@ -2492,7 +2492,7 @@ const expPop = document.createElement("div");
 expPop.className = "exppop"; expPop.hidden = true; expPop.setAttribute("role", "dialog"); expPop.setAttribute("aria-label", "Explanation");
 const selTool = document.createElement("div");
 selTool.className = "seltool"; selTool.hidden = true; selTool.setAttribute("role", "toolbar"); selTool.setAttribute("aria-label", "Selected text");
-selTool.innerHTML = `<span class="hlgroup"><button type="button" class="hlbtn" data-hc="y" aria-label="Highlight yellow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l-5 5v4h4l5-5M14 6l4 4M9 11l5-5 4 4-5 5z"/></svg>Highlight</button><button type="button" class="hldot g" data-hc="g" aria-label="Highlight green"></button><button type="button" class="hldot p" data-hc="p" aria-label="Highlight pink"></button></span><button type="button" class="hlrmbtn" hidden aria-label="Remove highlight from the selected text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16l-3-3 9-9 6 6-7 7H9z"/></svg>Remove highlight</button>`;
+selTool.innerHTML = `<span class="hlgroup"><button type="button" class="hlbtn" data-hc="y" aria-label="Highlight yellow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l-5 5v4h4l5-5M14 6l4 4M9 11l5-5 4 4-5 5z"/></svg>Highlight</button><button type="button" class="hldot y" data-hc="y" aria-label="Highlight yellow"></button><button type="button" class="hldot g" data-hc="g" aria-label="Highlight green"></button><button type="button" class="hldot p" data-hc="p" aria-label="Highlight pink"></button></span><button type="button" class="hlrmbtn" hidden aria-label="Remove highlight from the selected text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16l-3-3 9-9 6 6-7 7H9z"/></svg>Remove highlight</button>`;
 selTool.prepend(expBtn); expBtn.hidden = false;
 document.body.append(selTool, expPop);
 
@@ -2774,7 +2774,7 @@ if (SDV.group === "sd") filter = 20;
 renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
 startAbbr(); startHighlights();
 /* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes; if a newer build is live, reload once */
-const BUILD = "6b21a420aadd";
+const BUILD = "289d23d081d3";
 if (location.protocol === "https:" && location.hostname.endsWith("github.io")) {
   fetch(location.pathname + "?build=" + Date.now(), {cache: "no-store"}).then(r => r.text()).then(t => {
     const m = t.match(/const BUILD = "([0-9a-f]{12})"/);
