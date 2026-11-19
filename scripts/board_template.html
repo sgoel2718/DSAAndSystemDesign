@@ -1319,6 +1319,7 @@ function renderSD(){
 /*__SDJS__*/
 if (SDV.group === "sd") filter = 20;
 renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
+startAbbr();
 if (SYNC.repo && Date.now() - SYNC.at > 10 * 60000) syncLC();
 const totop = document.getElementById("totop");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

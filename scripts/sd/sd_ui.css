@@ -242,3 +242,5 @@ nav#tabs{margin-top:12px}
 .sayw{display:inline-block;font:600 10.5px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:8px}
 .saya{margin:0;padding:8px 12px;background:var(--panel);border-left:3px solid var(--ce);border-radius:0 8px 8px 0;font-size:14.5px;line-height:1.55}
 .saya .sayw{display:block;margin-bottom:2px;color:var(--ce)}
+
+abbr[title]{text-decoration:underline dotted;text-decoration-color:color-mix(in srgb,var(--muted) 70%,transparent);text-underline-offset:3px;cursor:help}

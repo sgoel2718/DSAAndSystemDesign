@@ -14,7 +14,7 @@ const isSD = f => f === 34 ? GROUP === "sd" : (f >= 20 || f === 7);
 
 /* ---------- markdown-lite ---------- */
 function mdInline(s){
-  return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[\s(])\*([^*\s][^*]*)\*(?=[\s.,;:)!?]|$)/g, "$1<i>$2</i>");
 }
 function md(src){
   if (!src) return "";
