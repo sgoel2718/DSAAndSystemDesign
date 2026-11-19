@@ -118,8 +118,11 @@ function renderNotes(root){
   root.querySelectorAll("[data-unmark]").forEach(b => b.onclick = () => { delete state.tm[b.dataset.unmark]; save(); renderSDX(); });
   root.querySelectorAll("[data-unnote]").forEach(b => b.onclick = () => { const k = "n:" + b.dataset.unnote; if (NV.confirm === k) { delete state.tn[b.dataset.unnote]; NV.confirm = null; save(); } else NV.confirm = k; renderSDX(); });
   root.querySelector("#nvProb").onclick = () => { filter = 5; qFilter.marks = true; qFilter.notes = false; GROUP = "dsa"; renderTabs(); renderBoard(); };
-  root.querySelector("#nvExport").onclick = () => {
+  root.querySelector("#nvExport").onclick = async () => {
     const blob = new Blob([JSON.stringify({app: "dsa30", exported: new Date().toISOString(), state}, null, 1)], {type: "application/json"});
+    const fname = "dsa-notes-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    try { const dl = window.claude && claude.use ? await claude.use("downloads") : null;     // inside the Claude viewer
+      if (dl) { await dl.save({filename: fname, data: blob}); return; } } catch (e) { if (e && e.code) return; }
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "dsa-notes-backup-" + new Date().toISOString().slice(0, 10) + ".json";
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   };
