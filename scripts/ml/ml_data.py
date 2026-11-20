@@ -15,6 +15,8 @@ from ml_labs import LABS
 from ml_qa import QA
 from ml_meta import TABS, ROADMAP, DEMOS, CAPSTONES, KIT, CHEAT
 from ml_projects import PROJECTS
+from deep import d_py, d_stats, d_math, d_found, d_sup, d_unsup, d_dl, d_cv, d_nlp, d_gen, d_ops  # noqa: F401  (register deep layers)
+from deep.util import D as DEEP
 from ml_proj_util import LEVELS as PJ_LEVELS
 
 TOPIC_COMPANIES = {
@@ -91,6 +93,12 @@ def build():
         for s_ in p["see"]:
             assert s_ in concepts, (p["id"], s_)
             concepts[s_].setdefault("projects", []).append(p["id"])
+    for cid, c in concepts.items():
+        assert cid in DEEP, "no deep layer/walkthrough for " + cid
+        d = DEEP[cid]; c["deep"] = {k: d[k] for k in ("intuition", "maths", "worked", "mistakes", "use", "avoid")}
+        c["e2e"] = {k: d[k] for k in ("data", "steps", "code", "net")}
+        assert c.get("projects"), "concept not used in any end-to-end project: " + cid
+    assert not set(DEEP) - set(concepts), set(DEEP) - set(concepts)
     caps = []
     for c in CAPSTONES:
         caps.append(dict(c))

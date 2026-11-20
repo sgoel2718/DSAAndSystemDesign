@@ -61,3 +61,15 @@
 .pjsteps .codewrap{margin-top:6px}
 .pjsteps{grid-template-columns:minmax(0,1fr)}.pjsteps>li{min-width:0}.pjsteps .codewrap,.pjsteps pre{max-width:100%}
 .pjsteps pre.code{max-height:none}
+/* deep layer + walkthrough */
+.mldeep,.mle2e{margin:16px 0 8px;padding-top:6px;border-top:1px dashed var(--line)}
+.mldeeph{margin:4px 0 6px;font-size:15px}
+.sdbox.mlmath{background:color-mix(in srgb,var(--lab1) 7%,var(--panel))}
+.mluse{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 12px}
+.sdbox.mlok{background:color-mix(in srgb,var(--ce) 8%,var(--panel))}.sdbox.mlno{background:color-mix(in srgb,var(--cm) 8%,var(--panel))}
+.mle2esteps{margin:6px 0 10px;padding-left:22px;font-size:14.5px}.mle2esteps li{margin:2px 0}
+.mldeep .sdmd p,.mldeep .sdbox p{margin:4px 0}
+.pjcov{margin:8px 0 10px}
+.pjcovall{margin:22px 0;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--panel)}.pjcovall summary{cursor:pointer}
+.pjcovt{border-collapse:collapse;width:100%;font-size:13.5px;margin:4px 0 10px}.pjcovt th,.pjcovt td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}
+.pjcovt .sdlink{margin:2px 4px 2px 0}

@@ -147,6 +147,7 @@ function conceptBody(c){
     ${c.example ? `<div class="sdbox ex"><b>Real-world example</b><p>${mdInline(c.example)}</p></div>` : ""}
     ${c.diagram ? diagramSVG(c.diagram, c.title) : ""}
     ${c.code ? pyBlock(c.code, c.net) : ""}
+    ${c.deep ? mlDeep(c) : ""}
     ${c.demo ? `<div class="sdlabhost" data-demo="${c.demo}"><button type="button" class="sdlabbtn" data-demo="${c.demo}">▶ Try the live demo: ${esc(ML_DEMO_TITLE(c.demo))}</button></div>` : ""}
     ${c.projects && c.projects.length ? `<div class="sdsee"><span>Build it (end-to-end project):</span>${c.projects.map(l => `<button type="button" class="sdlink" data-go="${l}">🛠 ${esc(SD_TITLE(l))}</button>`).join("")}</div>` : ""}
     ${c.labs && c.labs.length ? `<div class="sdsee"><span>Hands-on lab:</span>${c.labs.map(l => `<button type="button" class="sdlink" data-golab-ml="${l}">${esc(SD_TITLE(l))}</button>`).join("")}</div>` : ""}

@@ -25,6 +25,26 @@ function pyBlock(code, net){
   return `<div class="codewrap"><div class="codebar"><span>Python · ${net ? "needs internet or an API key: run it in Colab / VS Code" : "verified: runs as-is in Google Colab or VS Code"}</span><span class="cbtns"><button type="button" class="copy sdcopy">Copy</button><a class="copy" href="https://colab.research.google.com/#create=true" target="_blank" rel="noopener">New Colab notebook ↗</a></span></div><pre class="code py">${pyHL(code)}</pre></div>`;
 }
 
+/* ---------- deep layer + end-to-end walkthrough on every concept ---------- */
+function mlDeep(c){
+  if (!c.deep) return "";
+  const d = c.deep, e = c.e2e, li = xs => `<ul>${xs.map(x => `<li>${mdInline(x)}</li>`).join("")}</ul>`;
+  return `<section class="mldeep" aria-label="Go deeper">
+    <h4 class="mldeeph">Go deeper</h4>
+    <div class="sdbox an"><b>Intuition</b>${md(d.intuition)}</div>
+    <div class="sdbox mlmath"><b>The maths</b>${md(d.maths)}</div>
+    <div class="sdbox ex"><b>Worked example by hand</b>${md(d.worked)}</div>
+    <div class="mluse"><div class="sdbox mlok"><b>Use it when</b>${li(d.use)}</div><div class="sdbox mlno"><b>Avoid it when</b>${li(d.avoid)}</div></div>
+    <div class="sdbox tip"><b>Common mistakes</b>${li(d.mistakes)}</div>
+  </section>
+  <section class="mle2e" aria-label="End-to-end walkthrough">
+    <h4 class="mldeeph">End-to-end walkthrough</h4>
+    <p class="pjmeta"><b>Data:</b> ${mdInline(e.data)}</p>
+    <ol class="mle2esteps">${e.steps.map(x => `<li>${mdInline(x)}</li>`).join("")}</ol>
+    ${pyBlock(e.code, e.net)}
+  </section>`;
+}
+
 /* ---------- toolbar shared by ML tabs ---------- */
 const mlToolbar = (ph, extra = "") => sdToolbar(ph, extra).replace('<span class="sr">Search system design</span>', '<span class="sr">Search machine learning</span>');
 const mlProg = (n, d, what) => `<div class="sdprog"><div class="trbar"><i style="width:${n ? d / n * 100 : 0}%"></i></div><span><b>${d}</b> of ${n} ${what}</span></div>`;
@@ -95,7 +115,7 @@ function renderMLStart(root){
   const pick = MLX.capstones.find(c => c.id === state.mlcap.pick);
   root.innerHTML = `<div class="eyebrow">ML &amp; AI · start here</div><h2>Machine Learning &amp; AI: from Python basics to generative and agentic AI</h2>
     ${mlToolbar("Search all of ML & AI: concepts, labs, interview questions")}
-    <p class="lead">A complete course in the order you should learn it: the Python and maths bridge, classical machine learning, deep learning, computer vision and speech, NLP and transformers, LLMs, RAG, generative and agentic AI, and deploying models. Every topic has a plain-English explanation, an analogy or example, runnable Python, and what to say in an interview. Live demos run in your browser.</p>
+    <p class="lead">A complete course in the order you should learn it: the Python and maths bridge, classical machine learning, deep learning, computer vision and speech, NLP and transformers, LLMs, RAG, generative and agentic AI, and deploying models. Every topic has a plain-English explanation, an analogy or example, runnable Python, and what to say in an interview — plus a <i>Go deeper</i> layer (intuition, the maths, a worked example by hand, common mistakes, when to use it and when not) and an <i>end-to-end walkthrough</i> on real data, and every concept is built in at least one end-to-end project. Live demos run in your browser.</p>
     <div class="sdstats"><div><b>${learned}<span>/${allIds.length}</span></b>concepts learned</div><div><b>${labsDone}<span>/${MLX.labs.length}</span></b>labs completed</div>
       <div><b>${MLX.demos.length}</b>live demos</div><div><b>${MLX.qa.length}</b>interview Q&amp;As</div><div><b>${MLX.projects.length}</b>end-to-end projects</div><div><b>${MLX.capstones.length}</b>capstone options</div></div>
     ${nx ? `<div class="sdbox tip mlnext"><b>Continue where you left off</b><p>Day ${nx.day.day} of ${MLX.plan.length}: ${esc(nx.day.title)}</p><button type="button" class="sdlabbtn" data-go="${nx.id}">Open: ${esc(SD_TITLE(nx.id))} →</button></div>` : `<div class="sdbox tip"><b>Every concept learned!</b><p>Finish the labs and pick a capstone.</p></div>`}
@@ -227,6 +247,7 @@ function pjBody(p){
   return `<p class="pjmeta"><span class="pjv ${v[1]}">${v[0]}</span> · ${esc(p.time)} · ${esc(p.run)} · topic: ${esc(tabLbl)}</p>
     <p class="labnote">${esc(PLAN.mlx.pjlevels[p.verify])}</p>
     <div class="sdbox an"><b>What you'll build</b><ul>${p.build.map(x => `<li>${mdInline(x)}</li>`).join("")}</ul></div>
+    ${p.see.length ? `<div class="sdsee pjcov"><span>Covers ${p.see.length} concepts:</span>${p.see.map(s => `<button type="button" class="sdlink" data-go="${s}">${state.sd.c[s] ? "✓ " : ""}${esc(SD_TITLE(s))}</button>`).join("")}</div>` : ""}
     <p><b>Skills:</b> ${p.skills.map(esc).join(" · ")}</p><p><b>Data:</b> ${mdInline(p.data)}</p>
     <div class="pjflow">${p.arch.map(a => `<span>${esc(a)}</span>`).join("<i>→</i>")}</div>
     <h4>Project structure</h4><pre class="code pjtree">${esc(p.tree)}</pre>
@@ -238,15 +259,21 @@ function pjBody(p){
     ${p.talk.length ? `<div class="sdbox tip sdsay"><b>In the interview: how to present this project</b><ul>${p.talk.map(t => `<li>${mdInline(t)}</li>`).join("")}</ul></div>` : ""}
     ${p.extend.length ? `<div class="sdbox an"><b>Take it further</b><ul>${p.extend.map(x => `<li>${mdInline(x)}</li>`).join("")}</ul></div>` : ""}
     <div class="sdbox"><b>Publish it</b><ol><li>Create a GitHub repo (or a folder in your <i>AI-ML-Projects</i> repo), add a README with the goal, results table, screenshots and how to run.</li><li>For apps, deploy a demo (Hugging Face Spaces / Streamlit Cloud) and link it in the README.</li><li>Add the project to your resume with one quantified result line.</li></ol></div>
-    ${p.see.length ? `<div class="sdsee"><span>Concepts used:</span>${p.see.map(s => `<button type="button" class="sdlink" data-go="${s}">${esc(SD_TITLE(s))}</button>`).join("")}</div>` : ""}
     <label class="sdlearn"><input type="checkbox" data-pjdone="${p.id}"${state.mlpj && state.mlpj[p.id] && state.mlpj[p.id].done ? " checked" : ""}> I built this project</label>`;
+}
+function pjCoverage(){
+  const by = {}; MLX.projects.forEach(p => p.see.forEach(c => (by[c] = by[c] || []).push(p)));
+  const all = MLX.tabs.flatMap(t => t.sections.flatMap(s => s.ids)), covered = all.filter(id => by[id]).length;
+  return `<details class="pjcovall"><summary><b>Concept coverage:</b> ${covered} of ${all.length} concepts are used in at least one project — open to see which project builds each concept</summary>
+    ${MLX.tabs.map(t => `<h4>${esc(t.label)}</h4><table class="pjcovt"><thead><tr><th scope="col">Concept</th><th scope="col">Built in</th></tr></thead><tbody>${t.sections.flatMap(s => s.ids).map(id => `<tr><td><button type="button" class="sdlink" data-go="${id}">${esc(SD_TITLE(id))}</button></td><td>${(by[id] || []).map(p => `<button type="button" class="sdlink" data-go="${p.id}">🛠 ${esc(p.title.split(":")[0])}</button>`).join(" ") || "—"}</td></tr>`).join("")}</tbody></table>`).join("")}
+  </details>`;
 }
 function pjCard(p){
   const open = SDV.open.has(p.id), done = !!(state.mlpj && state.mlpj[p.id] && state.mlpj[p.id].done), v = PJ_VERIFY[p.verify];
   return `<article class="sdc mlcard pjcard${done ? " learned" : ""}" id="sdc-${p.id}">
     <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${p.id}" data-id="${p.id}">
       <span class="sdct"><b>${esc(p.title)}</b>${doneMark(done)}</span><span class="sdlv ${p.level[0]}">${esc(p.level)}</span>
-      <span class="sdwhat">${mdInline(p.what)}<br><span class="pjv ${v[1]}">${v[0]}</span> <span class="pjsm">${esc(p.time)} · ${p.steps.filter(s => s.file).length} files</span></span></button>${tmActs("mlpj:" + p.id, p.title, "mlpj")}${state.tn["mlpj:" + p.id] ? tmNoteArea("mlpj:" + p.id) : ""}
+      <span class="sdwhat">${mdInline(p.what)}<br><span class="pjv ${v[1]}">${v[0]}</span> <span class="pjsm">${esc(p.time)} · ${p.steps.filter(s => s.file).length} files · covers ${p.see.length} concepts</span></span></button>${tmActs("mlpj:" + p.id, p.title, "mlpj")}${state.tn["mlpj:" + p.id] ? tmNoteArea("mlpj:" + p.id) : ""}
     <div class="sdcb" id="sdb-${p.id}"${open ? "" : " hidden"}>${open ? pjBody(p) : ""}</div></article>`;
 }
 function renderProjects(root){
@@ -254,11 +281,12 @@ function renderProjects(root){
   const list = MLX.projects.filter(p => (PJV.tab === "All" || p.tab === PJV.tab) && hit(q, p.title, p.what, p.skills.join(" "), p.steps.map(s => s.title + " " + s.code).join(" ")));
   const done = MLX.projects.filter(p => state.mlpj && state.mlpj[p.id] && state.mlpj[p.id].done).length, nv = k => MLX.projects.filter(p => p.verify === k).length;
   root.innerHTML = `<div class="eyebrow">ML &amp; AI · build real things</div><h2>End-to-end projects</h2>
-    <p class="lead">${MLX.projects.length} complete projects, at least one for every topic, from an empty folder to a working, deployed app: real datasets, real pretrained models, full source files, tests, a demo app and deployment. Open one and follow the steps; every file has a Copy button and the folder tree shows where it goes.</p>
+    <p class="lead">${MLX.projects.length} complete projects that together use every one of the course's concepts (see the coverage table at the bottom), from an empty folder to a working, deployed app: real datasets, real pretrained models, full source files, tests, a demo app and deployment. Open one and follow the steps; every file has a Copy button and the folder tree shows where it goes.</p>
     <div class="sdstats"><div><b>${nv("full")}</b>verified end to end here on real data</div><div><b>${nv("smoke")}</b>pipeline verified (full run on a Colab GPU)</div><div><b>${nv("static")}</b>code-checked; need a GPU or API key</div><div><b>${done}<span>/${MLX.projects.length}</span></b>built by you</div></div>
     ${mlToolbar("Search projects, e.g. RAG, YOLO, FastAPI, forecasting").replace(/<div class="sdlvls"[\s\S]*?<\/div>/, "")}
     <div class="sdtopics" role="group" aria-label="Topic">${tabs.map(t => `<button type="button" data-pjtab="${t}" aria-pressed="${PJV.tab === t}">${esc(t === "All" ? "All topics" : (MLX.tabs.find(x => x.key === t) || {}).label)}</button>`).join("")}</div>
-    <div class="sdlist">${list.map(pjCard).join("") || `<p class="qempty">No projects match.</p>`}</div>`;
+    <div class="sdlist">${list.map(pjCard).join("") || `<p class="qempty">No projects match.</p>`}</div>
+    ${pjCoverage()}`;
   sdWireToolbar(root);
   root.querySelectorAll("[data-pjtab]").forEach(b => b.onclick = () => { PJV.tab = b.dataset.pjtab; renderSDX(); });
 }
