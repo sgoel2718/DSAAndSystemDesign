@@ -14,6 +14,8 @@ from ml_ops import OPS
 from ml_labs import LABS
 from ml_qa import QA
 from ml_meta import TABS, ROADMAP, DEMOS, CAPSTONES, KIT, CHEAT
+from ml_projects import PROJECTS
+from ml_proj_util import LEVELS as PJ_LEVELS
 
 TOPIC_COMPANIES = {
     "ML fundamentals": ["Google", "Amazon", "Microsoft", "Flipkart", "Walmart Global Tech", "Fractal", "TCS / Infosys"],
@@ -83,11 +85,17 @@ def build():
     for l in labs:
         d = max(where[s] for s in l["see"])
         plan[d]["labs"].append(l["id"])
+    tabkeys = {t["key"] for t in tabs}
+    for p in PROJECTS:
+        assert p["tab"] in tabkeys, p["id"]
+        for s_ in p["see"]:
+            assert s_ in concepts, (p["id"], s_)
+            concepts[s_].setdefault("projects", []).append(p["id"])
     caps = []
     for c in CAPSTONES:
         caps.append(dict(c))
     return dict(tabs=tabs, concepts=concepts, labs=labs, qa=qa, plan=plan, roadmap=[dict(name=n, why=w, tabs=k) for n, w, k in ROADMAP],
-                demos=[dict(id=i, title=t, desc=d) for i, t, d in DEMOS], capstones=caps, kit=KIT, cheat=CHEAT)
+                demos=[dict(id=i, title=t, desc=d) for i, t, d in DEMOS], capstones=caps, kit=KIT, cheat=CHEAT, projects=PROJECTS, pjlevels=PJ_LEVELS)
 
 
 if __name__ == "__main__":

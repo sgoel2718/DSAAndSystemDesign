@@ -97,12 +97,12 @@ function renderMLStart(root){
     ${mlToolbar("Search all of ML & AI: concepts, labs, interview questions")}
     <p class="lead">A complete course in the order you should learn it: the Python and maths bridge, classical machine learning, deep learning, computer vision and speech, NLP and transformers, LLMs, RAG, generative and agentic AI, and deploying models. Every topic has a plain-English explanation, an analogy or example, runnable Python, and what to say in an interview. Live demos run in your browser.</p>
     <div class="sdstats"><div><b>${learned}<span>/${allIds.length}</span></b>concepts learned</div><div><b>${labsDone}<span>/${MLX.labs.length}</span></b>labs completed</div>
-      <div><b>${MLX.demos.length}</b>live demos</div><div><b>${MLX.qa.length}</b>interview Q&amp;As</div><div><b>${MLX.capstones.length}</b>capstone options</div></div>
+      <div><b>${MLX.demos.length}</b>live demos</div><div><b>${MLX.qa.length}</b>interview Q&amp;As</div><div><b>${MLX.projects.length}</b>end-to-end projects</div><div><b>${MLX.capstones.length}</b>capstone options</div></div>
     ${nx ? `<div class="sdbox tip mlnext"><b>Continue where you left off</b><p>Day ${nx.day.day} of ${MLX.plan.length}: ${esc(nx.day.title)}</p><button type="button" class="sdlabbtn" data-go="${nx.id}">Open: ${esc(SD_TITLE(nx.id))} →</button></div>` : `<div class="sdbox tip"><b>Every concept learned!</b><p>Finish the labs and pick a capstone.</p></div>`}
     <div class="sdbox an"><b>How to use this section</b><ol>
       <li><b>Learn</b> one day of the <button type="button" class="sdlink" data-mltab="57">${MLX.plan.length}-day study plan</button> at a time: open each concept card, read it, run its code in Colab, and tick <i>I understand this concept</i>.</li>
       <li><b>Play</b> with the <button type="button" class="sdlink" data-mltab="52">live demos</button> to build intuition (gradient descent, overfitting, k-means, neural networks, attention…).</li>
-      <li><b>Do</b> the <button type="button" class="sdlink" data-mltab="53">hands-on lab</button> attached to each day.</li>
+      <li><b>Do</b> the <button type="button" class="sdlink" data-mltab="53">hands-on lab</button> attached to each day, then <b>build</b> the <button type="button" class="sdlink" data-mltab="58">end-to-end project</button> for that topic.</li>
       <li><b>Revise</b> with the <button type="button" class="sdlink" data-mltab="54">interview Q&amp;A</button> and <button type="button" class="sdlink" data-mltab="56">cheat sheet</button>, then build a <button type="button" class="sdlink" data-mltab="55">capstone project</button>${pick ? ` (your pick: <b>${esc(pick.title)}</b>)` : ""}.</li>
       <li>Select any text to <b>Explain</b> or <b>Highlight</b> it; tap ☆ / ✎ on any card to bookmark or write a note.</li></ol></div>
     ${MLX.roadmap.map(st => `<div class="sdstage"><div class="sdsh"><h3>${esc(st.name)}</h3></div><p>${esc(st.why)}</p>
@@ -206,7 +206,66 @@ function renderMLX(root){
   else if (filter === 55) renderCapstones(root);
   else if (filter === 56) renderMLCheat(root);
   else if (filter === 57) renderMLPlan(root);
+  else if (filter === 58) renderProjects(root);
 }
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-mltab]"); if (t) { filter = +t.dataset.mltab; renderTabs(); renderBoard(); document.getElementById("tabs").scrollIntoView({behavior: "smooth"}); }
+});
+
+/* ---------- end-to-end projects ---------- */
+ML_TABS.splice(ML_TABS.findIndex(t => t[0] === 53), 0, [58, "🛠 End-to-end projects"]);
+MLX.projects.forEach(p => SD_TAB_OF[p.id] = 58);
+const PJ_VERIFY = {full: ["✓ Verified end to end", "ok"], smoke: ["✓ Pipeline verified (smoke run)", "sm"], static: ["Code-checked · needs GPU/API", "st"]};
+let PJV = {tab: "All"};
+function codeBlock(code, lang, file){
+  const body = lang === "python" ? pyHL(code) : esc(code);
+  return `<div class="codewrap"><div class="codebar"><span>${file ? `<b>${esc(file)}</b>` : esc(lang === "bash" ? "Terminal" : lang)}</span><span class="cbtns"><button type="button" class="copy sdcopy">Copy</button></span></div><pre class="code ${lang === "python" ? "py" : ""}">${body}</pre></div>`;
+}
+function pjBody(p){
+  const v = PJ_VERIFY[p.verify], tabLbl = (MLX.tabs.find(t => t.key === p.tab) || {}).label || "";
+  const stepsDone = (state.mlpj && state.mlpj[p.id]) || {};
+  return `<p class="pjmeta"><span class="pjv ${v[1]}">${v[0]}</span> · ${esc(p.time)} · ${esc(p.run)} · topic: ${esc(tabLbl)}</p>
+    <p class="labnote">${esc(PLAN.mlx.pjlevels[p.verify])}</p>
+    <div class="sdbox an"><b>What you'll build</b><ul>${p.build.map(x => `<li>${mdInline(x)}</li>`).join("")}</ul></div>
+    <p><b>Skills:</b> ${p.skills.map(esc).join(" · ")}</p><p><b>Data:</b> ${mdInline(p.data)}</p>
+    <div class="pjflow">${p.arch.map(a => `<span>${esc(a)}</span>`).join("<i>→</i>")}</div>
+    <h4>Project structure</h4><pre class="code pjtree">${esc(p.tree)}</pre>
+    <h4>Build it step by step</h4>
+    <ol class="pjsteps">${p.steps.map((s, i) => `<li class="${stepsDone[i] ? "done" : ""}"><div class="pjsh"><label><input type="checkbox" data-pjstep="${p.id}|${i}"${stepsDone[i] ? " checked" : ""}> <b>${esc(s.title)}</b></label>${s.file ? `<code>${esc(s.file)}</code>` : ""}</div>
+      ${s.text ? md(s.text) : ""}${s.code ? codeBlock(s.code.replace(/\n$/, ""), s.lang, s.file) : ""}</li>`).join("")}</ol>
+    ${p.check.length ? `<div class="sdbox ex"><b>How it was verified here</b><p>These commands were run on the real project files${p.verify === "smoke" ? " (smoke mode)" : ""}:</p>${codeBlock(p.check.join("\n"), "bash")}</div>` : ""}
+    ${p.errors.length ? `<div class="sdbox tip"><b>Errors you may hit and the fix</b><ul>${p.errors.map(([e, f]) => `<li><b>${esc(e)}</b> → ${mdInline(f)}</li>`).join("")}</ul></div>` : ""}
+    ${p.talk.length ? `<div class="sdbox tip sdsay"><b>In the interview: how to present this project</b><ul>${p.talk.map(t => `<li>${mdInline(t)}</li>`).join("")}</ul></div>` : ""}
+    ${p.extend.length ? `<div class="sdbox an"><b>Take it further</b><ul>${p.extend.map(x => `<li>${mdInline(x)}</li>`).join("")}</ul></div>` : ""}
+    <div class="sdbox"><b>Publish it</b><ol><li>Create a GitHub repo (or a folder in your <i>AI-ML-Projects</i> repo), add a README with the goal, results table, screenshots and how to run.</li><li>For apps, deploy a demo (Hugging Face Spaces / Streamlit Cloud) and link it in the README.</li><li>Add the project to your resume with one quantified result line.</li></ol></div>
+    ${p.see.length ? `<div class="sdsee"><span>Concepts used:</span>${p.see.map(s => `<button type="button" class="sdlink" data-go="${s}">${esc(SD_TITLE(s))}</button>`).join("")}</div>` : ""}
+    <label class="sdlearn"><input type="checkbox" data-pjdone="${p.id}"${state.mlpj && state.mlpj[p.id] && state.mlpj[p.id].done ? " checked" : ""}> I built this project</label>`;
+}
+function pjCard(p){
+  const open = SDV.open.has(p.id), done = !!(state.mlpj && state.mlpj[p.id] && state.mlpj[p.id].done), v = PJ_VERIFY[p.verify];
+  return `<article class="sdc mlcard pjcard${done ? " learned" : ""}" id="sdc-${p.id}">
+    <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${p.id}" data-id="${p.id}">
+      <span class="sdct"><b>${esc(p.title)}</b>${doneMark(done)}</span><span class="sdlv ${p.level[0]}">${esc(p.level)}</span>
+      <span class="sdwhat">${mdInline(p.what)}<br><span class="pjv ${v[1]}">${v[0]}</span> <span class="pjsm">${esc(p.time)} · ${p.steps.filter(s => s.file).length} files</span></span></button>${tmActs("mlpj:" + p.id, p.title, "mlpj")}${state.tn["mlpj:" + p.id] ? tmNoteArea("mlpj:" + p.id) : ""}
+    <div class="sdcb" id="sdb-${p.id}"${open ? "" : " hidden"}>${open ? pjBody(p) : ""}</div></article>`;
+}
+function renderProjects(root){
+  const q = SDV.q.trim().toLowerCase(), tabs = ["All", ...new Set(MLX.projects.map(p => p.tab))];
+  const list = MLX.projects.filter(p => (PJV.tab === "All" || p.tab === PJV.tab) && hit(q, p.title, p.what, p.skills.join(" "), p.steps.map(s => s.title + " " + s.code).join(" ")));
+  const done = MLX.projects.filter(p => state.mlpj && state.mlpj[p.id] && state.mlpj[p.id].done).length, nv = k => MLX.projects.filter(p => p.verify === k).length;
+  root.innerHTML = `<div class="eyebrow">ML &amp; AI · build real things</div><h2>End-to-end projects</h2>
+    <p class="lead">${MLX.projects.length} complete projects, at least one for every topic, from an empty folder to a working, deployed app: real datasets, real pretrained models, full source files, tests, a demo app and deployment. Open one and follow the steps; every file has a Copy button and the folder tree shows where it goes.</p>
+    <div class="sdstats"><div><b>${nv("full")}</b>verified end to end here on real data</div><div><b>${nv("smoke")}</b>pipeline verified (full run on a Colab GPU)</div><div><b>${nv("static")}</b>code-checked; need a GPU or API key</div><div><b>${done}<span>/${MLX.projects.length}</span></b>built by you</div></div>
+    ${mlToolbar("Search projects, e.g. RAG, YOLO, FastAPI, forecasting").replace(/<div class="sdlvls"[\s\S]*?<\/div>/, "")}
+    <div class="sdtopics" role="group" aria-label="Topic">${tabs.map(t => `<button type="button" data-pjtab="${t}" aria-pressed="${PJV.tab === t}">${esc(t === "All" ? "All topics" : (MLX.tabs.find(x => x.key === t) || {}).label)}</button>`).join("")}</div>
+    <div class="sdlist">${list.map(pjCard).join("") || `<p class="qempty">No projects match.</p>`}</div>`;
+  sdWireToolbar(root);
+  root.querySelectorAll("[data-pjtab]").forEach(b => b.onclick = () => { PJV.tab = b.dataset.pjtab; renderSDX(); });
+}
+document.addEventListener("change", e => {
+  const s = e.target.closest("[data-pjstep]"), d = e.target.closest("[data-pjdone]"); if (!s && !d) return;
+  state.mlpj = state.mlpj || {};
+  if (s) { const [id, i] = s.dataset.pjstep.split("|"); const o = state.mlpj[id] = state.mlpj[id] || {}; if (s.checked) o[i] = Date.now(); else delete o[i]; s.closest("li").classList.toggle("done", s.checked); }
+  if (d) { const o = state.mlpj[d.dataset.pjdone] = state.mlpj[d.dataset.pjdone] || {}; if (d.checked) o.done = Date.now(); else delete o.done; d.closest(".sdc").classList.toggle("learned", d.checked); }
+  save();
 });

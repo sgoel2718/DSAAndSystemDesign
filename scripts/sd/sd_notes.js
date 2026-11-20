@@ -3,7 +3,7 @@ if (!state.tm) state.tm = {};     // topic bookmarks: id -> {at, title, kind}
 if (!state.tn) state.tn = {};     // topic notes:     id -> {t, at, title, kind}
 if (!state.pad) state.pad = [];   // free notes:      [{id, title, text, at, up}]
 let NV = {q: "", kind: "All", confirm: null};
-const TM_KINDS = {sd: "System Design concept", hld: "HLD question", lld: "LLD question", qa: "Interview Q&A", day: "DSA day lesson", pat: "DSA pattern", ml: "ML & AI concept", mlab: "ML lab", mlqa: "ML interview Q&A"};
+const TM_KINDS = {sd: "System Design concept", hld: "HLD question", lld: "LLD question", qa: "Interview Q&A", day: "DSA day lesson", pat: "DSA pattern", ml: "ML & AI concept", mlab: "ML lab", mlqa: "ML interview Q&A", mlpj: "ML project"};
 const TM_ICON = on => `<svg viewBox="0 0 24 24" aria-hidden="true" class="tmico${on ? " on" : ""}"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>`;
 const NOTE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" class="tmico"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>';
 function tmKindOf(id){ const k = id.split(":")[0]; return k; }
@@ -143,6 +143,7 @@ function renderNotes(root){
       if (Array.isArray(s.hl)) { const have = new Set(state.hl.map(x => x.id)); state.hl.push(...s.hl.filter(x => !have.has(x.id))); }
       ["days", "probs", "marks", "notes", "tm", "tn"].forEach(k => { if (s[k]) state[k] = Object.assign({}, s[k], state[k] || {}); });   // merge, keep current on clash
       if (s.sd) ["c", "h", "l", "m"].forEach(k => state.sd[k] = Object.assign({}, s.sd[k] || {}, state.sd[k] || {}));
+      if (s.mlpj) state.mlpj = Object.assign({}, s.mlpj, state.mlpj || {});
       if (s.mlcap) { state.mlcap.short = Object.assign({}, s.mlcap.short || {}, state.mlcap.short); if (!state.mlcap.pick) state.mlcap.pick = s.mlcap.pick || ""; }
       if (Array.isArray(s.pad)) { const have = new Set(state.pad.map(x => x.id)); state.pad.push(...s.pad.filter(x => !have.has(x.id))); }
       save(); renderTop(); renderSDX(); root.querySelector(".lead").insertAdjacentHTML("afterend", `<p class="labrule ok">Backup imported and merged.</p>`);

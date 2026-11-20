@@ -6,7 +6,7 @@ SDX.tabs.forEach((t, i) => t.sections.forEach(s => s.ids.forEach(id => SD_TAB_OF
 SDX.hld.forEach(h => SD_TAB_OF[h.id] = 29); SDX.lld.forEach(l => SD_TAB_OF[l.id] = 30);
 SD_TAB_OF["hld-framework"] = 32;
 const CONCEPT = id => SDX.concepts[id] || (PLAN.mlx && PLAN.mlx.concepts[id]);
-const SD_TITLE = id => (CONCEPT(id) || SDX.hld.find(h => h.id === id) || SDX.lld.find(l => l.id === id) || (PLAN.mlx && PLAN.mlx.labs.find(l => l.id === id)) || {title: id === "hld-framework" ? "HLD interview framework" : id}).title;
+const SD_TITLE = id => (CONCEPT(id) || SDX.hld.find(h => h.id === id) || SDX.lld.find(l => l.id === id) || (PLAN.mlx && (PLAN.mlx.labs.find(l => l.id === id) || PLAN.mlx.projects.find(p => p.id === id))) || {title: id === "hld-framework" ? "HLD interview framework" : id}).title;
 if (!state.sd) state.sd = {c: {}, h: {}, l: {}};
 if (!state.sd.m) state.sd.m = {};          // ML labs completed
 let SDV = {level: "All", q: "", open: new Set(), practice: false, qaTopic: "All", qaShowAll: false, company: "All", coPick: "Amazon", freq: "All"};
@@ -148,6 +148,7 @@ function conceptBody(c){
     ${c.diagram ? diagramSVG(c.diagram, c.title) : ""}
     ${c.code ? pyBlock(c.code, c.net) : ""}
     ${c.demo ? `<div class="sdlabhost" data-demo="${c.demo}"><button type="button" class="sdlabbtn" data-demo="${c.demo}">▶ Try the live demo: ${esc(ML_DEMO_TITLE(c.demo))}</button></div>` : ""}
+    ${c.projects && c.projects.length ? `<div class="sdsee"><span>Build it (end-to-end project):</span>${c.projects.map(l => `<button type="button" class="sdlink" data-go="${l}">🛠 ${esc(SD_TITLE(l))}</button>`).join("")}</div>` : ""}
     ${c.labs && c.labs.length ? `<div class="sdsee"><span>Hands-on lab:</span>${c.labs.map(l => `<button type="button" class="sdlink" data-golab-ml="${l}">${esc(SD_TITLE(l))}</button>`).join("")}</div>` : ""}
     ${c.lab ? `<div class="sdlabhost" data-lab="${c.lab}"><button type="button" class="sdlabbtn" data-lab="${c.lab}">▶ Try the interactive lab: ${esc(LAB_TITLES[c.lab])}</button></div>` : ""}
     ${c.say && c.say.length ? `<div class="sdbox tip sdsay"><b>In the interview: what to say</b>${c.say.map(x => `<div class="sayit">
@@ -179,6 +180,7 @@ function openCard(card){
 function cardBodyFor(id){
   if (CONCEPT(id)) return conceptBody(CONCEPT(id));
   if (id.startsWith("m-lab-")) return mlLabBody(PLAN.mlx.labs.find(l => l.id === id));
+  if (id.startsWith("p-") && PLAN.mlx.projects.some(p => p.id === id)) return pjBody(PLAN.mlx.projects.find(p => p.id === id));
   const h = SDX.hld.find(x => x.id === id); if (h) return hldBody(h);
   const l = SDX.lld.find(x => x.id === id); if (l) return lldBody(l);
   return "";

@@ -114,7 +114,7 @@ Object.assign(ABBR, {
 /* inside the ML & AI section (.mlx) some letters mean something else; null = leave as written */
 const ABBR_MLX = {L1: null, L2: null, L3: null, L4: null, L7: null, AP: "Average Precision", CP: null, DP: null, SC: null, TC: null, PN: null, OT: null, CI: null, CD: null,
   RED: null, USE: null, MAC: null, ACL: null, PK: null, NS: null, AZ: null, HA: null, DR: null, GC: null, ICE: "Individual Conditional Expectation", TF: "TensorFlow",
-  SSD: "Single Shot MultiBox Detector", EDA: "Exploratory Data Analysis", PDF: "Probability Density Function", ANN: null, EM: "Expectation–Maximisation", POS: "Part-Of-Speech",
+  SSD: "Single Shot MultiBox Detector", EDA: "Exploratory Data Analysis", PDF: null, ANN: null, EM: "Expectation–Maximisation", POS: "Part-Of-Speech",
   XOR: null, BASE: null, CAP: null, ETA: null, SLA: null, DST: null, PIN: null, PAN: null, ID: null, UI: null, IO: null};
 const ABBR_RE = new RegExp("(?<![\\w/.-])(" + [...new Set([...Object.keys(ABBR), ...Object.keys(ABBR_MLX)])].sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")(s?)(?![\\w/-])", "g");
 const ABBR_UNIT = ".sdc, .sdq, .mlcard, .mlcap, .sdstage, .lab, .sheet, .note, .pcard, .box, .nvitem, .sdbox, .qday, .ppsolwrap, .kit, .sdx > p, .sdx > h2, .trcard";
