@@ -570,13 +570,13 @@ function renderTop(){
 }
 function renderTabs(){
   const t = document.getElementById("tabs");
-  if (filter !== 34) GROUP = (filter >= 20 || filter === 7) ? "sd" : "dsa";
-  const sd = isSD(filter);
+  if (filter !== 34) GROUP = groupOf(filter);
+  const grp = groupOf(filter);
   const g = document.getElementById("groups");
-  g.innerHTML = `<button type="button" data-g="dsa" aria-pressed="${!sd}">DSA <small>30-day plan</small></button><button type="button" data-g="sd" aria-pressed="${sd}">System Design <small>basic → advanced</small></button>`;
-  g.querySelectorAll("button").forEach(b => b.onclick = () => { const toSD = b.dataset.g === "sd"; if (toSD === isSD(filter)) return;
-    filter = toSD ? 20 : 0; GROUP = toSD ? "sd" : "dsa"; try { localStorage.setItem("dsa30-group", b.dataset.g); } catch (e) {} renderTabs(); renderBoard(); });
-  const opts = sd ? SD_TABS : [[0,"All 30 days"],[11,"Progress tracker"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[10,"Padho with Pratyush Practice Sheet"],[9,"Build days"],[8,"Patterns: how to approach"],[34,"✎ My notes & bookmarks"]];
+  g.innerHTML = `<button type="button" data-g="dsa" aria-pressed="${grp === "dsa"}">DSA <small>30-day plan</small></button><button type="button" data-g="sd" aria-pressed="${grp === "sd"}">System Design <small>basic → advanced</small></button><button type="button" data-g="ml" aria-pressed="${grp === "ml"}">ML &amp; AI <small>basics → GenAI</small></button>`;
+  g.querySelectorAll("button").forEach(b => b.onclick = () => { const to = b.dataset.g; if (to === grp) return;
+    filter = to === "sd" ? 20 : to === "ml" ? 40 : 0; GROUP = to; try { localStorage.setItem("dsa30-group", to); } catch (e) {} renderTabs(); renderBoard(); });
+  const opts = grp === "sd" ? SD_TABS : grp === "ml" ? ML_TABS : [[0,"All 30 days"],[11,"Progress tracker"], [1,"Week 1 · Foundations"],[2,"Week 2 · Trees & Graphs"],[3,"Week 3 · Advanced Algorithms"],[4,"Week 4 · System Design days"],[6,"Questions (day-wise)"],[5,"★ Bookmarks"],[10,"Padho with Pratyush Practice Sheet"],[9,"Build days"],[8,"Patterns: how to approach"],[34,"✎ My notes & bookmarks"]];
   t.innerHTML = opts.map(([v,l]) => `<button type="button" id="tab-${v}" data-v="${v}" aria-pressed="${filter===v}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.v; if (filter === 5) qFilter.marks = true; if (filter === 6) { qFilter.marks = false; qFilter.notes = false; } renderTabs(); renderBoard(); });
 }
@@ -1317,7 +1317,7 @@ function renderSD(){
   document.querySelectorAll("#sd .snote").forEach(n => n.onclick = () => openSheet(+n.dataset.day));
 }
 /*__SDJS__*/
-if (SDV.group === "sd") filter = 20;
+if (SDV.group === "sd") filter = 20; else if (SDV.group === "ml") filter = 40;
 renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
 startAbbr(); startHighlights();
 /* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes, and open tabs never refresh by themselves.

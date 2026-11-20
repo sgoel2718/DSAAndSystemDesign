@@ -47,7 +47,7 @@ function applyHighlights(root){
   (root.querySelectorAll ? [root, ...root.querySelectorAll(".sdc[id], .sdq[id]")] : []).forEach(el => {
     const u = el.matches && (el.matches(".sdc[id], .sdq[id]") || el.id === "sheet") ? hlUnitOf(el) : null; if (u) units.set(u.key, u.unit); });
   const sheet = document.getElementById("sheet"); if (sheet && !sheet.hidden && root.contains && (root === sheet || sheet.contains(root) || root.contains(sheet))) { const u = hlUnitOf(sheet); if (u) units.set(u.key, u.unit); }
-  state.hl.forEach(h => { const u = units.get(h.key) || (h.key.startsWith("sdc-") || h.key.startsWith("qa-") ? document.getElementById(h.key) : null);
+  state.hl.forEach(h => { const u = units.get(h.key) || (h.key.startsWith("sdc-") || h.key.startsWith("qa-") || h.key.startsWith("mqa-") ? document.getElementById(h.key) : null);
     if (u && root.contains && (root.contains(u) || u.contains(root))) hlWrap(u, h); });
 }
 function addHighlight(color){
@@ -87,6 +87,7 @@ function hlGo(h){
   const k = h.key;
   if (k.startsWith("sdc-")) sdGo(k.slice(4));
   else if (k.startsWith("qa-")) tmGo("qa:" + k.slice(3));
+  else if (k.startsWith("mqa-")) tmGo("mlqa:" + k.slice(4));
   else if (k.startsWith("day:") || k.startsWith("pat:")) tmGo(k);
 }
 const hlObs = new MutationObserver(ms => { if (!state.hl.length) return; clearTimeout(hlObs.t); hlObs.t = setTimeout(() => {

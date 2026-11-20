@@ -5,12 +5,15 @@ const SD_TAB_OF = {};               // concept id -> filter number
 SDX.tabs.forEach((t, i) => t.sections.forEach(s => s.ids.forEach(id => SD_TAB_OF[id] = 21 + i)));
 SDX.hld.forEach(h => SD_TAB_OF[h.id] = 29); SDX.lld.forEach(l => SD_TAB_OF[l.id] = 30);
 SD_TAB_OF["hld-framework"] = 32;
-const SD_TITLE = id => (SDX.concepts[id] || SDX.hld.find(h => h.id === id) || SDX.lld.find(l => l.id === id) || {title: id === "hld-framework" ? "HLD interview framework" : id}).title;
+const CONCEPT = id => SDX.concepts[id] || (PLAN.mlx && PLAN.mlx.concepts[id]);
+const SD_TITLE = id => (CONCEPT(id) || SDX.hld.find(h => h.id === id) || SDX.lld.find(l => l.id === id) || (PLAN.mlx && PLAN.mlx.labs.find(l => l.id === id)) || {title: id === "hld-framework" ? "HLD interview framework" : id}).title;
 if (!state.sd) state.sd = {c: {}, h: {}, l: {}};
+if (!state.sd.m) state.sd.m = {};          // ML labs completed
 let SDV = {level: "All", q: "", open: new Set(), practice: false, qaTopic: "All", qaShowAll: false, company: "All", coPick: "Amazon", freq: "All"};
-try { const g = localStorage.getItem("dsa30-group"); if (g === "sd") { SDV.group = "sd"; GROUP = "sd"; } } catch (e) {}
 let GROUP = "dsa";
-const isSD = f => f === 34 ? GROUP === "sd" : (f >= 20 || f === 7);
+try { const g = localStorage.getItem("dsa30-group"); if (g === "sd" || g === "ml") { SDV.group = g; GROUP = g; } } catch (e) {}
+const groupOf = f => f === 34 ? GROUP : (f >= 40 && f < 60) ? "ml" : (f >= 20 || f === 7) ? "sd" : "dsa";
+const isSD = f => groupOf(f) === "sd";
 
 /* ---------- markdown-lite ---------- */
 function mdInline(s){
@@ -131,11 +134,11 @@ const hit = (q, ...xs) => !q || xs.some(x => x && String(x).toLowerCase().includ
 
 /* ---------- concept cards ---------- */
 function conceptCard(c){
-  const open = SDV.open.has(c.id), learned = !!state.sd.c[c.id];
+  const open = SDV.open.has(c.id), learned = !!state.sd.c[c.id], pre = c.id.startsWith("m-") ? "ml" : "sd";
   return `<article class="sdc${learned ? " learned" : ""}" id="sdc-${c.id}">
     <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${c.id}" data-id="${c.id}">
       <span class="sdct"><b>${esc(c.title)}</b>${doneMark(learned)}</span>${lvBadge(c.level)}
-      <span class="sdwhat">${mdInline(c.what)}</span></button>${tmActs("sd:" + c.id, c.title, "sd")}${state.tn["sd:" + c.id] ? tmNoteArea("sd:" + c.id) : ""}
+      <span class="sdwhat">${mdInline(c.what)}</span></button>${tmActs(pre + ":" + c.id, c.title, pre)}${state.tn[pre + ":" + c.id] ? tmNoteArea(pre + ":" + c.id) : ""}
     <div class="sdcb" id="sdb-${c.id}"${open ? "" : " hidden"}>${open ? conceptBody(c) : ""}</div></article>`;
 }
 function conceptBody(c){
@@ -143,6 +146,9 @@ function conceptBody(c){
     ${c.analogy ? `<div class="sdbox an"><b>Real-life analogy</b><p>${mdInline(c.analogy)}</p></div>` : ""}
     ${c.example ? `<div class="sdbox ex"><b>Real-world example</b><p>${mdInline(c.example)}</p></div>` : ""}
     ${c.diagram ? diagramSVG(c.diagram, c.title) : ""}
+    ${c.code ? pyBlock(c.code, c.net) : ""}
+    ${c.demo ? `<div class="sdlabhost" data-demo="${c.demo}"><button type="button" class="sdlabbtn" data-demo="${c.demo}">▶ Try the live demo: ${esc(ML_DEMO_TITLE(c.demo))}</button></div>` : ""}
+    ${c.labs && c.labs.length ? `<div class="sdsee"><span>Hands-on lab:</span>${c.labs.map(l => `<button type="button" class="sdlink" data-golab-ml="${l}">${esc(SD_TITLE(l))}</button>`).join("")}</div>` : ""}
     ${c.lab ? `<div class="sdlabhost" data-lab="${c.lab}"><button type="button" class="sdlabbtn" data-lab="${c.lab}">▶ Try the interactive lab: ${esc(LAB_TITLES[c.lab])}</button></div>` : ""}
     ${c.say && c.say.length ? `<div class="sdbox tip sdsay"><b>In the interview: what to say</b>${c.say.map(x => `<div class="sayit">
       <p class="sayq">${x.p.startsWith("Interviewer: ") ? `<span class="sayw">Interviewer asks</span>${mdInline(x.p.slice(13))}` : `<span class="sayw">Tip</span>${mdInline(x.p)}`}</p>
@@ -152,10 +158,10 @@ function conceptBody(c){
 }
 function renderConceptTab(root, t){
   const q = SDV.q.trim().toLowerCase(), all = t.sections.flatMap(s => s.ids), learned = all.filter(id => state.sd.c[id]).length;
-  const secs = t.sections.map(s => ({name: s.name, cs: s.ids.map(id => SDX.concepts[id]).filter(c => lvOK(c.level) && hit(q, c.title, c.what, c.body))})).filter(s => s.cs.length);
-  root.innerHTML = `<div class="eyebrow">System design · ${esc(t.label)}</div><h2>${esc(t.label)}</h2><p class="lead">${esc(t.intro)}</p>
+  const secs = t.sections.map(s => ({name: s.name, cs: s.ids.map(CONCEPT).filter(c => lvOK(c.level) && hit(q, c.title, c.what, c.body))})).filter(s => s.cs.length);
+  root.innerHTML = `<div class="eyebrow">${t.key ? "ML &amp; AI" : "System design"} · ${esc(t.label)}</div><h2>${esc(t.label)}</h2><p class="lead">${esc(t.intro)}</p>
     <div class="sdprog"><div class="trbar"><i style="width:${learned / all.length * 100}%"></i></div><span><b>${learned}</b> of ${all.length} concepts learned in this tab</span></div>
-    ${sdToolbar("Search this tab, e.g. cache, Kafka, CAP", `<button type="button" class="sdtog" id="sdExpand">${secs.every(s => s.cs.every(c => SDV.open.has(c.id))) ? "Collapse all" : "Expand all"}</button>`)}
+    ${sdToolbar(t.key ? "Search this tab, e.g. gradient, overfitting, attention" : "Search this tab, e.g. cache, Kafka, CAP", `<button type="button" class="sdtog" id="sdExpand">${secs.every(s => s.cs.every(c => SDV.open.has(c.id))) ? "Collapse all" : "Expand all"}</button>`)}
     <div class="sdlayout">
       <nav class="sdtoc" aria-label="Concepts in this tab"><details open><summary>Contents</summary>${secs.map(s => `<div class="sdtocs"><b>${esc(s.name)}</b>${s.cs.map(c => `<a href="#sdc-${c.id}" data-toc="${c.id}"><span class="dot ${c.level[0]}" aria-hidden="true"></span>${esc(c.title)}${state.sd.c[c.id] ? " ✓" : ""}</a>`).join("")}</div>`).join("")}</details></nav>
       <div class="sdlist">${secs.length ? secs.map(s => `<h3 class="sdsec">${esc(s.name)}</h3>${s.cs.map(conceptCard).join("")}`).join("") : `<p class="qempty">No concepts match. Clear the search or choose another level.</p>`}</div>
@@ -171,7 +177,8 @@ function openCard(card){
   body.hidden = false; btn.setAttribute("aria-expanded", "true"); SDV.open.add(id);
 }
 function cardBodyFor(id){
-  if (SDX.concepts[id]) return conceptBody(SDX.concepts[id]);
+  if (CONCEPT(id)) return conceptBody(CONCEPT(id));
+  if (id.startsWith("m-lab-")) return mlLabBody(PLAN.mlx.labs.find(l => l.id === id));
   const h = SDX.hld.find(x => x.id === id); if (h) return hldBody(h);
   const l = SDX.lld.find(x => x.id === id); if (l) return lldBody(l);
   return "";
@@ -348,6 +355,8 @@ function renderSearch(root){
 function renderSDX(){
   const root = document.getElementById("sdx");
   if (SDV.lastTab !== filter) { SDV.company = "All"; SDV.freq = "All"; SDV.lastTab = filter; }   // filters are per tab
+  root.classList.toggle("mlx", groupOf(filter) === "ml");
+  if (filter >= 40 && filter < 60) { renderMLX(root); return; }
   if (filter === 20 && SDV.q.trim()) renderSearch(root);
   else if (filter === 20) renderStart(root);
   else if (filter >= 21 && filter <= 27) renderConceptTab(root, SDX.tabs[filter - 21]);
@@ -369,6 +378,8 @@ document.addEventListener("click", e => {
   }
   const go = e.target.closest("[data-go]"); if (go) { sdGo(go.dataset.go); return; }
   const gl = e.target.closest("[data-golab]"); if (gl) { filter = 28; renderTabs(); renderBoard(); requestAnimationFrame(() => { const el = document.getElementById("lab-" + gl.dataset.golab); if (el) el.scrollIntoView({block: "start"}); }); return; }
+  const dm = e.target.closest(".sdlabbtn[data-demo]"); if (dm) { const host = dm.parentElement; host.innerHTML = mlDemoHTML(dm.dataset.demo, "in"); ML_DEMOS[dm.dataset.demo](host.querySelector(".lab")); return; }
+  const glm = e.target.closest("[data-golab-ml]"); if (glm) { mlGoLab(glm.dataset.golabMl); return; }
   const lb = e.target.closest(".sdlabbtn"); if (lb) { const host = lb.parentElement; host.innerHTML = labHTML(lb.dataset.lab, "in"); LABS[lb.dataset.lab](host.querySelector(".lab")); return; }
   const cp = e.target.closest(".sdcopy");
   if (cp) { const pre = cp.closest(".codewrap").querySelector("pre"); const done = () => { cp.textContent = "Copied"; setTimeout(() => cp.textContent = "Copy", 1500); };
@@ -380,10 +391,10 @@ document.addEventListener("change", e => {
     const card = t.closest(".sdc"); if (card) { card.classList.toggle("learned", t.checked); const tt = card.querySelector(".sdct"); const m = tt.querySelector(".sddone"); if (t.checked && !m) tt.insertAdjacentHTML("beforeend", doneMark(true)); if (!t.checked && m) m.remove(); }
     if (t.checked) SDV.open.delete(id);                                  // done: fold the card up
     const prog = document.querySelector("#sdx .sdprog");
-    if (prog && filter >= 21 && filter <= 30) { const y = window.scrollY; renderSDX(); window.scrollTo(0, y); }
+    if (prog && ((filter >= 21 && filter <= 30) || (filter >= 41 && filter <= 53))) { const y = window.scrollY; renderSDX(); window.scrollTo(0, y); }
     else if (t.checked && card) { const b = card.querySelector(".sdcb"), h = card.querySelector(".sdch"); b.hidden = true; h.setAttribute("aria-expanded", "false"); }
     if (t.checked) { const c2 = document.getElementById("sdc-" + id); if (c2) { const r = c2.getBoundingClientRect(); if (r.top < 0 || r.top > innerHeight) c2.scrollIntoView({block: "start"}); c2.querySelector(".sdch").focus({preventScroll: true}); } } };
-  if (t.dataset.learn) set("c", t.dataset.learn); else if (t.dataset.hld) set("h", t.dataset.hld); else if (t.dataset.lld) set("l", t.dataset.lld);
+  if (t.dataset.learn) set("c", t.dataset.learn); else if (t.dataset.hld) set("h", t.dataset.hld); else if (t.dataset.lld) set("l", t.dataset.lld); else if (t.dataset.mllab) set("m", t.dataset.mllab);
 });
 
 /* ================= Interactive labs ================= */

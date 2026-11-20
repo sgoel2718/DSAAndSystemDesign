@@ -62,6 +62,11 @@ function expIndex(){
     say: (c.say || [])[0]}, [[c.title, 6], [c.what, 3], [c.body, 1], [(c.say || []).map(x => x.p + " " + x.a).join(" "), 1]]));
   SDX.qa.forEach(x => add({kind: "Interview Q&A", title: x.q, what: x.a, body: x.a}, [[x.q, 4], [x.a, 1.5]]));
   PLAN.patterns.forEach(([n, sig]) => { const P = PLAN.playbook[n] || {}; add({kind: "DSA pattern", title: n, what: sig, body: strip(JSON.stringify(P)), pat: n}, [[n, 6], [sig, 3], [JSON.stringify(P), 0.5]]); });
+  if (typeof MLX !== "undefined") {
+    Object.values(MLX.concepts).forEach(c => add({kind: "ML & AI concept", title: c.title, what: c.what, body: strip(c.body), go: c.id,
+      say: (c.say || [])[0]}, [[c.title, 6], [c.what, 3], [c.body, 1], [(c.say || []).map(x => x.p + " " + x.a).join(" "), 1]]));
+    MLX.qa.forEach(x => add({kind: "ML interview Q&A", title: x.q, what: x.a, body: x.a}, [[x.q, 4], [x.a, 1.5]]));
+  }
   SDX.hld.forEach(h => add({kind: "HLD question", title: h.title, what: "Tests " + h.tests, body: strip(h.deep.join(" ") + " " + h.flow.join(" ")), go: h.id}, [[h.title, 4], [h.tests, 2], [h.deep.join(" "), 0.7]]));
   const df = {}; docs.forEach(d => Object.keys(d.tf).forEach(t => df[t] = (df[t] || 0) + 1));
   const N = docs.length, idf = t => Math.log(1 + N / (df[t] || 0.5));

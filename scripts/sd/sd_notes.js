@@ -3,7 +3,7 @@ if (!state.tm) state.tm = {};     // topic bookmarks: id -> {at, title, kind}
 if (!state.tn) state.tn = {};     // topic notes:     id -> {t, at, title, kind}
 if (!state.pad) state.pad = [];   // free notes:      [{id, title, text, at, up}]
 let NV = {q: "", kind: "All", confirm: null};
-const TM_KINDS = {sd: "System Design concept", hld: "HLD question", lld: "LLD question", qa: "Interview Q&A", day: "DSA day lesson", pat: "DSA pattern"};
+const TM_KINDS = {sd: "System Design concept", hld: "HLD question", lld: "LLD question", qa: "Interview Q&A", day: "DSA day lesson", pat: "DSA pattern", ml: "ML & AI concept", mlab: "ML lab", mlqa: "ML interview Q&A"};
 const TM_ICON = on => `<svg viewBox="0 0 24 24" aria-hidden="true" class="tmico${on ? " on" : ""}"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>`;
 const NOTE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" class="tmico"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>';
 function tmKindOf(id){ const k = id.split(":")[0]; return k; }
@@ -69,6 +69,8 @@ function tmGo(id){
   const [k, ...rest] = id.split(":"), key = rest.join(":");
   if (k === "day") { openSheet(+key); return; }
   if (k === "pat") { const i = PLAN.patterns.findIndex(p => p[0] === key); if (i >= 0) openPattern(i); return; }
+  if (k === "mlqa") { filter = 54; SDV.q = ""; MLV.qaTopic = "All"; renderTabs(); renderBoard();
+    requestAnimationFrame(() => { const el = document.getElementById("mqa-" + key); if (el) { el.open = true; el.scrollIntoView({block: "start"}); } }); return; }
   if (k === "qa") { filter = 31; SDV.q = ""; SDV.qaTopic = "All"; renderTabs(); renderBoard();
     requestAnimationFrame(() => { const el = document.getElementById("qa-" + key); if (el) { el.open = true; el.scrollIntoView({block: "start"}); } }); return; }
   sdGo(key);
@@ -85,7 +87,7 @@ function renderNotes(root){
   const probMarks = Object.keys(state.marks).length, probNotes = Object.keys(state.notes).length;
   const kinds = [["All", "Everything"], ["marks", "Bookmarked"], ["notes", "With notes"], ...Object.entries(TM_KINDS)];
   root.innerHTML = `<div class="eyebrow">Your space</div><h2>My notes &amp; bookmarks</h2>
-    <p class="lead">Write anything to revisit later, and find every topic you bookmarked or annotated across DSA and System Design. Tap ☆ to bookmark or ✎ to write a note on any topic card, day lesson, pattern, HLD/LLD question or Q&amp;A. Select any text and tap <b>Highlight</b> to mark it.</p>
+    <p class="lead">Write anything to revisit later, and find every topic you bookmarked or annotated across DSA, System Design and ML &amp; AI. Tap ☆ to bookmark or ✎ to write a note on any topic card, day lesson, pattern, HLD/LLD question, ML lab or Q&amp;A. Select any text and tap <b>Highlight</b> to mark it.</p>
     <div class="sdbar"><label class="sdsearch"><span class="sr">Search notes</span><input type="search" id="nvQ" placeholder="Search your notes and bookmarks" value="${esc(NV.q)}"></label>
       <button type="button" class="sdtog" id="nvExport">Export backup</button><label class="sdtog nvimp">Import backup<input type="file" id="nvImport" accept="application/json" hidden></label></div>
     <div class="nvstats"><span><b>${state.pad.length}</b> notepad notes</span><span><b>${Object.keys(state.tm).length}</b> bookmarked topics</span><span><b>${Object.keys(state.tn).length}</b> topic notes</span><span><b>${state.hl.length}</b> highlights</span>
@@ -140,7 +142,8 @@ function renderNotes(root){
     f.text().then(t => { const d = JSON.parse(t), s = d.state || d;
       if (Array.isArray(s.hl)) { const have = new Set(state.hl.map(x => x.id)); state.hl.push(...s.hl.filter(x => !have.has(x.id))); }
       ["days", "probs", "marks", "notes", "tm", "tn"].forEach(k => { if (s[k]) state[k] = Object.assign({}, s[k], state[k] || {}); });   // merge, keep current on clash
-      if (s.sd) ["c", "h", "l"].forEach(k => state.sd[k] = Object.assign({}, s.sd[k] || {}, state.sd[k]));
+      if (s.sd) ["c", "h", "l", "m"].forEach(k => state.sd[k] = Object.assign({}, s.sd[k] || {}, state.sd[k] || {}));
+      if (s.mlcap) { state.mlcap.short = Object.assign({}, s.mlcap.short || {}, state.mlcap.short); if (!state.mlcap.pick) state.mlcap.pick = s.mlcap.pick || ""; }
       if (Array.isArray(s.pad)) { const have = new Set(state.pad.map(x => x.id)); state.pad.push(...s.pad.filter(x => !have.has(x.id))); }
       save(); renderTop(); renderSDX(); root.querySelector(".lead").insertAdjacentHTML("afterend", `<p class="labrule ok">Backup imported and merged.</p>`);
     }).catch(() => root.querySelector(".lead").insertAdjacentHTML("afterend", `<p class="labrule no">That file isn't a valid backup.</p>`));

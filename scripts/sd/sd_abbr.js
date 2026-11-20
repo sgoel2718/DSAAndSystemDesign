@@ -75,8 +75,49 @@ const ABBR = {
   KMP: "Knuth–Morris–Pratt", AVL: "Adelson-Velsky and Landis", GCD: "Greatest Common Divisor", LCM: "Least Common Multiple", DLL: "Doubly Linked List",
   PQ: "Priority Queue", LPS: "Longest Prefix Suffix", JMH: "Java Microbenchmark Harness", TCO: "Tail Call Optimisation", STAR: "Situation, Task, Action, Result",
 };
-const ABBR_RE = new RegExp("(?<![\\w/.-])(" + Object.keys(ABBR).sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")(s?)(?![\\w/-])", "g");
-const ABBR_UNIT = ".sdc, .sdq, .sdstage, .lab, .sheet, .note, .pcard, .box, .nvitem, .sdbox, .qday, .ppsolwrap, .kit, .sdx > p, .sdx > h2, .trcard";
+/* machine-learning terms (generic: safe on every page) */
+Object.assign(ABBR, {
+  CNN: "Convolutional Neural Network", RNN: "Recurrent Neural Network", LSTM: "Long Short-Term Memory", GRU: "Gated Recurrent Unit", MLP: "Multilayer Perceptron",
+  SVM: "Support Vector Machine", SVR: "Support Vector Regression", PCA: "Principal Component Analysis", kNN: "k-Nearest Neighbours", GMM: "Gaussian Mixture Model",
+  DBSCAN: "Density-Based Spatial Clustering of Applications with Noise", HDBSCAN: "Hierarchical DBSCAN", ROC: "Receiver Operating Characteristic", AUC: "Area Under the Curve",
+  MSE: "Mean Squared Error", MAE: "Mean Absolute Error", RMSE: "Root Mean Squared Error", MAPE: "Mean Absolute Percentage Error", WAPE: "Weighted Absolute Percentage Error",
+  MASE: "Mean Absolute Scaled Error", MCC: "Matthews Correlation Coefficient", OOB: "Out-Of-Bag", SGD: "Stochastic Gradient Descent", ReLU: "Rectified Linear Unit",
+  GELU: "Gaussian Error Linear Unit", SiLU: "Sigmoid Linear Unit", NLP: "Natural Language Processing", NER: "Named Entity Recognition", BPE: "Byte-Pair Encoding",
+  BERT: "Bidirectional Encoder Representations from Transformers", GPT: "Generative Pre-trained Transformer", T5: "Text-To-Text Transfer Transformer", ViT: "Vision Transformer",
+  CLIP: "Contrastive Language–Image Pre-training", GAN: "Generative Adversarial Network", VAE: "Variational Autoencoder", ELBO: "Evidence Lower Bound",
+  DDPM: "Denoising Diffusion Probabilistic Model", LoRA: "Low-Rank Adaptation", QLoRA: "Quantized Low-Rank Adaptation", PEFT: "Parameter-Efficient Fine-Tuning",
+  RLHF: "Reinforcement Learning from Human Feedback", RLAIF: "Reinforcement Learning from AI Feedback", DPO: "Direct Preference Optimization", PPO: "Proximal Policy Optimization",
+  SFT: "Supervised Fine-Tuning", MDP: "Markov Decision Process", DQN: "Deep Q-Network", KL: "Kullback–Leibler", MLE: "Maximum Likelihood Estimation",
+  IoU: "Intersection over Union", NMS: "Non-Maximum Suppression", mAP: "mean Average Precision", YOLO: "You Only Look Once", HOG: "Histogram of Oriented Gradients",
+  SIFT: "Scale-Invariant Feature Transform", LBP: "Local Binary Patterns", MFCC: "Mel-Frequency Cepstral Coefficient", STFT: "Short-Time Fourier Transform", FFT: "Fast Fourier Transform",
+  ASR: "Automatic Speech Recognition", TTS: "Text-To-Speech", CTC: "Connectionist Temporal Classification", WER: "Word Error Rate", PSNR: "Peak Signal-to-Noise Ratio",
+  SSIM: "Structural Similarity Index", FID: "Fréchet Inception Distance", LPIPS: "Learned Perceptual Image Patch Similarity", ARIMA: "AutoRegressive Integrated Moving Average",
+  SARIMA: "Seasonal AutoRegressive Integrated Moving Average", SARIMAX: "Seasonal ARIMA with eXogenous regressors", ADF: "Augmented Dickey–Fuller", PSI: "Population Stability Index",
+  SHAP: "SHapley Additive exPlanations", LIME: "Local Interpretable Model-agnostic Explanations", PDP: "Partial Dependence Plot", SMOTE: "Synthetic Minority Over-sampling Technique",
+  GBDT: "Gradient-Boosted Decision Trees", GBM: "Gradient Boosting Machine", MoE: "Mixture of Experts", GQA: "Grouped-Query Attention", RoPE: "Rotary Position Embedding",
+  MCP: "Model Context Protocol", HITL: "Human-In-The-Loop", MMR: "Maximal Marginal Relevance", MRR: "Mean Reciprocal Rank", NDCG: "Normalized Discounted Cumulative Gain",
+  HyDE: "Hypothetical Document Embeddings", GNN: "Graph Neural Network", GCN: "Graph Convolutional Network", TCN: "Temporal Convolutional Network",
+  DCGAN: "Deep Convolutional GAN", SRGAN: "Super-Resolution GAN", ESRGAN: "Enhanced Super-Resolution GAN", SRCNN: "Super-Resolution CNN", CUDA: "Compute Unified Device Architecture",
+  TPU: "Tensor Processing Unit", ONNX: "Open Neural Network Exchange", MLOps: "Machine Learning Operations", LLMOps: "Large Language Model Operations", OCR: "Optical Character Recognition",
+  IQR: "Interquartile Range", PMF: "Probability Mass Function", CDF: "Cumulative Distribution Function", CLT: "Central Limit Theorem", VIF: "Variance Inflation Factor",
+  ANOVA: "Analysis of Variance", BCE: "Binary Cross-Entropy", NLL: "Negative Log-Likelihood", BLEU: "Bilingual Evaluation Understudy", ROUGE: "Recall-Oriented Understudy for Gisting Evaluation",
+  SAM: "Segment Anything Model", DETR: "DEtection TRansformer", FPN: "Feature Pyramid Network", RPN: "Region Proposal Network", CRF: "Conditional Random Field",
+  HMM: "Hidden Markov Model", LSA: "Latent Semantic Analysis", NMF: "Non-negative Matrix Factorization", SVD: "Singular Value Decomposition", ALS: "Alternating Least Squares",
+  LLE: "Locally Linear Embedding", "t-SNE": "t-distributed Stochastic Neighbor Embedding", UMAP: "Uniform Manifold Approximation and Projection", MDS: "Multidimensional Scaling",
+  TPR: "True Positive Rate", FPR: "False Positive Rate", TNR: "True Negative Rate", NF4: "4-bit NormalFloat", FLOP: "Floating-Point Operation", RL: "Reinforcement Learning",
+  DL: "Deep Learning", GenAI: "Generative AI", LM: "Language Model", MLM: "Masked Language Modelling", HF: "Hugging Face", CoT: "Chain-of-Thought",
+  NLU: "Natural Language Understanding", NLI: "Natural Language Inference", LCEL: "LangChain Expression Language", FER: "Facial Expression Recognition",
+  FACS: "Facial Action Coding System", MTCNN: "Multi-task Cascaded Convolutional Networks", AIC: "Akaike Information Criterion", BIC: "Bayesian Information Criterion",
+  RFM: "Recency, Frequency, Monetary", CTR: "Click-Through Rate", ARI: "Adjusted Rand Index", "TF-IDF": "Term Frequency–Inverse Document Frequency",
+  LOF: "Local Outlier Factor", DAG: "Directed Acyclic Graph", NSE: "National Stock Exchange", RBI: "Reserve Bank of India",
+});
+/* inside the ML & AI section (.mlx) some letters mean something else; null = leave as written */
+const ABBR_MLX = {L1: null, L2: null, L3: null, L4: null, L7: null, AP: "Average Precision", CP: null, DP: null, SC: null, TC: null, PN: null, OT: null, CI: null, CD: null,
+  RED: null, USE: null, MAC: null, ACL: null, PK: null, NS: null, AZ: null, HA: null, DR: null, GC: null, ICE: "Individual Conditional Expectation", TF: "TensorFlow",
+  SSD: "Single Shot MultiBox Detector", EDA: "Exploratory Data Analysis", PDF: "Probability Density Function", ANN: null, EM: "Expectation–Maximisation", POS: "Part-Of-Speech",
+  XOR: null, BASE: null, CAP: null, ETA: null, SLA: null, DST: null, PIN: null, PAN: null, ID: null, UI: null, IO: null};
+const ABBR_RE = new RegExp("(?<![\\w/.-])(" + [...new Set([...Object.keys(ABBR), ...Object.keys(ABBR_MLX)])].sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")(s?)(?![\\w/-])", "g");
+const ABBR_UNIT = ".sdc, .sdq, .mlcard, .mlcap, .sdstage, .lab, .sheet, .note, .pcard, .box, .nvitem, .sdbox, .qday, .ppsolwrap, .kit, .sdx > p, .sdx > h2, .trcard";
 const ABBR_SKIP = ".pptable tr:not(.ppsolrow), nav, .groups, .today, header, .tmacts, pre, code, textarea, input, select, script, style, svg, abbr, .tag, .sdlv, .sdfq, .sdqt, .nvkind, .sdrt, .codebar, .lgd";
 const abbrSeen = new WeakMap(), abbrDone = new WeakSet();
 const T = t => { const x = document.createTextNode(t); abbrDone.add(x); return x; };
@@ -97,12 +138,14 @@ function expandAbbr(root){
     const unitText = unit.textContent.toLowerCase();
     const frag = document.createDocumentFragment(); let last = 0, m;
     while ((m = ABBR_RE.exec(text))) {
-      const [all, k, s] = m, full = ABBR[k] + (s && !/s$/.test(ABBR[k]) ? "s" : "");
+      const [all, k, s] = m, def = n.parentElement.closest(".mlx") && k in ABBR_MLX ? ABBR_MLX[k] : ABBR[k];
+      if (!def) { frag.append(T(text.slice(last, m.index) + all)); last = m.index + all.length; continue; }
+      const full = def + (s && !/s$/.test(def) ? "s" : "");
       frag.append(T(text.slice(last, m.index)));
       const before = text.slice(Math.max(0, m.index - full.length - 3), m.index).toLowerCase(), after = text.slice(m.index + all.length, m.index + all.length + full.length + 3).toLowerCase();
-      const alreadyExplained = before.includes(ABBR[k].toLowerCase()) || after.includes(ABBR[k].toLowerCase()) || unitText.includes(ABBR[k].toLowerCase() + " (" + k.toLowerCase());
+      const alreadyExplained = before.includes(def.toLowerCase()) || after.includes(def.toLowerCase()) || unitText.includes(def.toLowerCase() + " (" + k.toLowerCase());
       if (!seen.has(k) && !alreadyExplained) { frag.append(T(full + " (")); }
-      const ab = document.createElement("abbr"); ab.title = ABBR[k]; ab.textContent = all; frag.append(ab);
+      const ab = document.createElement("abbr"); ab.title = def; ab.textContent = all; frag.append(ab);
       if (!seen.has(k) && !alreadyExplained) frag.append(T(")"));
       seen.add(k); last = m.index + all.length;
     }
