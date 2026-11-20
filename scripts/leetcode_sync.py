@@ -12,7 +12,9 @@ EXT = {"java": "java", "python3": "py", "python": "py", "cpp": "cpp", "c": "c", 
 
 session, csrf = os.environ.get("LEETCODE_SESSION", "").strip(), os.environ.get("LEETCODE_CSRF_TOKEN", "").strip()
 if not session or not csrf:
-    sys.exit("Missing secrets: add LEETCODE_SESSION and LEETCODE_CSRF_TOKEN in the repo's Settings > Secrets and variables > Actions.")
+    # Not set up yet: skip quietly (exit 0) so scheduled runs don't fail and email every 3 hours.
+    print("LeetCode sync skipped: add LEETCODE_SESSION and LEETCODE_CSRF_TOKEN in Settings > Secrets and variables > Actions to enable it.")
+    sys.exit(0)
 HEAD = {"Cookie": f"LEETCODE_SESSION={session}; csrftoken={csrf}", "x-csrftoken": csrf, "Referer": "https://leetcode.com/",
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36"}
 

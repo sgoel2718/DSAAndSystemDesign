@@ -1320,15 +1320,26 @@ function renderSD(){
 if (SDV.group === "sd") filter = 20;
 renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
 startAbbr(); startHighlights();
-/* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes; if a newer build is live, reload once */
+/* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes, and open tabs never refresh by themselves.
+   Check on load, whenever the tab comes back into view, and every 10 minutes; if a newer build is live, offer (or do) a reload. */
 const BUILD = "__BUILD__";
-if (location.protocol === "https:" && location.hostname.endsWith("github.io")) {
+function checkForUpdate(auto){
+  if (!(location.protocol === "https:" && location.hostname.endsWith("github.io"))) return;
   fetch(location.pathname + "?build=" + Date.now(), {cache: "no-store"}).then(r => r.text()).then(t => {
-    const m = t.match(/const BUILD = "([0-9a-f]{12})"/);
+    const m = t.match(/const BUILD = "([0-9a-f]{12})"/); if (!m || m[1] === BUILD) return;
+    const typing = document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
     let tried = null; try { tried = sessionStorage.getItem("dsa30-reloaded-for"); } catch (e) {}
-    if (m && m[1] !== BUILD && tried !== m[1]) { try { sessionStorage.setItem("dsa30-reloaded-for", m[1]); } catch (e) {} location.reload(); }
+    if (auto && !typing && tried !== m[1]) { try { sessionStorage.setItem("dsa30-reloaded-for", m[1]); } catch (e) {} location.reload(); return; }
+    if (document.getElementById("updbar")) return;
+    const bar = document.createElement("div"); bar.id = "updbar"; bar.setAttribute("role", "status");
+    bar.innerHTML = 'A new version of this site is available. <button type="button">Update now</button>';
+    bar.querySelector("button").onclick = () => location.reload();
+    document.body.appendChild(bar);
   }).catch(() => {});
 }
+checkForUpdate(true);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(true); });
+setInterval(() => checkForUpdate(false), 10 * 60 * 1000);
 if (SYNC.repo && Date.now() - SYNC.at > 10 * 60000) syncLC();
 const totop = document.getElementById("totop");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
