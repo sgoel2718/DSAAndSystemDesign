@@ -1364,6 +1364,7 @@ setInterval(() => checkForUpdate(false), 10 * 60 * 1000);
 // and again whenever you come back to this tab, so a new submission shows without pressing Sync
 if (SYNC.repo) syncLC();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && SYNC.repo && Date.now() - SYNC.at > 30000) syncLC(); });
+setInterval(() => { if (!document.hidden && SYNC.repo && Date.now() - SYNC.at > 55000) syncLC(); }, 60000);   // a page left open (e.g. inside the Claude app) picks up changes within a minute
 const totop = document.getElementById("totop");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function onScroll(){ totop.hidden = window.scrollY < 300; }
