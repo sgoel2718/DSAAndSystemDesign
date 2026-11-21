@@ -105,6 +105,21 @@
    "last": 1795277197,
    "title": "Smallest Sum Contiguous Subarray"
   },
+  "maximum-product-subarray": {
+   "files": {
+    "java": {
+     "at": 1795277735,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/maximum-product-subarray/maximum-product-subarray.java",
+     "runtime": "Time O(n)"
+    }
+   },
+   "first": 1795277735,
+   "last": 1795277735,
+   "title": "Maximum Product Subarray"
+  },
   "maximum-subarray": {
    "files": {
     "java": {
@@ -137,5 +152,5 @@
   }
  },
  "seen": 0,
- "updated": 1795277197
+ "updated": 1795277735
 }
