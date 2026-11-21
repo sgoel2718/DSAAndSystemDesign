@@ -44,8 +44,23 @@
    "first": 1795121752,
    "last": 1795121752,
    "title": "Count Triplets with Sum Smaller than X"
+  },
+  "gfg-segregate-0s-and-1s": {
+   "files": {
+    "java": {
+     "at": 1795270345,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/gfg-segregate-0s-and-1s/gfg-segregate-0s-and-1s.java",
+     "runtime": "Time O(n)"
+    }
+   },
+   "first": 1795270345,
+   "last": 1795270345,
+   "title": "Segregate 0s and 1s"
   }
  },
  "seen": 0,
- "updated": 1795121752
+ "updated": 1795270345
 }
