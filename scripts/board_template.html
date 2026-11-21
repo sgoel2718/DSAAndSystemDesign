@@ -240,8 +240,8 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .pptable table{border-collapse:collapse;width:100%;min-width:900px;font-size:13.5px}
 .pptable th,.pptable td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
 .pptable thead th{position:sticky;top:0;background:var(--bg);font:600 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-.pptable td:nth-child(4){min-width:260px}
-.pptable td:nth-child(n+5){max-width:280px;overflow-wrap:anywhere;font:12px var(--mono)}
+.pptable td:nth-child(5){min-width:260px}
+.pptable td:nth-child(n+6){max-width:280px;overflow-wrap:anywhere;font:12px var(--mono)}
 .pptable td a{color:var(--accent);text-decoration:none}.pptable td a:hover{text-decoration:underline}
 .pptable .apcol{width:150px;vertical-align:middle}
 .apbtns{display:flex;flex-direction:column;align-items:stretch;gap:6px}
@@ -258,11 +258,16 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .pqsolwrap{padding:0 12px 10px}
 .pqsolwrap .sol{margin:0}
 .pptable .ck{width:52px;text-align:center;background:var(--bg)}
-.pptable thead th.ck{text-align:center}
+.pptable thead th.ck,.pptable thead th.bk{text-align:center}
+.pptable .bk{width:48px;text-align:center;background:var(--bg);padding:2px 4px;vertical-align:middle}
+.pptable .bk .bm{margin:0 auto;display:grid}
+.pptable tr.marked td.bk{background:color-mix(in srgb,var(--warm) 12%,var(--panel))}
+.ppmarkonly{display:inline-flex;gap:6px;align-items:center;font-size:13.5px}.ppmarkonly input{width:16px;height:16px;accent-color:var(--warm)}
+.pptable.only-marked tbody tr:not(.marked):not(.ppsolrow),.pptable.only-marked tbody tr.ppsolrow[data-unmarked]{display:none}
 .ppck{width:18px;height:18px;accent-color:var(--easy);cursor:pointer;margin:0}
 .ppck:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .pptable tr.done td:not(.rn):not(.ck){background:color-mix(in srgb,var(--easy) 9%,var(--panel))}
-.pptable tr.done td:nth-child(4){color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--easy) 70%,transparent)}
+.pptable tr.done td:nth-child(5){color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--easy) 70%,transparent)}
 .ppprog{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 12px;font-size:14px;font-variant-numeric:tabular-nums}
 .ppprog b{font:700 18px var(--mono);color:var(--easy)}
 .ppprog .bar{flex:0 1 220px;min-width:120px;margin:0}.ppprog .bar i{background:var(--easy)}
@@ -541,6 +546,7 @@ document.addEventListener("click", e => {
   });
   renderTop();
   if (!document.getElementById("qs").hidden) { renderQuestions(); }
+  if (document.getElementById("pp").dataset.built) ppSync();
 });
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const start = new Date(PLAN.start + "T00:00:00");
@@ -1114,10 +1120,11 @@ function renderPP(){
     root.innerHTML = `<div class="eyebrow">Practice sheet</div><h2>Padho with Pratyush Practice Sheet</h2>
       <p class="lead">Copied as it is from your Google Sheet: same rows, order, text and links. <a href="${P.source}" target="_blank" rel="noopener">Open the original sheet</a></p>
       <div class="ppprog" id="ppProg"></div>
-      <div class="pptable"><table>
-        <thead><tr><th class="rn" scope="col"><span class="sr">Row</span></th><th class="ck" scope="col">Done</th>${P.header.map(h => `<th scope="col">${esc(h)}</th>`).join("")}<th scope="col" class="apcol">Approaches</th></tr></thead>
+      <label class="ppmarkonly"><input type="checkbox" id="ppMarks"> <span id="ppMarksLabel">Show only bookmarked</span></label>
+      <div class="pptable" id="ppTable"><table>
+        <thead><tr><th class="rn" scope="col"><span class="sr">Row</span></th><th class="ck" scope="col">Done</th><th class="bk" scope="col">Save</th>${P.header.map(h => `<th scope="col">${esc(h)}</th>`).join("")}<th scope="col" class="apcol">Approaches</th></tr></thead>
         <tbody>
-          <tr class="pphead"><td class="rn">1</td><td class="ck"></td>${P.header.map(h => `<td>${esc(h)}</td>`).join("")}<td></td></tr>
+          <tr class="pphead"><td class="rn">1</td><td class="ck"></td><td class="bk"></td>${P.header.map(h => `<td>${esc(h)}</td>`).join("")}<td></td></tr>
           ${P.rows.map((r, i) => {
             const keys = P.keys[i];
             const ck = keys.length ? `<input type="checkbox" class="ppck" id="pp-${i}" data-i="${i}" aria-label="Mark done: ${esc(r[1])}">` : "";
@@ -1126,11 +1133,11 @@ function renderPP(){
             const btn = nApp ? `<button type="button" class="ppap" id="ppap-${i}" data-i="${i}" aria-expanded="false" aria-controls="pps-${i}">${nApp} approaches</button>` : "";
             const names = Object.fromEntries(Object.values(PLAN.pattern_q).flat().map(q => [q.slug, q.name]));
             const uniq = slugs.filter(([sl], j) => slugs.findIndex(([x]) => x === sl) === j);
-            const detail = keys.length ? `<tr class="ppsolrow" id="pps-${i}" hidden><td class="rn"></td><td colspan="7"><div class="ppsolwrap">
+            const detail = keys.length ? `<tr class="ppsolrow" id="pps-${i}" hidden><td class="rn"></td><td colspan="8"><div class="ppsolwrap">
                 ${uniq.map(([sl]) => subSlot(sl, "", "pp")).join("")}
                 ${withSol.map(([sl, day]) => `${withSol.length > 1 ? `<div class="ppsolname">${esc(names[sl] || sl)}</div>` : ""}${solHTML(sl, +day, "pp" + i)}`).join("")}
               </div></td></tr>` : "";
-            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol"><div class="apbtns">${btn}${keys.length ? `<span class="mysubslot ppbtn" data-slug="${uniq.map(([sl]) => sl).join(",")}" data-i="${i}">${ppSubBtn(uniq.map(([sl]) => sl), i)}</span>` : ""}</div></td></tr>${detail}`;
+            return `<tr id="ppr-${i}"${P.heads[i] ? ' class="ppsec"' : ""}><td class="rn">${i + 2}</td><td class="ck">${ck}</td><td class="bk">${uniq.map(([sl]) => bm(sl, uniq.length > 1 ? (names[sl] || sl) : r[1])).join("")}</td>${r.map(cell).map(c => `<td>${c}</td>`).join("")}<td class="apcol"><div class="apbtns">${btn}${keys.length ? `<span class="mysubslot ppbtn" data-slug="${uniq.map(([sl]) => sl).join(",")}" data-i="${i}">${ppSubBtn(uniq.map(([sl]) => sl), i)}</span>` : ""}</div></td></tr>${detail}`;
           }).join("")}
         </tbody></table></div>`;
     root.addEventListener("click", e => {
@@ -1146,6 +1153,7 @@ function renderPP(){
       row.querySelectorAll(".mysubslot").forEach(d => d.hidden = open && !mineBtn);
     });
     wireCopy(root);
+    document.getElementById("ppMarks").onchange = e => document.getElementById("ppTable").classList.toggle("only-marked", e.target.checked);
     root.querySelectorAll(".ppck").forEach(c => c.onchange = () => {
       PLAN.pp.keys[+c.dataset.i].forEach(k => setSolved(k, c.checked));
       if (c.checked) {                      // done: fold the row's approaches / code back up
@@ -1159,7 +1167,7 @@ function renderPP(){
   ppSync();
 }
 function ppSync(){
-  const P = PLAN.pp; let rows = 0, done = 0;
+  const P = PLAN.pp; let rows = 0, done = 0, marks = 0;
   P.keys.forEach((keys, i) => {
     if (!keys.length) return;
     rows++;
@@ -1169,7 +1177,14 @@ function ppSync(){
     if (c) { c.checked = all; c.indeterminate = n > 0 && !all; }
     const tr = document.getElementById("ppr-" + i);
     if (tr) tr.classList.toggle("done", all);
+    const marked = keys.some(k => state.marks[k.split("@")[0]]);
+    if (marked) marks++;
+    if (tr) tr.classList.toggle("marked", marked);
+    const sr = document.getElementById("pps-" + i);
+    if (sr) sr.toggleAttribute("data-unmarked", !marked);
   });
+  const ml = document.getElementById("ppMarksLabel");
+  if (ml) ml.textContent = `Show only bookmarked (${marks})`;
   const pg = document.getElementById("ppProg");
   if (pg) pg.innerHTML = `<b>${done}</b> of ${rows} questions done<span class="bar"><i style="width:${rows ? done / rows * 100 : 0}%"></i></span><span class="pphint">Ticks sync with the Questions tab, day sheets and the counter at the top.</span>`;
 }
