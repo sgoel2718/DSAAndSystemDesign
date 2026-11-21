@@ -396,7 +396,12 @@ nav button:focus-visible,.note:focus-visible,.sheet button:focus-visible{outline
 .mysub{margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
 .mysub summary{cursor:pointer;padding:7px 10px;font:600 13.5px var(--sans);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mysubdot{width:8px;height:8px;border-radius:50%;background:var(--ce)}
-.mysubbody{padding:0 10px 10px;display:grid;gap:8px}
+.mysubbody{padding:0 10px 10px;display:grid;gap:8px;min-width:0}
+.mysubexp{border:1px solid var(--line);border-radius:8px;padding:6px 12px 8px;background:color-mix(in srgb,var(--ce) 5%,var(--panel));min-width:0}
+.mysubexph{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ce);margin-top:4px}
+.mysubexp .sdmd{font-size:14.5px}
+.mysubexp table th,.mysubexp table td,.pptable .mysubexp table th,.pptable .mysubexp table td{font:13.5px var(--sans);min-width:0;max-width:none;text-transform:none;letter-spacing:normal;position:static;color:var(--ink);background:none;text-decoration:none}
+.mysubexp table th{font-weight:600;background:color-mix(in srgb,var(--ink) 5%,transparent)}.mysubexp .sdmd h4{margin:12px 0 4px}.mysubexp code{font:13px var(--mono);background:color-mix(in srgb,var(--ink) 7%,transparent);padding:1px 5px;border-radius:4px}
 .ppap.ppmine{color:var(--ce);background:color-mix(in srgb,var(--ce) 10%,var(--panel));border-color:color-mix(in srgb,var(--ce) 40%,transparent)}
 .ppap.ppmine:focus-visible{outline-color:var(--ce)}
 .mysublink{display:inline-block;margin-left:6px;font:600 12px var(--sans);white-space:nowrap}
@@ -1052,7 +1057,7 @@ function parseIndex(ix){
   Object.entries(ix.problems || {}).forEach(([slug, p]) => {
     const code = Object.values(p.files || {}).map(f => ({path: f.path, lang: LCLANG[f.lang] || f.lang, at: f.at * 1000, runtime: f.runtime, memory: f.memory}));
     code.sort((a, b) => (b.lang === "Java") - (a.lang === "Java"));
-    files[slug] = {known: known.has(slug), first: p.first * 1000, code};
+    files[slug] = {known: known.has(slug), first: p.first * 1000, code, explain: p.explain || ""};
   });
   return files;
 }
@@ -1117,7 +1122,7 @@ function subHTML(slug, mode){
   const r = SYNC.files[slug]; if (!r) return "";
   if (mode === "link") return `<a class="mysublink" href="${blobURL(r.code[0].path)}" target="_blank" rel="noopener">My code ↗</a>`;
   return `<details class="mysub" data-slug="${slug}"><summary><span class="mysubdot" aria-hidden="true"></span>My LeetCode submission<span class="chip">${r.code.map(c => c.lang).filter((v, i, a) => a.indexOf(v) === i).join(" · ")}</span></summary>
-    <div class="mysubbody">${r.code.map((c, i) => `<div class="codewrap"><div class="codebar"><span>${esc(c.lang)}${c.at ? " · accepted " + new Date(c.at).toLocaleDateString("en-IN", {day: "2-digit", month: "short", year: "numeric"}) : ""}${c.runtime ? " · " + esc(c.runtime) : ""}${c.memory ? " · " + esc(c.memory) : ""}</span><span class="cbtns">
+    <div class="mysubbody">${r.explain ? `<div class="mysubexp"><div class="mysubexph">Explanation</div><div class="sdmd">${md(r.explain.replace(/^\|[\s:|-]+\|[ \t]*\n/gm, ""))}</div></div>` : ""}${r.code.map((c, i) => `<div class="codewrap"><div class="codebar"><span>${esc(c.lang)}${c.at ? " · accepted " + new Date(c.at).toLocaleDateString("en-IN", {day: "2-digit", month: "short", year: "numeric"}) : ""}${c.runtime ? " · " + esc(c.runtime) : ""}${c.memory ? " · " + esc(c.memory) : ""}</span><span class="cbtns">
       <a class="copy" href="${blobURL(c.path)}" target="_blank" rel="noopener">Open on GitHub</a><button type="button" class="copy subcopy" data-i="${i}">Copy</button></span></div>
       <pre class="code java" data-path="${esc(c.path)}">Loading…</pre></div>`).join("")}</div></details>`;
 }
@@ -3613,7 +3618,7 @@ renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
 startAbbr(); startHighlights();
 /* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes, and open tabs never refresh by themselves.
    Check on load, whenever the tab comes back into view, and every 10 minutes; if a newer build is live, offer (or do) a reload. */
-const BUILD = "dda5132a20f2";
+const BUILD = "b11c93693e0b";
 function checkForUpdate(auto){
   if (!(location.protocol === "https:" && location.hostname.endsWith("github.io"))) return;
   fetch(location.pathname + "?build=" + Date.now(), {cache: "no-store"}).then(r => r.text()).then(t => {

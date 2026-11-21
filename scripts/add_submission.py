@@ -1,5 +1,6 @@
 """Adds a solution you pasted to leetcode/ in the same format the LeetCode sync uses, so the website shows it.
-Usage: python3 scripts/add_submission.py <slug> <title> <code-file> [lang=java] [unix-time] [time-complexity] [space-complexity]"""
+Usage: python3 scripts/add_submission.py <slug> <title> <code-file> [lang=java] [unix-time] [time-complexity] [space-complexity] [explanation.md]
+The optional explanation (markdown) is shown above the code on the website."""
 import json, os, sys, time
 ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "leetcode")
 EXT = {"java": "java", "python3": "py", "cpp": "cpp", "javascript": "js", "csharp": "cs", "mysql": "sql"}
@@ -16,6 +17,7 @@ open(os.path.join(ROOT, rel), "w", encoding="utf-8").write(open(src, encoding="u
 p = idx["problems"].setdefault(slug, {"title": title, "first": at, "files": {}})
 p["first"] = min(p["first"], at); p["last"] = max(p.get("last", 0), at)
 p["files"][ext] = {"path": "leetcode/" + rel, "lang": lang, "at": at, "runtime": tc and "Time " + tc, "memory": sc and "Space " + sc, "manual": True}
+if len(sys.argv) > 8 and sys.argv[8]: p["explain"] = open(sys.argv[8], encoding="utf-8").read().strip()
 idx["updated"] = int(time.time())
 json.dump(idx, open(idx_path, "w"), indent=1, sort_keys=True)
 print("added", rel)
