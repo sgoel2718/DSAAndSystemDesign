@@ -45,6 +45,21 @@
    "last": 1795272011,
    "title": "4Sum"
   },
+  "backspace-string-compare": {
+   "files": {
+    "java": {
+     "at": 1795273787,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/backspace-string-compare/backspace-string-compare.java",
+     "runtime": "Time O(n + m)"
+    }
+   },
+   "first": 1795273787,
+   "last": 1795273787,
+   "title": "Backspace String Compare"
+  },
   "gfg-count-triplets-with-sum-smaller-than-x": {
    "files": {
     "java": {
@@ -92,5 +107,5 @@
   }
  },
  "seen": 0,
- "updated": 1795272011
+ "updated": 1795273787
 }
