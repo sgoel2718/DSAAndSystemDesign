@@ -90,6 +90,21 @@
    "last": 1795270345,
    "title": "Segregate 0s and 1s"
   },
+  "maximum-subarray": {
+   "files": {
+    "java": {
+     "at": 1795276896,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/maximum-subarray/maximum-subarray.java",
+     "runtime": "Time O(n)"
+    }
+   },
+   "first": 1795276896,
+   "last": 1795276896,
+   "title": "Maximum Subarray"
+  },
   "sort-colors": {
    "files": {
     "java": {
@@ -107,5 +122,5 @@
   }
  },
  "seen": 0,
- "updated": 1795273787
+ "updated": 1795276896
 }
