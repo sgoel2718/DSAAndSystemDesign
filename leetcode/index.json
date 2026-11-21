@@ -90,6 +90,21 @@
    "last": 1795270345,
    "title": "Segregate 0s and 1s"
   },
+  "gfg-smallest-sum-contiguous-subarray": {
+   "files": {
+    "java": {
+     "at": 1795277197,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/gfg-smallest-sum-contiguous-subarray/gfg-smallest-sum-contiguous-subarray.java",
+     "runtime": "Time O(n)"
+    }
+   },
+   "first": 1795277197,
+   "last": 1795277197,
+   "title": "Smallest Sum Contiguous Subarray"
+  },
   "maximum-subarray": {
    "files": {
     "java": {
@@ -122,5 +137,5 @@
   }
  },
  "seen": 0,
- "updated": 1795276896
+ "updated": 1795277197
 }
