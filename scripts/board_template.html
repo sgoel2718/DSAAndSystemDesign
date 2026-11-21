@@ -681,7 +681,7 @@ const LCLANG = {java: "Java", python3: "Python", python: "Python", cpp: "C++", c
 function parseIndex(ix){
   const known = new Set(Object.values(keyInfo()).map(q => q.slug)), files = {};
   Object.entries(ix.problems || {}).forEach(([slug, p]) => {
-    const code = Object.values(p.files || {}).map(f => ({path: f.path, lang: LCLANG[f.lang] || f.lang, at: f.at * 1000, runtime: f.runtime, memory: f.memory}));
+    const code = Object.values(p.files || {}).map(f => ({path: f.path, lang: LCLANG[f.lang] || f.lang, at: f.at * 1000, runtime: f.runtime, memory: f.memory, label: f.label || ""}));
     code.sort((a, b) => (b.lang === "Java") - (a.lang === "Java"));
     files[slug] = {known: known.has(slug), first: p.first * 1000, code, explain: p.explain || ""};
   });
@@ -748,7 +748,7 @@ function subHTML(slug, mode){
   const r = SYNC.files[slug]; if (!r) return "";
   if (mode === "link") return `<a class="mysublink" href="${blobURL(r.code[0].path)}" target="_blank" rel="noopener">My code ↗</a>`;
   return `<details class="mysub" data-slug="${slug}"><summary><span class="mysubdot" aria-hidden="true"></span>My LeetCode submission<span class="chip">${r.code.map(c => c.lang).filter((v, i, a) => a.indexOf(v) === i).join(" · ")}</span></summary>
-    <div class="mysubbody">${r.explain ? `<div class="mysubexp"><div class="mysubexph">Explanation</div><div class="sdmd">${md(r.explain.replace(/^\|[\s:|-]+\|[ \t]*\n/gm, ""))}</div></div>` : ""}${r.code.map((c, i) => `<div class="codewrap"><div class="codebar"><span>${esc(c.lang)}${c.at ? " · accepted " + new Date(c.at).toLocaleDateString("en-IN", {day: "2-digit", month: "short", year: "numeric"}) : ""}${c.runtime ? " · " + esc(c.runtime) : ""}${c.memory ? " · " + esc(c.memory) : ""}</span><span class="cbtns">
+    <div class="mysubbody">${r.explain ? `<div class="mysubexp"><div class="mysubexph">Explanation</div><div class="sdmd">${md(r.explain.replace(/^\|[\s:|-]+\|[ \t]*\n/gm, ""))}</div></div>` : ""}${r.code.map((c, i) => `<div class="codewrap"><div class="codebar"><span>${esc(c.lang)}${c.label ? " · " + esc(c.label) : ""}${c.at ? " · accepted " + new Date(c.at).toLocaleDateString("en-IN", {day: "2-digit", month: "short", year: "numeric"}) : ""}${c.runtime ? " · " + esc(c.runtime) : ""}${c.memory ? " · " + esc(c.memory) : ""}</span><span class="cbtns">
       <a class="copy" href="${blobURL(c.path)}" target="_blank" rel="noopener">Open on GitHub</a><button type="button" class="copy subcopy" data-i="${i}">Copy</button></span></div>
       <pre class="code java" data-path="${esc(c.path)}">Loading…</pre></div>`).join("")}</div></details>`;
 }

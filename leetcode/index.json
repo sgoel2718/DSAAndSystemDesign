@@ -167,13 +167,23 @@
    "title": "Maximum Subarray Sum with One Deletion"
   },
   "maximum-sum-circular-subarray": {
+   "explain": "**The idea in one line:** a subarray that wraps around the end is everything *except* one block in the middle. So its sum is `total \u2212 (that middle block)`, and to make it as big as possible you cut out the *smallest* block, which is `minKadane`.\n\n### The two kinds of answer\n\nThe best circular subarray is one of two kinds:\n\n1. **It doesn't wrap.** It sits inside the array, so normal Kadane finds it: `maxKadane`.\n2. **It wraps.** It takes a piece from the end and a piece from the start. What it leaves out is one contiguous block in the middle.\n\n### Why `total \u2212 minKadane` is the best wrapping subarray\n\nFor a wrapping subarray, the array splits into two parts:\n\n```\n[ start piece | middle block (left out) | end piece ]\n  wrapped sum = start piece + end piece = total \u2212 middle block\n```\n\n`total` is fixed, so the wrapped sum is largest when the middle block is **smallest**. The smallest contiguous block is exactly what min-Kadane finds. So:\n\n```\nbest wrapping sum = total \u2212 minKadane\nanswer = max(maxKadane, total \u2212 minKadane)\n```\n\n### Example: `[5, -3, 5]` (expected 10)\n\n| | value |\n|---|---|\n| total | 5 \u2212 3 + 5 = **7** |\n| maxKadane (no wrap) | **7** (the whole array) |\n| minKadane (block to cut) | **\u22123** |\n| total \u2212 minKadane (wrap) | 7 \u2212 (\u22123) = **10** (end 5 + start 5, skipping \u22123) |\n| answer | max(7, 10) = **10** \u2713 |\n\nCutting out a negative block *adds* to the total, which is why wrapping wins here.\n\n### Why the `maxKadane < 0` check\n\nIf every number is negative, e.g. `[-3, -2, -1]`:\n\n- total = \u22126 and minKadane = \u22126 (the whole array), so `total \u2212 minKadane = 0`.\n- That 0 means \"cut out everything\", which leaves an **empty** subarray, and empty isn't allowed.\n- So when `maxKadane < 0` (all negative), the answer is just `maxKadane` = **\u22121**.\n\n### Two versions\n\n| | Three helpers (my submission) | One pass |\n|---|---|---|\n| Passes | 3 (total, max run, min run) | 1 |\n| Time | O(n) | O(n) |\n| Space | O(1) | O(1) |\n\nThe one-pass version keeps the total, the max run and the min run in the same loop; the logic is identical.",
    "files": {
     "java": {
      "at": 1795280536,
+     "label": "Three helpers (my solution)",
      "lang": "java",
      "manual": true,
      "memory": "Space O(1)",
      "path": "leetcode/maximum-sum-circular-subarray/maximum-sum-circular-subarray.java",
+     "runtime": "Time O(n)"
+    },
+    "java-onepass": {
+     "label": "One pass",
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/maximum-sum-circular-subarray/maximum-sum-circular-subarray-one-pass.java",
      "runtime": "Time O(n)"
     }
    },
