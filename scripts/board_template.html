@@ -1355,7 +1355,10 @@ function checkForUpdate(auto){
 checkForUpdate(true);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(true); });
 setInterval(() => checkForUpdate(false), 10 * 60 * 1000);
-if (SYNC.repo && Date.now() - SYNC.at > 10 * 60000) syncLC();
+// your submissions live in leetcode/index.json on GitHub (raw file, no API rate limit): fetch it on every open,
+// and again whenever you come back to this tab, so a new submission shows without pressing Sync
+if (SYNC.repo) syncLC();
+document.addEventListener("visibilitychange", () => { if (!document.hidden && SYNC.repo && Date.now() - SYNC.at > 30000) syncLC(); });
 const totop = document.getElementById("totop");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function onScroll(){ totop.hidden = window.scrollY < 300; }

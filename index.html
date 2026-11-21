@@ -3613,7 +3613,7 @@ renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
 startAbbr(); startHighlights();
 /* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes, and open tabs never refresh by themselves.
    Check on load, whenever the tab comes back into view, and every 10 minutes; if a newer build is live, offer (or do) a reload. */
-const BUILD = "563989940ba2";
+const BUILD = "dda5132a20f2";
 function checkForUpdate(auto){
   if (!(location.protocol === "https:" && location.hostname.endsWith("github.io"))) return;
   fetch(location.pathname + "?build=" + Date.now(), {cache: "no-store"}).then(r => r.text()).then(t => {
@@ -3631,7 +3631,10 @@ function checkForUpdate(auto){
 checkForUpdate(true);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(true); });
 setInterval(() => checkForUpdate(false), 10 * 60 * 1000);
-if (SYNC.repo && Date.now() - SYNC.at > 10 * 60000) syncLC();
+// your submissions live in leetcode/index.json on GitHub (raw file, no API rate limit): fetch it on every open,
+// and again whenever you come back to this tab, so a new submission shows without pressing Sync
+if (SYNC.repo) syncLC();
+document.addEventListener("visibilitychange", () => { if (!document.hidden && SYNC.repo && Date.now() - SYNC.at > 30000) syncLC(); });
 const totop = document.getElementById("totop");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function onScroll(){ totop.hidden = window.scrollY < 300; }
