@@ -1062,6 +1062,7 @@ function parseIndex(ix){
   return files;
 }
 const LANGS = {java: "Java", py: "Python", cpp: "C++", c: "C", js: "JavaScript", ts: "TypeScript", cs: "C#", go: "Go", kt: "Kotlin", rs: "Rust", swift: "Swift", sql: "SQL", rb: "Ruby", scala: "Scala", php: "PHP", dart: "Dart"};
+const pagesBase = () => { const [o, r] = SYNC.repo.split("/"); return `https://${o.toLowerCase()}.github.io/${r}/`; };
 const rawURL = path => `https://raw.githubusercontent.com/${SYNC.repo}/${encodeURIComponent(SYNC.branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
 const blobURL = path => `https://github.com/${SYNC.repo}/blob/${encodeURIComponent(SYNC.branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
 function parseTree(tree){
@@ -1089,7 +1090,9 @@ async function syncLC(manual){
       if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); });
     const before = new Set(Object.keys(SYNC.files));
     // 1) the GitHub Action layout: leetcode/index.json (has the real accepted times). 2) fallback: any LeetHub-style repo tree.
-    const ix = await fetch(`https://raw.githubusercontent.com/${SYNC.repo}/HEAD/leetcode/index.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null).catch(() => null);
+    // GitHub Pages first: it is updated about a minute after a push, while raw.githubusercontent.com caches for 5 minutes
+    const getJSON = u => fetch(u).then(r => r.ok ? r.json() : null).catch(() => null);
+    const ix = await getJSON(`${pagesBase()}leetcode/index.json?t=${Date.now()}`) || await getJSON(`https://raw.githubusercontent.com/${SYNC.repo}/HEAD/leetcode/index.json?t=${Date.now()}`);
     if (ix) { SYNC.branch = "HEAD"; SYNC.files = parseIndex(ix); SYNC.source = "action"; SYNC.updated = (ix.updated || 0) * 1000; }
     else if (SYNC.repo === "sgoel2718/DSAAndSystemDesign") { SYNC.files = {}; SYNC.source = "none"; SYNC.err = ""; SYNC.at = Date.now(); saveSync(); refreshSubs(); if (filter === 11) renderTracker(); return; }
     else {
@@ -1133,7 +1136,8 @@ document.addEventListener("toggle", e => {
   const d = e.target; if (!d.classList || !d.classList.contains("mysub") || !d.open) return;
   d.querySelectorAll("pre[data-path]").forEach(pre => {
     const path = pre.dataset.path;
-    const p = subCache[path] || (subCache[path] = fetch(rawURL(path)).then(r => { if (!r.ok) throw 0; return r.text(); }));
+    const p = subCache[path] || (subCache[path] = fetch(pagesBase() + path.split("/").map(encodeURIComponent).join("/") + "?t=" + Date.now()).then(r => { if (!r.ok) throw 0; return r.text(); })
+      .catch(() => fetch(rawURL(path)).then(r => { if (!r.ok) throw 0; return r.text(); })));
     p.then(t => { pre.textContent = t; }, () => { delete subCache[path]; pre.textContent = "Could not load this file from GitHub. Use Open on GitHub."; });
   });
 }, true);
@@ -3618,7 +3622,7 @@ renderTop(); renderTabs(); renderProj(); renderKit(); renderSD(); renderBoard();
 startAbbr(); startHighlights();
 /* auto-update: GitHub Pages lets browsers reuse a saved copy for 10 minutes, and open tabs never refresh by themselves.
    Check on load, whenever the tab comes back into view, and every 10 minutes; if a newer build is live, offer (or do) a reload. */
-const BUILD = "25653762c924";
+const BUILD = "77bc05fd0f98";
 function checkForUpdate(auto){
   if (!(location.protocol === "https:" && location.hostname.endsWith("github.io"))) return;
   fetch(location.pathname + "?build=" + Date.now(), {cache: "no-store"}).then(r => r.text()).then(t => {
