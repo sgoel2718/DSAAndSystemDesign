@@ -135,6 +135,21 @@
    "last": 1795276896,
    "title": "Maximum Subarray"
   },
+  "maximum-subarray-sum-with-one-deletion": {
+   "files": {
+    "java": {
+     "at": 1795278423,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/maximum-subarray-sum-with-one-deletion/maximum-subarray-sum-with-one-deletion.java",
+     "runtime": "Time O(n)"
+    }
+   },
+   "first": 1795278423,
+   "last": 1795278423,
+   "title": "Maximum Subarray Sum with One Deletion"
+  },
   "sort-colors": {
    "files": {
     "java": {
@@ -152,5 +167,5 @@
   }
  },
  "seen": 0,
- "updated": 1795277735
+ "updated": 1795278423
 }
