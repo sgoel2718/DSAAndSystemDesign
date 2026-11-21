@@ -105,6 +105,21 @@
    "last": 1795277197,
    "title": "Smallest Sum Contiguous Subarray"
   },
+  "maximum-absolute-sum-of-any-subarray": {
+   "files": {
+    "java": {
+     "at": 1795279624,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/maximum-absolute-sum-of-any-subarray/maximum-absolute-sum-of-any-subarray.java",
+     "runtime": "Time O(n)"
+    }
+   },
+   "first": 1795279624,
+   "last": 1795279624,
+   "title": "Maximum Absolute Sum of Any Subarray"
+  },
   "maximum-product-subarray": {
    "files": {
     "java": {
@@ -167,5 +182,5 @@
   }
  },
  "seen": 0,
- "updated": 1795278423
+ "updated": 1795279624
 }
