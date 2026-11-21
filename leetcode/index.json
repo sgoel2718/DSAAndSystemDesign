@@ -30,6 +30,21 @@
    "last": 1795120860,
    "title": "3Sum Closest"
   },
+  "4sum": {
+   "files": {
+    "java": {
+     "at": 1795272011,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1) extra (sort aside)",
+     "path": "leetcode/4sum/4sum.java",
+     "runtime": "Time O(n\u00b3)"
+    }
+   },
+   "first": 1795272011,
+   "last": 1795272011,
+   "title": "4Sum"
+  },
   "gfg-count-triplets-with-sum-smaller-than-x": {
    "files": {
     "java": {
@@ -77,5 +92,5 @@
   }
  },
  "seen": 0,
- "updated": 1795270756
+ "updated": 1795272011
 }
