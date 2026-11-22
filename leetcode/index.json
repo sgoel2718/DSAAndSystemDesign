@@ -75,6 +75,21 @@
    "last": 1795121752,
    "title": "Count Triplets with Sum Smaller than X"
   },
+  "gfg-longest-k-unique-characters-substring": {
+   "files": {
+    "java": {
+     "at": 1795337234,
+     "lang": "java",
+     "manual": true,
+     "memory": "Space O(1)",
+     "path": "leetcode/gfg-longest-k-unique-characters-substring/gfg-longest-k-unique-characters-substring.java",
+     "runtime": "Time O(n)"
+    }
+   },
+   "first": 1795337234,
+   "last": 1795337234,
+   "title": "Longest K Unique Characters Substring"
+  },
   "gfg-segregate-0s-and-1s": {
    "files": {
     "java": {
@@ -253,5 +268,5 @@
   }
  },
  "seen": 0,
- "updated": 1795328345
+ "updated": 1795337234
 }
