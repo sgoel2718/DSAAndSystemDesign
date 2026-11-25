@@ -25,6 +25,19 @@ function pyBlock(code, net){
   return `<div class="codewrap"><div class="codebar"><span>Python · ${net ? "needs internet or an API key: run it in Colab / VS Code" : "verified: runs as-is in Google Colab or VS Code"}</span><span class="cbtns"><button type="button" class="copy sdcopy">Copy</button><a class="copy" href="https://colab.research.google.com/#create=true" target="_blank" rel="noopener">New Colab notebook ↗</a></span></div><pre class="code py">${pyHL(code)}</pre></div>`;
 }
 
+/* ---------- beginner lesson: shown first on every concept that has one ---------- */
+function mlLesson(c){
+  const L = c.lesson, reveal = (label, body) => `<details class="mlreveal"><summary>${label}</summary><div>${md(body)}</div></details>`;
+  return `<section class="mlles" aria-label="Lesson">
+    <div class="mlles-sec mlles-why"><h4>Why this matters</h4>${md(L.why)}</div>
+    <div class="mlles-sec"><h4>The idea in plain words</h4>${md(L.idea)}</div>
+    <div class="mlles-sec"><h4>Step by step</h4><ol class="mlsteps">${L.steps.map(s => `<li><b>${mdInline(s.h)}</b>${md(s.md)}</li>`).join("")}</ol></div>
+    <div class="sdbox ex mlles-try"><b>Try it yourself</b>${md(L.tryq)}${reveal("Show the answer", L.trya)}</div>
+    <div class="mlles-sec"><h4>Words you'll hear</h4><dl class="mlwords">${L.words.map(w => `<dt>${esc(w.t)}</dt><dd>${mdInline(w.m)}</dd>`).join("")}</dl></div>
+    <div class="mlles-sec"><h4>Now the code</h4>${md(L.code_intro)}${pyBlock(L.code, L.net)}</div>
+    <div class="sdbox tip mlles-check"><b>Check yourself</b><ol>${L.check.map(q => `<li>${mdInline(q.q)}${reveal("Answer", q.a)}</li>`).join("")}</ol></div>
+  </section>`;
+}
 /* ---------- deep layer + end-to-end walkthrough on every concept ---------- */
 function mlDeep(c){
   if (!c.deep) return "";

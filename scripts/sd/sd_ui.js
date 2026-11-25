@@ -138,23 +138,29 @@ function conceptCard(c){
   return `<article class="sdc${learned ? " learned" : ""}" id="sdc-${c.id}">
     <button type="button" class="sdch" aria-expanded="${open}" aria-controls="sdb-${c.id}" data-id="${c.id}">
       <span class="sdct"><b>${esc(c.title)}</b>${doneMark(learned)}</span>${lvBadge(c.level)}
-      <span class="sdwhat">${mdInline(c.what)}</span></button>${tmActs(pre + ":" + c.id, c.title, pre)}${state.tn[pre + ":" + c.id] ? tmNoteArea(pre + ":" + c.id) : ""}
+      <span class="sdwhat">${mdInline(c.lesson ? c.lesson.hook : c.what)}</span></button>${tmActs(pre + ":" + c.id, c.title, pre)}${state.tn[pre + ":" + c.id] ? tmNoteArea(pre + ":" + c.id) : ""}
     <div class="sdcb" id="sdb-${c.id}"${open ? "" : " hidden"}>${open ? conceptBody(c) : ""}</div></article>`;
 }
 function conceptBody(c){
+  if (c.lesson) return mlLesson(c) + `<details class="mlref"><summary>Full reference card: formulas, more code, deeper detail and interview answers</summary>` + conceptRef(c) + `</details>` + conceptLinks(c);
+  return conceptRef(c) + conceptLinks(c);
+}
+function conceptRef(c){
   return `<div class="sdmd">${md(c.body)}</div>
     ${c.analogy ? `<div class="sdbox an"><b>Real-life analogy</b><p>${mdInline(c.analogy)}</p></div>` : ""}
     ${c.example ? `<div class="sdbox ex"><b>Real-world example</b><p>${mdInline(c.example)}</p></div>` : ""}
     ${c.diagram ? diagramSVG(c.diagram, c.title) : ""}
     ${c.code ? pyBlock(c.code, c.net) : ""}
     ${c.deep ? mlDeep(c) : ""}
-    ${c.demo ? `<div class="sdlabhost" data-demo="${c.demo}"><button type="button" class="sdlabbtn" data-demo="${c.demo}">▶ Try the live demo: ${esc(ML_DEMO_TITLE(c.demo))}</button></div>` : ""}
+    ${c.say && c.say.length ? `<div class="sdbox tip sdsay"><b>In the interview: what to say</b>${c.say.map(x => `<div class="sayit">
+      <p class="sayq">${x.p.startsWith("Interviewer: ") ? `<span class="sayw">Interviewer asks</span>${mdInline(x.p.slice(13))}` : `<span class="sayw">Tip</span>${mdInline(x.p)}`}</p>
+      <blockquote class="saya"><span class="sayw">Your answer</span>${mdInline(x.a.replace(/^"|"$/g, ""))}</blockquote></div>`).join("")}</div>` : ""}`;
+}
+function conceptLinks(c){
+  return `${c.demo ? `<div class="sdlabhost" data-demo="${c.demo}"><button type="button" class="sdlabbtn" data-demo="${c.demo}">▶ Try the live demo: ${esc(ML_DEMO_TITLE(c.demo))}</button></div>` : ""}
     ${c.projects && c.projects.length ? `<div class="sdsee"><span>Build it (end-to-end project):</span>${c.projects.map(l => `<button type="button" class="sdlink" data-go="${l}">🛠 ${esc(SD_TITLE(l))}</button>`).join("")}</div>` : ""}
     ${c.labs && c.labs.length ? `<div class="sdsee"><span>Hands-on lab:</span>${c.labs.map(l => `<button type="button" class="sdlink" data-golab-ml="${l}">${esc(SD_TITLE(l))}</button>`).join("")}</div>` : ""}
     ${c.lab ? `<div class="sdlabhost" data-lab="${c.lab}"><button type="button" class="sdlabbtn" data-lab="${c.lab}">▶ Try the interactive lab: ${esc(LAB_TITLES[c.lab])}</button></div>` : ""}
-    ${c.say && c.say.length ? `<div class="sdbox tip sdsay"><b>In the interview: what to say</b>${c.say.map(x => `<div class="sayit">
-      <p class="sayq">${x.p.startsWith("Interviewer: ") ? `<span class="sayw">Interviewer asks</span>${mdInline(x.p.slice(13))}` : `<span class="sayw">Tip</span>${mdInline(x.p)}`}</p>
-      <blockquote class="saya"><span class="sayw">Your answer</span>${mdInline(x.a.replace(/^"|"$/g, ""))}</blockquote></div>`).join("")}</div>` : ""}
     ${c.see.length ? `<div class="sdsee"><span>Related:</span>${c.see.map(s => `<button type="button" class="sdlink" data-go="${s}">${esc(SD_TITLE(s))}</button>`).join("")}</div>` : ""}
     <label class="sdlearn"><input type="checkbox" data-learn="${c.id}"${state.sd.c[c.id] ? " checked" : ""}> I understand this concept</label>`;
 }

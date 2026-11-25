@@ -18,6 +18,8 @@ from ml_projects import PROJECTS
 from deep import d_py, d_stats, d_math, d_found, d_sup, d_unsup, d_dl, d_cv, d_nlp, d_gen, d_ops  # noqa: F401  (register deep layers)
 from deep.util import D as DEEP
 from ml_proj_util import LEVELS as PJ_LEVELS
+import lessons  # noqa: F401  (registers beginner lessons)
+from lesson_util import LESSONS
 
 TOPIC_COMPANIES = {
     "ML fundamentals": ["Google", "Amazon", "Microsoft", "Flipkart", "Walmart Global Tech", "Fractal", "TCS / Infosys"],
@@ -99,6 +101,9 @@ def build():
         c["e2e"] = {k: d[k] for k in ("data", "steps", "code", "net")}
         assert c.get("projects"), "concept not used in any end-to-end project: " + cid
     assert not set(DEEP) - set(concepts), set(DEEP) - set(concepts)
+    for lid, les in LESSONS.items():
+        assert lid in concepts, "lesson for unknown concept " + lid
+        concepts[lid]["lesson"] = les
     caps = []
     for c in CAPSTONES:
         caps.append(dict(c))
