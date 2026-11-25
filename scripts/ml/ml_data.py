@@ -104,6 +104,11 @@ def build():
     for lid, les in LESSONS.items():
         assert lid in concepts, "lesson for unknown concept " + lid
         concepts[lid]["lesson"] = les
+    import json as _json, os as _os
+    _wp = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "walks.json")
+    for wid, w in (_json.load(open(_wp, encoding="utf-8")) if _os.path.exists(_wp) else {}).items():
+        assert wid in concepts, "walkthrough for unknown concept " + wid
+        concepts[wid]["walk"] = w
     caps = []
     for c in CAPSTONES:
         caps.append(dict(c))

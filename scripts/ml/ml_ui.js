@@ -32,11 +32,21 @@ function mlLesson(c){
     <div class="mlles-sec mlles-why"><h4>Why this matters</h4>${md(L.why)}</div>
     <div class="mlles-sec"><h4>The idea in plain words</h4>${md(L.idea)}</div>
     <div class="mlles-sec"><h4>Step by step</h4><ol class="mlsteps">${L.steps.map(s => `<li><b>${mdInline(s.h)}</b>${md(s.md)}</li>`).join("")}</ol></div>
+    ${c.walk ? mlWalk(c) : ""}
     <div class="sdbox ex mlles-try"><b>Try it yourself</b>${md(L.tryq)}${reveal("Show the answer", L.trya)}</div>
     <div class="mlles-sec"><h4>Words you'll hear</h4><dl class="mlwords">${L.words.map(w => `<dt>${esc(w.t)}</dt><dd>${mdInline(w.m)}</dd>`).join("")}</dl></div>
     <div class="mlles-sec"><h4>Now the code</h4>${md(L.code_intro)}${pyBlock(L.code, L.net)}</div>
     <div class="sdbox tip mlles-check"><b>Check yourself</b><ol>${L.check.map(q => `<li>${mdInline(q.q)}${reveal("Answer", q.a)}</li>`).join("")}</ol></div>
   </section>`;
+}
+/* ---------- real-data walkthrough: actual rows of a real dataset followed through the method ---------- */
+const mlLinks = h => h.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+function mlWalk(c){
+  const w = c.walk;
+  return `<div class="mlles-sec mlwalk"><h4>Real data walkthrough</h4>
+    <p class="mlwalk-data"><b>Data:</b> ${mlLinks(mdInline(w.data))}</p>
+    <ol class="mlwalk-steps">${w.steps.map(s => `<li><b>${mdInline(s.h.replace(/^\d+\.\s*/, ""))}</b><div class="tscroll">${mlLinks(md(s.md.replace(/^\|[\s:|-]+\|[ \t]*\n/gm, "")))}</div></li>`).join("")}</ol>
+    <p class="mlwalk-take"><b>What this shows:</b> ${mdInline(w.takeaway)}</p></div>`;
 }
 /* ---------- deep layer + end-to-end walkthrough on every concept ---------- */
 function mlDeep(c){

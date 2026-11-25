@@ -143,7 +143,7 @@ function conceptCard(c){
 }
 function conceptBody(c){
   if (c.lesson) return mlLesson(c) + `<details class="mlref"><summary>Full reference card: formulas, more code, deeper detail and interview answers</summary>` + conceptRef(c) + `</details>` + conceptLinks(c);
-  return conceptRef(c) + conceptLinks(c);
+  return (c.walk ? `<section class="mlles">${mlWalk(c)}</section>` : "") + conceptRef(c) + conceptLinks(c);
 }
 function conceptRef(c){
   return `<div class="sdmd">${md(c.body)}</div>
