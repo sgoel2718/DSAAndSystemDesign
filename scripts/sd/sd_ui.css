@@ -339,3 +339,4 @@ mark.hl[data-hl]:hover{outline:1px dashed color-mix(in srgb,var(--ink) 40%,trans
 .vxout{margin:10px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden}.vxoh{font:12px var(--mono);padding:5px 10px;background:var(--bg);color:var(--muted)}
 .vxout pre{margin:0;padding:10px;font:12.5px var(--mono);background:var(--panel);white-space:pre-wrap}
 .vxkeypt p{margin:4px 0 0}
+.sdj .sdjt li{margin:4px 0}

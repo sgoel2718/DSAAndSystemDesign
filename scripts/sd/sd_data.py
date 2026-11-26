@@ -38,6 +38,33 @@ CONCEPT_TABS = [
 ]
 
 
+def attach_java(concepts, hld, tabs):
+    """Attach runnable Java practice programs (sd_j_*.py + real outputs) and export them to java-practice/."""
+    import glob, importlib, json, re
+    from sd_j_util import JAVA
+    here = os.path.dirname(os.path.abspath(__file__))
+    for f in sorted(glob.glob(os.path.join(here, "sd_j_*.py"))):
+        m = os.path.basename(f)[:-3]
+        if m != "sd_j_util": importlib.import_module(m)
+    out_f = os.path.join(here, "sd_java_out.json")
+    outs = json.load(open(out_f)) if os.path.exists(out_f) else {}
+    cards = dict(concepts); cards.update({h["id"]: h for h in hld})
+    folder = {}
+    for i, t in enumerate(tabs, 1):
+        for s in t["sections"]:
+            for cid in s["ids"]: folder[cid] = f"{i:02d}-" + re.sub(r"[^a-z0-9]+", "-", t["label"].lower()).strip("-")
+    for h in hld: folder[h["id"]] = "08-hld-questions"
+    root = os.path.normpath(os.path.join(here, "..", "..", "java-practice", "system-design"))
+    for cid, j in JAVA.items():
+        assert cid in cards, "java for unknown card " + cid
+        o = outs.get(cid)
+        if not o or o["h"] != __import__("hashlib").sha1(j["code"].encode()).hexdigest(): continue
+        cards[cid]["j"] = dict(code=j["code"], cls=j["cls"], tasks=j["tasks"], out=o["out"])
+        d = os.path.join(root, folder[cid]); os.makedirs(d, exist_ok=True)
+        fp = os.path.join(d, j["cls"] + ".java")
+        if not os.path.exists(fp) or open(fp).read() != j["code"]: open(fp, "w").write(j["code"])
+
+
 def attach_explain(concepts, hld, lld):
     """Attach the detailed explanation layer (sd_x*.py) to every card and validate its diagrams."""
     import glob, importlib, json
@@ -136,6 +163,7 @@ def build():
         l["freq"] = "Very common" if l["id"] in lvery else "Common" if l["id"] in lcommon else "Sometimes"
     attach_explain(concepts, hld, lld)
     tabs = [dict(key=k, label=l, intro=i, sections=[dict(name=n, ids=[c["id"] for c in cs]) for n, cs in secs]) for k, l, i, secs in CONCEPT_TABS]
+    attach_java(concepts, hld, tabs)
     return dict(tabs=tabs, concepts=concepts, hld=hld, lld=lld, qa=qa,
                 roadmap=[dict(name=n, why=w, ids=l) for n, w, l in M.ROADMAP],
                 framework=M.HLD_FRAMEWORK, levels=M.LEVELS_EXPECT, mistakes=M.MISTAKES, think=M.THINK, dbpick=M.DB_PICK,
