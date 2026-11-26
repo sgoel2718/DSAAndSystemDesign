@@ -3,7 +3,7 @@ usage: python3 check_ml.py [module_name ...]   (default: all)"""
 import importlib, os, subprocess, sys, tempfile, textwrap, time, ast
 sys.path.insert(0, os.path.dirname(__file__))
 
-MODS = ["ml_py", "ml_math", "ml_m1", "ml_sup", "ml_unsup", "ml_dl", "ml_cv", "ml_nlp", "ml_adv", "ml_ops", "ml_labs"]
+MODS = ["ml_py", "ml_math", "ml_m1", "ml_sup", "ml_sup_clf", "ml_unsup", "ml_dl", "ml_cv", "ml_nlp", "ml_adv", "ml_ops", "ml_labs"]
 ENV = dict(os.environ, KERAS_BACKEND="torch", MPLBACKEND="Agg", PYTHONWARNINGS="ignore", TOKENIZERS_PARALLELISM="false",
            HF_HUB_OFFLINE="1", TRANSFORMERS_VERBOSITY="error", MLFLOW_DISABLE_AGENT_HINT="1")
 

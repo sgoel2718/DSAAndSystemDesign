@@ -2950,5 +2950,95 @@
 }
 ],
 "takeaway": "Association rules turn co-occurrence counts into 'if A then B' rules, ranked by support, confidence and lift."
+},
+"m-linear-classification": {
+"data": "**Palmer penguins** — 344 real penguins measured in Antarctica: species, island, bill length/depth, flipper length, body mass ([palmerpenguins](https://allisonhorst.github.io/palmerpenguins/)).",
+"steps": [
+{
+"h": "Four methods, same straight-line rule",
+"md": "265 real Adelie and Gentoo penguins, 2 measurements each. Every method learns a score w·x + b and draws the line where it is 0:\n\n| method | boundary (real units) | training accuracy | closest penguin to the line (sd units) |\n| --- | --- | --- | --- |\n| perceptron | flipper = 67.7 + 8.52 × bill depth | 1 | 0.173 |\n| logistic regression | flipper = 101.3 + 6.29 × bill depth | 1 | 0.228 |\n| linear SVM | flipper = 99.9 + 6.42 × bill depth | 1 | 0.278 |\n| LDA | flipper = 117.2 + 5.20 × bill depth | 1 | 0.042 |\n\nAll four separate the species perfectly, but they pick different lines. The **linear SVM** leaves the widest gap to the nearest penguin, because maximising that gap (the margin) is exactly what it optimises."
+},
+{
+"h": "Scoring real penguins",
+"md": "Logistic regression's score for three penguins (positive → Gentoo):\n\n| species | bill_depth_mm | flipper_length_mm | score w·x + b | prediction |\n| --- | --- | --- | --- | --- |\n| Adelie | 18 | 210 | -0.89 | Adelie |\n| Adelie | 18.7 | 181 | -7.56 | Adelie |\n| Gentoo | 16.1 | 213 | 2.09 | Gentoo |\n\nThe first one is the penguin nearest the line: its score is close to 0, so it's the least certain."
+},
+{
+"h": "When a straight line isn't enough",
+"md": "Adelie vs Chinstrap on the same two measurements: their clouds overlap, and the best line is right only **74%** of the time (5-fold). Switching to bill length + bill depth, where Chinstraps stand out, the same linear model scores **97%**: often the fix is a better feature, not a more complex model."
+}
+],
+"takeaway": "Linear classifiers all predict by which side of a straight line a point falls on; the method only decides which line, and good features decide whether a line can work at all."
+},
+"m-naive-bayes": {
+"data": "**SMS Spam Collection** — 5,572 real text messages from the UK and Singapore, each labelled spam or ham (normal) ([UCI](https://archive.ics.uci.edu/dataset/228/sms+spam+collection)).",
+"steps": [
+{
+"h": "Count words per class",
+"md": "4,179 real training SMS. Prior P(spam) = **0.134**. With Laplace smoothing (add 1 to every count):\n\n| word | count in spam | count in ham | P(word ∣ spam) | P(word ∣ ham) | spam ÷ ham |\n| --- | --- | --- | --- | --- | --- |\n| free | 165 | 41 | 0.0081 | 0.00077 | 11 |\n| call | 279 | 181 | 0.014 | 0.0033 | 4.1 |\n| now | 155 | 222 | 0.0076 | 0.0041 | 1.9 |\n| lunch | 0 | 37 | 4.9e-05 | 0.0007 | 0.07 |\n| home | 2 | 124 | 0.00015 | 0.0023 | 0.064 |\n| prize | 71 | 0 | 0.0035 | 1.8e-05 | 192 |"
+},
+{
+"h": "Score a new message by hand",
+"md": "“free call now”: spam score = log P(spam) + Σ log P(word ∣ spam) = **-16.00**; ham score = **-18.52**. P(spam) = 1 / (1 + e^(ham − spam)) = **0.9256**; scikit-learn gives 0.9256. Words multiply their evidence, so three mildly spam-ish words together make spam very likely."
+},
+{
+"h": "Little data? Naive Bayes shines",
+"md": "Test spam F1 on 1,393 unseen messages (averaged over 5 random training sets for the small sizes):\n\n| labelled messages | Naive Bayes spam F1 | logistic regression spam F1 |\n| --- | --- | --- |\n| 30 | 0.457 | 0.096 |\n| 100 | 0.744 | 0.386 |\n| 4,179 | 0.927 | 0.927 |\n\nWith few labels Naive Bayes beats logistic regression clearly; with all the data they end up close."
+}
+],
+"takeaway": "Naive Bayes multiplies per-word evidence with the class prior; it's crude but fast and especially strong when labelled data is scarce."
+},
+"m-discriminant-analysis": {
+"data": "**Palmer penguins** — 344 real penguins measured in Antarctica: species, island, bill length/depth, flipper length, body mass ([palmerpenguins](https://allisonhorst.github.io/palmerpenguins/)).",
+"steps": [
+{
+"h": "One feature by hand",
+"md": "Flipper length of 265 real penguins. Adelie mean **190.1 mm**, Gentoo mean **217.2 mm**, pooled spread (sd) **6.6 mm**; 55% of them are Adelie. LDA's boundary = midpoint 203.7 + sd² × ln(P(Gentoo)/P(Adelie)) / (mean_A − mean_G) = 203.7 +0.32 = **204.0 mm**. The more common species gets a little extra room. This single cut classifies 98.5% of the penguins correctly."
+},
+{
+"h": "All four measurements, three species",
+"md": "| model | 5-fold accuracy |\n| --- | --- |\n| LDA (shared spread, straight boundaries) | 0.982 |\n| QDA (own spread per class, curved) | 0.985 |\n| logistic regression | 0.985 |\n\nWith 333 penguins all three do about equally well: the species really are roughly Gaussian clouds."
+},
+{
+"h": "Why LDA is the safer choice with little data",
+"md": "Train on only **6 penguins per species**, test on the rest (10 repeats): LDA **97.4%**, QDA **86.2%**. QDA must estimate a separate 4 × 4 spread matrix for each species from 6 birds; LDA pools all 18 into one."
+}
+],
+"takeaway": "LDA and QDA classify by asking which class's Gaussian cloud a point most likely came from; shared spread gives straight, stable boundaries, separate spreads give curved ones that need more data."
+},
+"m-threshold-calibration": {
+"data": "**Breast cancer (Wisconsin)** — 569 real biopsies: 30 measurements of cell nuclei and whether the tumour was malignant or benign ([UCI](https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic)).",
+"steps": [
+{
+"h": "Same model, different thresholds",
+"md": "Logistic regression on 228 unseen real biopsies (85 malignant):\n\n| threshold | malignant caught (recall) | flagged that are malignant (precision) | cancers missed | benign flagged |\n| --- | --- | --- | --- | --- |\n| 0.05 | 0.98 | 0.75 | 2 | 27 |\n| 0.2 | 0.95 | 0.86 | 4 | 13 |\n| 0.5 | 0.92 | 0.97 | 7 | 2 |\n| 0.8 | 0.88 | 1 | 10 | 0 |\n| 0.95 | 0.82 | 1 | 15 | 0 |\n\nA hospital would accept a few extra benign biopsies flagged to miss as few cancers as possible, so it picks a low threshold, not 0.5."
+},
+{
+"h": "Are the probabilities honest?",
+"md": "Naive Bayes is very sure of itself: 91% of its predictions are below 0.001 or above 0.999. Grouping predictions and comparing with what really happened:\n\n| predicted P(malignant) | raw naive Bayes | calibrated naive Bayes |\n| --- | --- | --- |\n| below 0.1 | 140 biopsies, said 0.00, really 0.06 | 124 biopsies, said 0.01, really 0.02 |\n| 0.1–0.9 | 4 biopsies, said 0.31, really 0.25 | 29 biopsies, said 0.59, really 0.34 |\n| above 0.9 | 84 biopsies, said 1.00, really 0.90 | 75 biopsies, said 0.97, really 0.97 |\n\nBrier score (lower = better): raw **0.073**, after isotonic calibration **0.060**."
+},
+{
+"h": "Picking the threshold from costs",
+"md": "If missing a cancer is judged 20× worse than an unnecessary follow-up, flag when P(malignant) > 1/(1 + 20) = **0.048**. With logistic regression's probabilities that flags 110 of 228 biopsies and misses 2 cancers. This only works if the probabilities are calibrated, which is why the two steps go together."
+}
+],
+"takeaway": "Choose the threshold from the cost of each mistake, and make sure the probabilities it's applied to are calibrated."
+},
+"m-choosing-classifier": {
+"data": "**Titanic passengers** — 891 real passengers of the 1912 sinking, with class, sex, age, fare and whether they survived ([Kaggle / Data Science Dojo](https://github.com/datasciencedojo/datasets)).",
+"steps": [
+{
+"h": "Same data, same folds, same metric",
+"md": "891 real passengers, 7 columns (missing ages filled and categories encoded inside each model's pipeline, so no test fold leaks into training). Every model is scored on the **same** 10 folds (5-fold, repeated twice) by AUC."
+},
+{
+"h": "The comparison",
+"md": "| model | AUC mean | ± sd across folds | time (s) |\n| --- | --- | --- | --- |\n| gradient boosting | 0.869 | 0.028 | 0.61 |\n| random forest | 0.868 | 0.031 | 3.44 |\n| kNN (k = 15) | 0.851 | 0.032 | 0.19 |\n| LDA | 0.849 | 0.037 | 0.18 |\n| logistic regression | 0.849 | 0.035 | 0.19 |\n| SVM (RBF kernel) | 0.845 | 0.041 | 0.24 |\n| decision tree (depth 4) | 0.843 | 0.032 | 0.18 |\n| naive Bayes | 0.83 | 0.032 | 0.17 |\n| always 'died' (baseline) | 0.5 | 0 | 0.17 |"
+},
+{
+"h": "Is the winner really better?",
+"md": "Compare fold by fold with logistic regression: **gradient boosting** is ahead by +0.020 AUC, about 3.5 standard errors, so the gain is probably real. Models statistically tied with logistic regression here: LDA, kNN (k = 15), decision tree (depth 4), SVM (RBF kernel). Final pick depends on the job: the top model for pure accuracy, logistic regression if every decision must be explained, with the gap above as the price of explainability."
+}
+],
+"takeaway": "Choose a classifier by comparing several families on identical folds with the right metric, then weigh any real gain against simplicity and explainability."
 }
 }

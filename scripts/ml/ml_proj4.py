@@ -400,8 +400,8 @@ def test_gradient_formula_matches_finite_difference():
 
 # ---------------------------------------------------------------- P23
 P23 = P("p-credit-scorecard", "Credit-risk scorecard: classical ML model zoo, costs and a system design (German Credit)", "sup", "Intermediate", "3–4 days", "VS Code or Colab (CPU)",
-  "Predict loan default for 1,000 real applicants with every classical model family — baselines and 1R, kNN, decision trees, bagging, AdaBoost, SVMs with different kernels, voting and stacking — using leak-free encoding pipelines, feature selection, cost-based thresholds (AUC computed by integration), reason codes for each decision, and a written system design with capacity and monitoring plans.",
-  ["`data.py`: load, encode (one-hot / ordinal / target) inside pipelines, cost matrix", "`zoo.py`: 12 models from 1R to stacking, compared with repeated stratified CV",
+  "Predict loan default for 1,000 real applicants with every classical model family — baselines and 1R, naive Bayes, LDA/QDA, kNN, decision trees, bagging, AdaBoost, SVMs with different kernels, voting and stacking — using leak-free encoding pipelines, feature selection, cost-based thresholds (AUC computed by integration), reason codes for each decision, and a written system design with capacity and monitoring plans.",
+  ["`data.py`: load, encode (one-hot / ordinal / target) inside pipelines, cost matrix", "`zoo.py`: 16 models from 1R to stacking, compared with repeated stratified CV",
    "`select.py`: filter, RFE and L1 selection inside CV", "`scorecard.py`: final calibrated model, expected-cost threshold, AUC by trapezoid integration, reason codes", "`DESIGN.md`: the production system design", "`tests/`"],
   ["categorical encoding without leakage", "kNN, trees, bagging, AdaBoost, SVM kernels, voting, stacking", "feature selection inside CV", "cost-sensitive thresholds", "ROC-AUC as an integral", "reason codes", "ML system design"],
   "Statlog German Credit (1,000 applicants, 20 attributes, 'good'/'bad' credit) from a public GitHub mirror.",
@@ -443,7 +443,7 @@ def expected_cost(y_true, flag_bad):
     y_true, flag_bad = np.asarray(y_true), np.asarray(flag_bad).astype(bool)
     return float(((~flag_bad) & (y_true == 1)).sum() * COST_FN + (flag_bad & (y_true == 0)).sum() * COST_FP) / len(y_true)
 '''),
-   S("The model zoo", """Every model is a pipeline (encoder → model) so the comparison is fair and leak-free. 1R and the majority class are the baselines to beat; kernels show linear vs non-linear SVMs; bagging/AdaBoost/voting/stacking show what ensembles add. Repeated stratified CV gives a mean and spread for each.""",
+   S("The model zoo", """Every model is a pipeline (encoder → model) so the comparison is fair and leak-free. 1R and the majority class are the baselines to beat; naive Bayes, LDA and QDA are the probabilistic (generative) classifiers; kernels show linear vs non-linear SVMs; bagging/AdaBoost/voting/stacking show what ensembles add. Repeated stratified CV gives a mean and spread for each.""",
      "zoo.py", '''
 import numpy as np, pandas as pd
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -455,10 +455,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from data import encoder, load
 
 
-class OneRule(BaseEstimator, ClassifierMixin):
+class OneRule(ClassifierMixin, BaseEstimator):
     """1R: pick the single categorical column whose per-value majority vote makes the fewest errors."""
 
     def fit(self, X, y):
@@ -485,6 +487,8 @@ def models(df):
             "random forest": base["forest"], "AdaBoost stumps": make_pipeline(e("ordinal"), AdaBoostClassifier(DecisionTreeClassifier(max_depth=1), n_estimators=300, learning_rate=0.5, random_state=0)),
             "SVM linear": make_pipeline(e(), SVC(kernel="linear", C=0.05, probability=True, random_state=0)), "SVM RBF": base["svm_rbf"],
             "SVM poly-3": make_pipeline(e(), SVC(kernel="poly", degree=3, C=0.5, probability=True, random_state=0)),
+            "naive Bayes": make_pipeline(e(), GaussianNB()), "LDA": make_pipeline(e(), LinearDiscriminantAnalysis(solver="lsqr", shrinkage="auto")),
+            "QDA": make_pipeline(e(), QuadraticDiscriminantAnalysis(reg_param=0.5)),
             "soft voting": VotingClassifier(list(base.items()), voting="soft"), "stacking": StackingClassifier(list(base.items()), LogisticRegression(), cv=5)}
 
 
@@ -621,7 +625,8 @@ def test_one_rule_beats_majority():
   errors=[("Stacking is slow", "SVM with probability=True runs internal CV — reduce repeats or use LinearSVC + calibration"), ("TargetEncoder leaks", "it must be inside the pipeline (it cross-fits automatically)")],
   extend=["Add a FastAPI endpoint that returns score + reason codes", "Add the fairness audit from the Responsible AI concept", "Replace the stacker's base models with gradient boosting and compare"],
   see=["m-encoding", "m-intuitive-algos", "m-knn", "m-decision-tree", "m-bootstrap-bagging", "m-adaboost", "m-svm", "m-kernels", "m-separability", "m-voting-stacking", "m-feature-selection",
-       "m-integration", "m-industry-cases", "m-ml-system-design", "m-metrics-clf"])
+       "m-integration", "m-industry-cases", "m-ml-system-design", "m-metrics-clf",
+       "m-linear-classification", "m-naive-bayes", "m-discriminant-analysis", "m-threshold-calibration", "m-choosing-classifier"])
 
 # ---------------------------------------------------------------- P24
 P24 = P("p-face-explorer", "Face explorer: EigenFaces, Fisherfaces, manifolds and outlier detection (Olivetti faces)", "unsup", "Intermediate", "2–3 days", "VS Code or Colab (CPU)",

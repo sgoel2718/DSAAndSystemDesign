@@ -5,6 +5,7 @@ from ml_py import PYTHON
 from ml_math import PROB, LINALG
 from ml_m1 import FOUND
 from ml_sup import SUP
+from ml_sup_clf import SUP_CLF
 from ml_unsup import UNSUP
 from ml_dl import DL
 from ml_cv import CV
@@ -37,7 +38,7 @@ TOPIC_COMPANIES = {
 
 
 def build():
-    cards = PYTHON + PROB + LINALG + FOUND + SUP + UNSUP + DL + CV + NLP + ADV + OPS
+    cards = PYTHON + PROB + LINALG + FOUND + SUP + SUP_CLF + UNSUP + DL + CV + NLP + ADV + OPS
     concepts = {}
     for c in cards:
         assert c["id"] not in concepts, "duplicate " + c["id"]

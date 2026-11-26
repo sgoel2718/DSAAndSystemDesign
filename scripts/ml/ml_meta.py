@@ -15,7 +15,8 @@ TABS = [
    ("Working with data", ["m-data-processing", "m-eda", "m-real-world-data", "m-encoding", "m-feature-engineering", "m-feature-selection", "m-feature-extraction", "m-imbalance"]),
    ("Evaluation & generalisation", ["m-train-val-test", "m-leakage", "m-overfitting", "m-regularization", "m-metrics-clf", "m-metrics-reg", "m-hyperparams", "m-separability"])]),
  ("sup", "Supervised learning", "Module 1–3 · regression and classification algorithms from linear models to XGBoost and SVMs.", [
-   ("Linear models", ["m-linear-regression", "m-logistic-regression", "m-multiclass"]),
+   ("Linear models", ["m-linear-regression", "m-logistic-regression", "m-linear-classification", "m-multiclass"]),
+   ("Probabilistic classifiers & choosing one", ["m-naive-bayes", "m-discriminant-analysis", "m-threshold-calibration", "m-choosing-classifier"]),
    ("Instance-based & trees", ["m-knn", "m-decision-tree"]),
    ("Ensembles", ["m-bootstrap-bagging", "m-random-forest", "m-voting-stacking", "m-adaboost", "m-gradient-boosting"]),
    ("Kernel methods", ["m-svm", "m-kernels"]),

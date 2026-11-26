@@ -450,3 +450,196 @@ for months in range(0, 73, 6):
     else: continue
     break
 ''')
+
+
+SMS = "https://raw.githubusercontent.com/justmarkham/pycon-2016-tutorial/master/data/sms.tsv"
+
+X("m-linear-classification",
+  "A linear classifier scores each example with a weighted sum and predicts by the sign of that score, so its decision boundary is a straight line (a hyperplane). Perceptron, logistic regression, linear SVM and LDA share this form and differ only in the loss used to choose the weights, which decides *which* separating line you get.",
+  """**Geometry.** f(x) = w·x + b; boundary {x : f(x) = 0}; w is normal to it and the signed distance of x is f(x)/‖w‖. **Losses with margin m = y·f(x), y ∈ {−1, +1}:** perceptron max(0, −m) (zero once correct, so any separating line is a minimum); logistic log(1 + e^(−m)) (always positive, pushes every point further out; gives P(y|x) = σ(f)); hinge max(0, 1 − m) + λ‖w‖² (zero beyond margin 1, so only points near the boundary matter → maximum margin 2/‖w‖). **Perceptron convergence:** if the data are separable with margin γ and ‖x‖ ≤ R, it makes at most (R/γ)² mistakes. **Separable data + unregularised logistic:** the loss keeps falling as ‖w‖ → ∞, so the weights diverge; regularisation fixes a finite solution. **Capacity:** a linear classifier in d dimensions can shatter d + 1 points (VC dimension d + 1).""",
+  """**Perceptron by hand.** Points (x₁, x₂, y): A = (1, 1, +1), B = (−1, −1, −1). Start w = (0, 0), b = 0. A: score 0 → treated as wrong → w = (1, 1), b = 1. B: score −1 − 1 + 1 = −1 → correct. A again: 1 + 1 + 1 = 3 → correct. Boundary **x₁ + x₂ + 1 = 0**; distance of A = 3/√2 = **2.12**, of B = 1/√2 = **0.71**. A linear SVM would instead put the boundary at x₁ + x₂ = 0, equally far (√2) from both: the maximum margin.""",
+  ["Forgetting to scale features (the boundary and the regularisation depend on units)", "Expecting a straight line to separate rings or XOR patterns", "Reading raw weights as importance when features are correlated", "Unregularised logistic regression on separable data (weights blow up)"],
+  ["Text and other high-dimensional sparse data", "Baselines and explainable scorecards", "Low-latency prediction"], ["Clearly curved or interacting boundaries without feature engineering"],
+  "Palmer penguins (real Antarctic field measurements) — perceptron, logistic regression, linear SVM and LDA on the same two features, compared by boundary, margin and accuracy; then a pair that is not separable.",
+  ["Load penguins and keep two species and two features", "Standardise and fit four linear classifiers", "Print each boundary as an equation and its margin to the nearest penguin", "Repeat on a harder pair and see where straight lines fail", "Compare adding an informative new measurement (bill length) with adding quadratic terms"],
+  '''
+import numpy as np, pandas as pd
+from sklearn.linear_model import Perceptron, LogisticRegression
+from sklearn.svm import LinearSVC
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_score
+pg = pd.read_csv("URL_PENGUINS").dropna()
+def run(a, b, feats):
+    d = pg[pg.species.isin([a, b])]; X = StandardScaler().fit_transform(d[feats]); y = (d.species == b).astype(int).to_numpy()
+    print(f"--- {a} vs {b} on {feats}")
+    for name, m in [("perceptron", Perceptron(random_state=0)), ("logistic", LogisticRegression()), ("linear SVM", LinearSVC(C=1.0)), ("LDA", LinearDiscriminantAnalysis())]:
+        m.fit(X, y); w, c = m.coef_[0], m.intercept_[0]; margin = np.min(np.abs(X @ w + c)) / np.linalg.norm(w)
+        print(f"  {name:10s} {w[0]:+.2f}*x1 {w[1]:+.2f}*x2 {c:+.2f} = 0 | train acc {m.score(X, y):.3f} | closest penguin {margin:.3f} sd away | 5-fold {cross_val_score(m, X, y, cv=5).mean():.3f}")
+    return d, y
+run("Adelie", "Gentoo", ["bill_depth_mm", "flipper_length_mm"])
+d, y = run("Adelie", "Chinstrap", ["bill_depth_mm", "flipper_length_mm"])
+poly = make_pipeline(StandardScaler(), PolynomialFeatures(2), StandardScaler(), LogisticRegression(max_iter=2000))
+print("Adelie vs Chinstrap with bill length added:", cross_val_score(make_pipeline(StandardScaler(), LogisticRegression()), d[["bill_length_mm", "bill_depth_mm"]], y, cv=5).mean().round(3),
+      "| quadratic features:", cross_val_score(poly, d[["bill_depth_mm", "flipper_length_mm"]], y, cv=5).mean().round(3))
+'''.replace("URL_PENGUINS", PENGUINS))
+
+X("m-naive-bayes",
+  "Naive Bayes turns class-conditional frequencies into a classifier with Bayes' rule, assuming features are independent given the class. Training is just counting, prediction is a sum of log-probabilities, and for text it is a fast, surprisingly strong baseline.",
+  """**Decision rule.** ŷ = argmaxₖ [log πₖ + Σᵢ log P(xᵢ | k)]. **Multinomial:** P(word w | k) = (N_kw + α)/(N_k + αV); a document's log-likelihood is Σ_w count_w · log P(w | k). **Bernoulli:** P(x | k) = Πᵢ pₖᵢ^xᵢ (1 − pₖᵢ)^(1−xᵢ), so absent words count as evidence too. **Gaussian:** P(xᵢ | k) = N(μₖᵢ, σ²ₖᵢ) → quadratic boundaries with diagonal covariances. **Linear in disguise:** multinomial/Bernoulli NB give a linear decision function in the counts (log-odds = b + Σ w_w·count_w), the generative twin of logistic regression; NB converges faster with little data, logistic regression reaches lower error with lots of data (Ng & Jordan, 2002). **Calibration:** correlated features add the same evidence repeatedly, so posteriors are pushed towards 0 and 1.""",
+  """**Multinomial NB by hand (α = 1, V = 4 words: free, win, lunch, call).** Spam counts: free 3, win 2, lunch 0, call 1 (total 6); ham: free 0, win 0, lunch 3, call 2 (total 5). P(free|spam) = 4/10 = 0.4, P(call|spam) = 2/10 = 0.2; P(free|ham) = 1/9 = 0.111, P(call|ham) = 3/9 = 0.333. Priors 0.5/0.5. Message "free call": spam 0.5 × 0.4 × 0.2 = **0.040**, ham 0.5 × 0.111 × 0.333 = **0.0185** → P(spam) = 0.040/0.0585 = **0.68**.""",
+  ["Using Gaussian NB on word counts (use Multinomial/Bernoulli)", "Forgetting smoothing (zero probabilities)", "Trusting NB's probabilities without calibration", "Feeding TF-IDF and expecting probabilistic meaning"],
+  ["Text classification baselines (spam, sentiment, topics)", "Very small labelled sets", "Streaming / incremental updates (just update counts)"], ["When calibrated probabilities matter", "Strongly correlated continuous features"],
+  "SMS Spam Collection (5,572 real messages) — Multinomial and Bernoulli NB vs logistic regression, a learning curve with few labels, the most spam-indicative words, and a calibration check.",
+  ["Load SMS, stratified train/test split", "Count words, fit Multinomial and Bernoulli NB", "Compare with logistic regression at 50 / 200 / all training messages", "Inspect log-probability ratios per word", "Check calibration with the Brier score"],
+  '''
+import numpy as np, pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score, brier_score_loss
+df = pd.read_csv("URL_SMS", sep="\\t", header=None, names=["label", "text"]); y = (df.label == "spam").astype(int).to_numpy()
+tr, te, ytr, yte = train_test_split(df.text, y, test_size=0.25, stratify=y, random_state=0)
+rng = np.random.default_rng(0)
+for n in (50, 200, len(tr)):
+    idx = rng.choice(len(tr), n, replace=False) if n < len(tr) else np.arange(len(tr))
+    vec = CountVectorizer().fit(tr.iloc[idx]); A, B = vec.transform(tr.iloc[idx]), vec.transform(te)
+    row = []
+    for name, m in [("multinomial NB", MultinomialNB()), ("Bernoulli NB", BernoulliNB()), ("logistic", LogisticRegression(max_iter=2000, C=10))]:
+        m.fit(A, ytr[idx]); row.append(f"{name} F1 {f1_score(yte, m.predict(B)):.3f}")
+    print(f"{n:5d} training messages: " + " | ".join(row))
+vec = CountVectorizer().fit(tr); nb = MultinomialNB().fit(vec.transform(tr), ytr)
+ratio = nb.feature_log_prob_[1] - nb.feature_log_prob_[0]; words = vec.get_feature_names_out()
+print("most spam-indicative words:", list(words[np.argsort(-ratio)[:10]]))
+p = nb.predict_proba(vec.transform(te))[:, 1]
+print(f"Brier score {brier_score_loss(yte, p):.4f}; share of probabilities below 0.01 or above 0.99: {np.mean((p < 0.01) | (p > 0.99)):.1%}")
+'''.replace("URL_SMS", SMS))
+
+X("m-discriminant-analysis",
+  "Discriminant analysis is a generative classifier: it fits a Gaussian to each class and assigns a point to the class with the highest prior × likelihood. Sharing one covariance across classes (LDA) gives linear boundaries and a supervised projection; per-class covariances (QDA) give quadratic boundaries.",
+  """**Discriminant functions.** δₖ(x) = −½ log|Σₖ| − ½(x − μₖ)ᵀΣₖ⁻¹(x − μₖ) + log πₖ (QDA). With Σₖ = Σ the quadratic term xᵀΣ⁻¹x is common to all classes and cancels: δₖ(x) = xᵀΣ⁻¹μₖ − ½μₖᵀΣ⁻¹μₖ + log πₖ (LDA, linear). **Estimates:** μ̂ₖ = class means, Σ̂ = pooled within-class covariance, π̂ₖ = class shares. **Parameters:** LDA Kd + d(d+1)/2, QDA K·(d + d(d+1)/2). **Shrinkage:** Σ̂(λ) = (1 − λ)Σ̂ + λ·(tr Σ̂/d)·I (Ledoit–Wolf chooses λ) keeps Σ̂ invertible when d is close to n. **Fisher view:** LDA's projection maximises between-class over within-class variance; at most K − 1 useful directions. **Two equal-variance 1-D classes:** boundary at (μ₁ + μ₂)/2 + σ² log(π₂/π₁)/(μ₁ − μ₂).""",
+  """**LDA by hand (1 feature).** Flipper length: Adelie mean 190, Gentoo 217, shared sd 7, priors 0.6 / 0.4. Boundary = (190 + 217)/2 + 7² · ln(0.4/0.6)/(190 − 217) = 203.5 + 49 · (−0.405)/(−27) = 203.5 + 0.74 = **204.2 mm** — the more common class gets a little more room. A 204 mm penguin → **Adelie**; 205 mm → **Gentoo**.""",
+  ["Using QDA with few samples per class (singular covariances) — add reg_param", "Assuming LDA needs scaled features (it doesn't change predictions)", "Ignoring strong non-normality / outliers", "Confusing LDA (classifier/projection) with LDA topic models"],
+  ["Small, roughly Gaussian tabular data", "Supervised dimensionality reduction for plotting", "Fast, stable multiclass baselines"], ["Heavy outliers, very skewed or categorical features"],
+  "Palmer penguins (3 species) and Pima diabetes — LDA vs QDA vs logistic regression with cross-validation, the boundary computed from class means, shrinkage when data are scarce, and a 2-D LDA projection.",
+  ["Load penguins, fit LDA/QDA/logistic and compare", "Compute the 1-D LDA boundary from means and pooled sd, and check against sklearn", "Learning curve with 10/30/all samples per class, with and without shrinkage", "Project onto LDA's 2 discriminant directions", "Repeat on Pima diabetes where classes overlap"],
+  '''
+import numpy as np, pandas as pd
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA, QuadraticDiscriminantAnalysis as QDA
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+pg = pd.read_csv("URL_PENGUINS").dropna(); feats = ["bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"]
+X, y = pg[feats].to_numpy(), pg.species.to_numpy(); cv = StratifiedKFold(5, shuffle=True, random_state=0)
+for name, m in [("LDA", LDA()), ("QDA", QDA(reg_param=0.05)), ("logistic", make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)))]:
+    print(f"penguins {name:9s} 5-fold accuracy {cross_val_score(m, X, y, cv=cv).mean():.3f}")
+two = pg[pg.species.isin(["Adelie", "Gentoo"])]; f = two.flipper_length_mm.to_numpy(); s = (two.species == "Gentoo").to_numpy()
+m1, m2 = f[~s].mean(), f[s].mean(); pooled = np.sqrt((((f[~s] - m1) ** 2).sum() + ((f[s] - m2) ** 2).sum()) / (len(f) - 2)); pa, pgt = (~s).mean(), s.mean()
+by_hand = (m1 + m2) / 2 + pooled ** 2 * np.log(pgt / pa) / (m1 - m2)
+lda1 = LDA().fit(f.reshape(-1, 1), s); grid = np.linspace(180, 230, 5001); learned = grid[np.argmax(lda1.predict(grid.reshape(-1, 1)))]
+print(f"1-D boundary by hand {by_hand:.2f} mm vs sklearn {learned:.2f} mm")
+rng = np.random.default_rng(0)
+for n in (5, 15, 50):
+    acc = {"LDA": [], "LDA shrinkage": [], "QDA": []}
+    for r in range(10):
+        idx = np.concatenate([rng.choice(np.where(y == k)[0], n, replace=False) for k in np.unique(y)]); test = np.setdiff1d(np.arange(len(y)), idx)
+        for name, m in [("LDA", LDA()), ("LDA shrinkage", LDA(solver="lsqr", shrinkage="auto")), ("QDA", QDA(reg_param=0.0))]:
+            try: acc[name].append(m.fit(X[idx], y[idx]).score(X[test], y[test]))
+            except Exception: acc[name].append(np.nan)
+    print(f"{n:3d} per class: " + " | ".join(f"{k} {np.nanmean(v):.3f}" for k, v in acc.items()))
+Z = LDA(n_components=2).fit(X, y).transform(X)
+print(pd.DataFrame(Z, columns=["LD1", "LD2"]).assign(species=y).groupby("species").mean().round(2))
+pima = pd.read_csv("URL_PIMA", names=PIMA_COLS_LIST); Xp, yp = pima.drop(columns="diabetes"), pima.diabetes
+for name, m in [("LDA", LDA()), ("QDA", QDA(reg_param=0.1)), ("logistic", make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)))]:
+    print(f"Pima {name:9s} AUC {cross_val_score(m, Xp, yp, cv=cv, scoring='roc_auc').mean():.3f}")
+'''.replace("URL_PENGUINS", PENGUINS).replace("URL_PIMA", PIMA).replace("PIMA_COLS_LIST", repr(PIMA_COLS)))
+
+X("m-threshold-calibration",
+  "Turning a probability into a decision needs two separate things: probabilities you can trust (calibration) and a threshold chosen from the costs or constraints of the application. Neither is the model's job by default, and 0.5 is rarely the right cut-off.",
+  """**Cost-optimal threshold.** With calibrated p and costs C_FN (miss) and C_FP (false alarm), flagging costs (1 − p)C_FP and not flagging costs pC_FN ⇒ flag iff p > C_FP/(C_FP + C_FN). **Calibration** means P(Y = 1 | p̂ = q) = q. Measures: **Brier score** (1/n)Σ(p − y)², which splits into a calibration part and a discrimination (refinement) part; **expected calibration error** ECE = Σ_bins (n_b/n)|mean p_b − rate_b|; reliability diagrams. **Platt scaling:** fit p = σ(a·s + b) on held-out scores s (2 parameters, needs little data, assumes a sigmoid-shaped distortion). **Isotonic regression:** monotone, non-parametric step function (needs more data, can overfit). Always fit the calibrator on data the model didn't train on (CalibratedClassifierCV cross-fits). **Prevalence shift:** if the positive rate changes from π to π′, adjust odds by (π′/(1−π′))/(π/(1−π)).""",
+  """**Threshold from costs.** Screening for diabetes: a missed case costs 8 units (late treatment), a false alarm costs 1 (an extra test). t = 1/(1 + 8) = **0.11**. Out of 100 patients with calibrated p = 0.2: expected cost of not flagging = 0.2 × 8 = 1.6 per patient; of flagging = 0.8 × 1 = 0.8 → flag. **Calibration check:** 40 patients predicted around 0.30, 18 actually diabetic → observed 0.45: the model under-predicts in this bin.""",
+  ["Tuning the threshold on the test set", "Calibrating on the training data", "Assuming accuracy or AUC say anything about calibration", "Using 0.5 with imbalanced classes", "Forgetting to recalibrate when the base rate changes"],
+  ["Any decision with unequal error costs", "Risk scores shown to people", "Combining model outputs with business rules"], ["Pure ranking tasks where only the order matters"],
+  "Pima Indians diabetes (768 real patients) — reliability diagrams and Brier/ECE for logistic regression, Naive Bayes and random forest, Platt vs isotonic calibration, and thresholds chosen by cost, by a recall target and by review capacity.",
+  ["Split into train / calibration-by-CV / test", "Measure calibration per model with bins, Brier and ECE", "Calibrate with Platt and isotonic and re-measure", "Choose thresholds three ways on out-of-fold predictions", "Report test recall, precision and expected cost per threshold"],
+  '''
+import numpy as np, pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.calibration import CalibratedClassifierCV, calibration_curve
+from sklearn.model_selection import train_test_split, cross_val_predict
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import brier_score_loss, roc_auc_score
+df = pd.read_csv("URL_PIMA", names=PIMA_COLS_LIST); y = df.pop("diabetes").to_numpy(); X = df.to_numpy()
+Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, stratify=y, random_state=0)
+def ece(y, p, bins=10):
+    b = np.minimum((p * bins).astype(int), bins - 1); return sum((b == k).mean() * abs(p[b == k].mean() - y[b == k].mean()) for k in range(bins) if (b == k).any())
+models = {"logistic": make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)), "naive Bayes": GaussianNB(), "random forest": RandomForestClassifier(300, min_samples_leaf=5, random_state=0)}
+for name, m in models.items():
+    for tag, est in [("raw", m), ("Platt", CalibratedClassifierCV(m, method="sigmoid", cv=5)), ("isotonic", CalibratedClassifierCV(m, method="isotonic", cv=5))]:
+        p = est.fit(Xtr, ytr).predict_proba(Xte)[:, 1]
+        print(f"{name:13s} {tag:8s} Brier {brier_score_loss(yte, p):.3f} ECE {ece(yte, p):.3f} AUC {roc_auc_score(yte, p):.3f}")
+frac, mean_p = calibration_curve(yte, GaussianNB().fit(Xtr, ytr).predict_proba(Xte)[:, 1], n_bins=5)
+print("naive Bayes reliability (predicted -> observed):", [f"{a:.2f}->{b:.2f}" for a, b in zip(mean_p, frac)])
+final = CalibratedClassifierCV(models["logistic"], method="sigmoid", cv=5)
+oof = cross_val_predict(final, Xtr, ytr, cv=5, method="predict_proba")[:, 1]
+C_FN, C_FP = 8.0, 1.0
+cost = lambda yy, f: ((~f & (yy == 1)).sum() * C_FN + (f & (yy == 0)).sum() * C_FP) / len(yy)
+grid = np.linspace(0.02, 0.9, 89)
+t_cost = grid[np.argmin([cost(ytr, oof >= t) for t in grid])]
+t_recall = max(t for t in grid if ((oof >= t) & (ytr == 1)).sum() / (ytr == 1).sum() >= 0.9)
+t_cap = np.quantile(oof, 1 - 0.25)                    # team can review the top 25% of patients
+p = final.fit(Xtr, ytr).predict_proba(Xte)[:, 1]
+for name, t in [("0.5 default", 0.5), (f"cost-optimal (theory {C_FP / (C_FP + C_FN):.2f})", t_cost), ("recall >= 90%", t_recall), ("review top 25%", t_cap)]:
+    f = p >= t; tp = (f & (yte == 1)).sum()
+    print(f"{name:28s} t={t:.2f} recall {tp / (yte == 1).sum():.2f} precision {tp / max(f.sum(), 1):.2f} flagged {f.mean():.0%} cost/patient {cost(yte, f):.3f}")
+'''.replace("URL_PIMA", PIMA).replace("PIMA_COLS_LIST", repr(PIMA_COLS)))
+
+X("m-choosing-classifier",
+  "Choosing a classifier is an experiment, not a preference: compare several model families on identical, leak-free cross-validation folds with the metric that reflects the goal, read the spread as well as the mean, and pick the simplest model whose performance is not distinguishably worse.",
+  """**Same folds, paired comparison.** With per-fold scores a_i, b_i on the same K folds, the paired differences dᵢ = aᵢ − bᵢ cancel fold difficulty; a rough check is mean(d) vs its standard error sd(d)/√K (CV folds overlap, so this is optimistic; the corrected resampled t-test of Nadeau & Bengio inflates the variance by (1/K + n_test/n_train)). **Repeated stratified CV** reduces the variance of the estimate. **Nested CV** when tuning: inner loop selects hyperparameters, outer loop estimates performance, otherwise the winner's score is biased upwards. **No free lunch:** averaged over all problems no learner is better; good choices come from matching the inductive bias (linear, local, axis-aligned splits, smooth kernels) to the data. **Bias–variance:** small n favours simple, high-bias models (NB, LDA, regularised linear); large n lets flexible models (boosting, deep nets) win.""",
+  """**Is the gap real?** 5-fold AUCs — boosting: 0.87, 0.85, 0.88, 0.86, 0.84; logistic: 0.86, 0.85, 0.86, 0.86, 0.83. Differences: 0.01, 0.00, 0.02, 0.00, 0.01 → mean **0.008**, sd 0.0084, standard error 0.0084/√5 = **0.0037** → about 2 standard errors, and folds overlap, so the evidence is weak. If explanations are required, logistic regression is a defensible choice.""",
+  ["Comparing models on different splits", "Preprocessing (scaling, encoding, selection) outside the CV loop", "Reporting the best tuned score without nested CV", "Ignoring the spread across folds", "Picking on accuracy when the goal is recall or calibration"],
+  ["Every new classification project", "Model reviews and interview case studies"], ["—"],
+  "Titanic passengers (891 real people) — nine classifier families in leak-free pipelines on the same repeated stratified folds, with AUC mean ± sd, paired differences against logistic regression, fit time, and a final pick with reasons.",
+  ["Load Titanic and build a ColumnTransformer for numeric and categorical columns", "Define nine models inside pipelines", "Score all on the same RepeatedStratifiedKFold with AUC and time them", "Compute paired fold differences vs logistic regression", "Choose and justify the final model"],
+  '''
+import time, numpy as np, pandas as pd
+from sklearn.compose import make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.model_selection import RepeatedStratifiedKFold, cross_val_score
+from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
+from sklearn.svm import SVC
+df = pd.read_csv("URL_TITANIC"); y = df.pop("Survived")
+num, cat = ["Age", "Fare", "SibSp", "Parch", "Pclass"], ["Sex", "Embarked"]
+pre = lambda: make_column_transformer((make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
+                                      (make_pipeline(SimpleImputer(strategy="most_frequent"), OneHotEncoder(handle_unknown="ignore", sparse_output=False)), cat))
+models = {"majority": DummyClassifier(), "logistic": LogisticRegression(max_iter=2000), "naive Bayes": GaussianNB(), "LDA": LinearDiscriminantAnalysis(),
+          "kNN (k=15)": KNeighborsClassifier(15), "tree (depth 4)": DecisionTreeClassifier(max_depth=4, random_state=0),
+          "random forest": RandomForestClassifier(300, min_samples_leaf=3, random_state=0, n_jobs=-1), "grad. boosting": HistGradientBoostingClassifier(max_depth=3, random_state=0),
+          "SVM RBF": SVC(probability=True, random_state=0)}
+cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=0); scores = {}
+for name, m in models.items():
+    t0 = time.time(); s = cross_val_score(make_pipeline(pre(), m), df, y, cv=cv, scoring="roc_auc"); scores[name] = s
+    print(f"{name:15s} AUC {s.mean():.3f} ± {s.std():.3f}   {time.time() - t0:5.1f}s")
+base = scores["logistic"]
+for name, s in scores.items():
+    if name in ("logistic", "majority"): continue
+    d = s - base; print(f"{name:15s} minus logistic: {d.mean():+.3f} (std error {d.std(ddof=1) / np.sqrt(len(d)):.3f})")
+best = max(scores, key=lambda k: scores[k].mean()); d = scores[best] - base; se = d.std(ddof=1) / np.sqrt(len(d))
+verdict = "a real gain: use it unless every decision must be explained" if d.mean() > 2 * se else "within noise: prefer the simpler logistic regression"
+print(f"highest mean AUC: {best}, {d.mean():+.3f} vs logistic ({d.mean() / se:.1f} standard errors) → {verdict}")
+'''.replace("URL_TITANIC", TITANIC))

@@ -459,3 +459,182 @@ for i in r.importances_mean.argsort()[::-1][:4]:
     print(f"{data.feature_names[i]:22s} accuracy drop {r.importances_mean[i]:.3f}")''',
   [("Why compute permutation importance on validation data?", "On training data it measures what the model memorised, not what helps on new data."),
    ("What do SHAP values of one prediction add up to?", "The prediction minus the average (base) prediction.")])
+
+
+L("m-linear-classification",
+  "A linear classifier draws one straight line (or flat plane) between classes and predicts by which side a point falls on.",
+  """Most real classifiers start here: spam filters, credit scores and the last layer of every neural network are linear classifiers. Knowing what a 'decision boundary' is makes every other classifier easier to understand.""",
+  """1. Give every feature a weight and add them up: **score = w₁x₁ + w₂x₂ + … + b**.
+2. If the score is above 0, predict class 1; below 0, class 0.
+3. The points where the score is exactly 0 form the **decision boundary**: a straight line in 2-D.
+
+Perceptron, logistic regression, linear SVM and LDA all use this same rule. They only differ in **how they choose the weights**: the perceptron fixes mistakes one at a time, logistic regression makes probabilities as accurate as possible, the SVM makes the gap (margin) between the classes as wide as possible.""",
+  [("Classify two points by hand",
+    """Boundary: score = 2 × petal_length − 5. A flower with petal length 1.4 cm: score = 2.8 − 5 = **−2.2** → class 0 (setosa). Petal length 4.5 cm: score = 9 − 5 = **4** → class 1 (versicolor). The boundary is at petal length 2.5 cm (score 0)."""),
+   ("When a line isn't enough",
+    """Inner circle = class A, outer ring = class B. No straight line can separate a ring from its centre. Fix: add a feature like x² + y² (distance from the centre); in that new feature a single threshold separates them. That's the idea behind feature engineering and kernels.""")],
+  ("A model's score is 0.3 for one email and −0.3 for another. Which side of the boundary is each on, and which one is closer to it?",
+   "The first is on the positive side (class 1), the second on the negative side (class 0); both are equally close, just on opposite sides."),
+  [("Decision boundary", "the line or surface where the model switches its prediction"),
+   ("Linearly separable", "some straight line splits the classes perfectly"),
+   ("Margin", "the gap between the boundary and the nearest points"),
+   ("Hyperplane", "the many-dimensional version of a straight line")],
+  """Four different linear classifiers on the same flowers: each prints its boundary line and accuracy.""",
+  r'''from sklearn.datasets import load_iris
+from sklearn.linear_model import Perceptron, LogisticRegression
+from sklearn.svm import LinearSVC
+
+X, y = load_iris(return_X_y=True)
+X, y = X[y < 2][:, [2, 3]], y[y < 2]                    # setosa vs versicolor: petal length, petal width
+for m in [Perceptron(), LogisticRegression(), LinearSVC()]:
+    m.fit(X, y)
+    w, b = m.coef_[0], m.intercept_[0]
+    print(type(m).__name__, f"{w[0]:.2f}*length {w[1]:+.2f}*width {b:+.2f} = 0", "accuracy", m.score(X, y))''',
+  [("What do all linear classifiers have in common?", "They predict by the sign of a weighted sum, so their boundary is a straight line / flat plane."),
+   ("How can a linear model separate a ring from its centre?", "By adding a new feature (like distance from the centre) in which the classes become separable.")])
+
+
+L("m-naive-bayes",
+  "Naive Bayes guesses the class by multiplying how common each feature is in each class, as if the features didn't affect each other.",
+  """It's one of the fastest, simplest classifiers there is and still a strong spam and text filter. It's also the clearest example of using probability (Bayes' rule) to classify.""",
+  """1. **Prior**: how common is each class? (13% of SMS are spam.)
+2. **Likelihoods**: for each class, how often does each word appear? ("free" is in 23% of spam but 1% of normal messages.)
+3. For a new message, multiply prior × likelihood of each of its words, separately for each class.
+4. Pick the class with the bigger result.
+
+"Naive" = it pretends words are independent once you know the class. That's not really true, but the winning class is usually still right. **Smoothing** adds a small count to every word so a word never seen in spam doesn't make P(spam) exactly zero.""",
+  [("Score a message by hand",
+    """P(spam) = 0.13, P(ham) = 0.87. P("free" | spam) = 0.23, P("free" | ham) = 0.01. P("call" | spam) = 0.5, P("call" | ham) = 0.05.
+Message "free call": spam score = 0.13 × 0.23 × 0.5 = **0.015**; ham score = 0.87 × 0.01 × 0.05 = **0.00044**. Spam wins by about 34×. As a probability: 0.015 / (0.015 + 0.00044) = **97% spam**."""),
+   ("Why smoothing matters",
+    """If "lunch" never appeared in spam, P("lunch" | spam) = 0 and any message containing "lunch" gets spam score 0, however spammy the rest is. With smoothing (add 1 to every count) it becomes small but not zero.""")],
+  ("A word appears equally often in spam and normal messages. Does it change the prediction?",
+   "No: its likelihood is the same for both classes, so it multiplies both scores by the same amount."),
+  [("Prior", "how common a class is before looking at the features"),
+   ("Likelihood", "how probable the features are within a class"),
+   ("Conditional independence", "the naive assumption: features don't influence each other within a class"),
+   ("Laplace smoothing", "adding a small count to avoid zero probabilities")],
+  """A tiny spam filter: count words, train Multinomial Naive Bayes, score new messages.""",
+  r'''from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+
+texts = ["win a free prize now", "free cash call now", "lunch at noon?", "call me after lunch", "free entry to win cash"]
+spam = [1, 1, 0, 0, 1]
+vec = CountVectorizer()
+X = vec.fit_transform(texts)                  # word counts per message
+nb = MultinomialNB(alpha=1).fit(X, spam)      # alpha=1 is Laplace smoothing
+for msg in ["free lunch", "win cash now", "call after lunch"]:
+    print(msg, "-> P(spam) =", nb.predict_proba(vec.transform([msg]))[0, 1].round(2))''',
+  [("What does 'naive' mean in Naive Bayes?", "It assumes the features are independent of each other once the class is known."),
+   ("Why use smoothing?", "So a word never seen with a class doesn't force that class's probability to zero.")])
+
+
+L("m-discriminant-analysis",
+  "LDA and QDA describe each class as a bell-shaped cloud of points and give a new point to the class whose cloud fits it best.",
+  """They're classic, fast classifiers that work well with small data, and LDA's idea (find directions that separate class averages) is also used to reduce dimensions.""",
+  """1. For each class, compute the **average point** (mean of every feature) and how spread out the points are (**covariance**).
+2. Treat each class as a bell-shaped (Gaussian) cloud around its average.
+3. For a new point, ask: which cloud is it most likely to come from? (Also count how common each class is.)
+
+**LDA**: all classes share the same spread → the boundaries between classes are **straight lines**.
+**QDA**: each class has its own spread → boundaries can be **curved**. QDA is more flexible but needs more data.""",
+  [("One feature, by hand",
+    """Penguin flipper length. Adelie: average 190 mm, Gentoo: average 217 mm, same spread for both (LDA), equally common. A new penguin with 200 mm is 10 mm from Adelie and 17 mm from Gentoo → **Adelie**. The boundary is halfway: (190 + 217) / 2 = **203.5 mm**."""),
+   ("When the spreads differ (QDA)",
+    """If Gentoo flippers vary a lot (spread 10 mm) and Adelie very little (spread 3 mm), then 200 mm is 3.3 spreads from Adelie but only 1.7 spreads from Gentoo → QDA says **Gentoo**. Different spreads move and bend the boundary.""")],
+  ("Two classes have the same spread and are equally common. Where does LDA put the boundary along one feature?",
+   "Exactly halfway between the two class averages."),
+  [("Class mean", "the average point of a class"),
+   ("Covariance", "how the features of a class spread and move together"),
+   ("Generative model", "a model of how each class's data is distributed, used to classify with Bayes' rule"),
+   ("Shared vs separate covariance", "LDA: one spread for all classes (straight boundaries); QDA: one per class (curved)")],
+  """LDA and QDA on real wine measurements, plus LDA's class averages.""",
+  r'''from sklearn.datasets import load_wine
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.model_selection import cross_val_score
+
+X, y = load_wine(return_X_y=True)
+for m in [LinearDiscriminantAnalysis(), QuadraticDiscriminantAnalysis(reg_param=0.1)]:
+    print(type(m).__name__, "accuracy:", cross_val_score(m, X, y, cv=5).mean().round(3))
+lda = LinearDiscriminantAnalysis().fit(X, y)
+print("average alcohol per wine class:", lda.means_[:, 0].round(2))''',
+  [("What's the difference between LDA and QDA?", "LDA assumes all classes share one spread (straight boundaries); QDA gives each class its own spread (curved boundaries)."),
+   ("Why might LDA beat QDA on a small dataset?", "It has far fewer numbers to estimate, so its estimates are more reliable.")])
+
+
+L("m-threshold-calibration",
+  "A model gives a probability; you decide the cut-off for saying 'yes', and you check that its 70% really means 70%.",
+  """In real systems the cut-off decides how many frauds you catch and how many good customers you annoy. Using 0.5 without thinking is one of the most common mistakes in deployed models.""",
+  """**Threshold**: predict "yes" when the probability is at least t.
+- Lower t → catch more positives (higher recall) but more false alarms (lower precision).
+- Higher t → fewer false alarms but more misses.
+Pick t from what each mistake costs, from a target (e.g. "recall at least 95%"), or from how many cases people can review.
+
+**Calibration**: among all cases where the model says 70%, about 70% should really be positive. Check by grouping predictions into bins and comparing. If the model is over-confident, fix it with **Platt scaling** or **isotonic regression**.""",
+  [("Pick a threshold from costs",
+    """Missing a fraud costs ₹10,000; checking a false alarm costs ₹1,000. Flag a transaction when expected loss from ignoring it is bigger: p × 10,000 > (1 − p) × 1,000 → p > 1,000 / 11,000 = **0.09**. So flag anything above 9%, not 50%."""),
+   ("Check calibration",
+    """The model said "about 80%" for 50 transactions; only 25 were fraud (50%). It's **over-confident**. After calibration, those 50 might get ~50%, which is what actually happens.""")],
+  ("Lowering the threshold from 0.5 to 0.2: does recall go up or down? And precision?",
+   "Recall goes up (more positives caught); precision usually goes down (more false alarms)."),
+  [("Threshold", "the probability cut-off for predicting 'yes'"),
+   ("Calibration", "how well predicted probabilities match real frequencies"),
+   ("Reliability diagram", "a chart of predicted probability vs observed rate per bin"),
+   ("Brier score", "average squared gap between probability and outcome (lower is better)")],
+  """See how recall and precision move with the threshold on real tumour data.""",
+  r'''from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import precision_score, recall_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+
+X, y = load_breast_cancer(return_X_y=True); y = 1 - y        # 1 = malignant
+Xtr, Xte, ytr, yte = train_test_split(X, y, stratify=y, random_state=0)
+p = make_pipeline(StandardScaler(), LogisticRegression()).fit(Xtr, ytr).predict_proba(Xte)[:, 1]
+for t in [0.1, 0.3, 0.5, 0.7, 0.9]:
+    pred = p >= t
+    print(f"threshold {t}: recall {recall_score(yte, pred):.2f}, precision {precision_score(yte, pred):.2f}")''',
+  [("Why not always use 0.5?", "Because mistakes usually have different costs and probabilities may not be calibrated."),
+   ("What does calibration fix?", "It makes predicted probabilities match how often things actually happen, without changing which cases rank highest.")])
+
+
+L("m-choosing-classifier",
+  "To pick a classifier, test a few different kinds on exactly the same data splits with the metric you care about, then weigh the score against speed and simplicity.",
+  """Interviewers often ask "which model would you use?". The best answer isn't a favourite algorithm; it's a fair comparison and a reason for the final choice.""",
+  """1. Decide the **metric** (AUC, F1, recall…) that matches the goal.
+2. Start with **baselines**: always predicting the most common class, then logistic regression.
+3. Try a few different families: Naive Bayes / LDA, k-nearest neighbours, a decision tree, random forest, gradient boosting, SVM.
+4. Use the **same cross-validation folds** for all of them, with preprocessing inside a pipeline.
+5. Look at the **spread** across folds: differences smaller than that are luck.
+6. Choose, also weighing speed, explainability and maintenance.""",
+  [("Read a comparison",
+    """Logistic regression AUC 0.95 ± 0.02, gradient boosting 0.96 ± 0.03. The gap (0.01) is smaller than the spread, so they're effectively tied. If the bank must explain every decision, choose logistic regression."""),
+   ("Match the data type",
+    """Customer table with 50 columns → try logistic regression and gradient boosting. 10,000 product reviews → TF-IDF + logistic regression or Naive Bayes. 5,000 X-ray images → a pre-trained CNN.""")],
+  ("Model A scores 0.871 ± 0.030 and model B 0.876 ± 0.028. Is B clearly better?",
+   "No: the difference (0.005) is much smaller than the spread, so it's within noise."),
+  [("Baseline", "a simple reference model every other model must beat"),
+   ("Cross-validation", "testing on several different held-out folds and averaging"),
+   ("Pipeline", "preprocessing + model fitted together so test folds don't leak into training"),
+   ("No free lunch", "no single algorithm is best on every problem")],
+  """Compare five classifier families on the same folds of real tumour data.""",
+  r'''from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+X, y = load_breast_cancer(return_X_y=True)
+folds = StratifiedKFold(5, shuffle=True, random_state=0)     # the SAME folds for every model
+for name, m in [("logistic", make_pipeline(StandardScaler(), LogisticRegression())), ("naive Bayes", GaussianNB()),
+                ("kNN", make_pipeline(StandardScaler(), KNeighborsClassifier())), ("tree", DecisionTreeClassifier(max_depth=4)),
+                ("forest", RandomForestClassifier(random_state=0))]:
+    s = cross_val_score(m, X, y, cv=folds, scoring="roc_auc")
+    print(f"{name:12s} AUC {s.mean():.3f} ± {s.std():.3f}")''',
+  [("Why use the same folds for every model?", "So differences come from the models, not from which data each happened to be tested on."),
+   ("When is a lower-scoring model the right choice?", "When the gap is within noise and it's simpler, faster or easier to explain.")])
