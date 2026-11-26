@@ -147,6 +147,7 @@ function conceptBody(c){
 }
 function conceptRef(c){
   return `<div class="sdmd">${md(c.body)}</div>
+    ${c.x ? sdxHTML(c.x, "Explained step by step, with diagrams") : ""}
     ${c.analogy ? `<div class="sdbox an"><b>Real-life analogy</b><p>${mdInline(c.analogy)}</p></div>` : ""}
     ${c.example ? `<div class="sdbox ex"><b>Real-world example</b><p>${mdInline(c.example)}</p></div>` : ""}
     ${c.diagram ? diagramSVG(c.diagram, c.title) : ""}
@@ -203,7 +204,7 @@ function hldCard(h){
     <div class="sdcb" id="sdb-${h.id}"${open ? "" : " hidden"}>${open ? hldBody(h) : ""}</div></article>`;
 }
 function hldBody(h){
-  const ans = `
+  const ans = `${h.x ? sdxHTML(h.x, "Explained step by step, with diagrams: read this first") : ""}
     <h4>2 · Back-of-the-envelope estimates</h4><div class="sdmd">${md(h.estimates)}</div>
     <h4>3 · API</h4><div class="sdmd">${md(h.api)}</div>
     <h4>4 · Data model</h4><div class="sdmd">${md(h.data)}</div>
@@ -240,7 +241,7 @@ function lldCard(l){
     <div class="sdcb" id="sdb-${l.id}"${open ? "" : " hidden"}>${open ? lldBody(l) : ""}</div></article>`;
 }
 function lldBody(l){
-  const code = `<div class="codewrap"><div class="codebar"><span>Java · complete, compiles and runs (main() demo)</span><span class="cbtns"><button type="button" class="copy sdcopy">Copy</button></span></div><pre class="code java">${esc(l.code)}</pre></div>`;
+  const code = `${l.x ? sdxHTML(l.x, "Explained step by step: classes, diagrams, flow and patterns") : ""}<h4 class="sdcodeh">Complete solution</h4><div class="codewrap"><div class="codebar"><span>Java · complete, compiles and runs (main() demo)</span><span class="cbtns"><button type="button" class="copy sdcopy">Copy</button></span></div><pre class="code java">${esc(l.code)}</pre></div>`;
   return `<div class="sdreq"><div><b>Requirements</b><ul>${l.requirements.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div>
       <div><b>Classes / entities</b><ul>${l.entities.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul><b>Patterns used</b><ul>${l.patterns.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div></div>
     ${SDV.practice ? `<details class="sdans"><summary>Try it yourself first: code it in 45 minutes, then open the solution</summary>${code}</details>` : code}

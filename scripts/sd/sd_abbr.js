@@ -118,7 +118,7 @@ const ABBR_MLX = {L1: null, L2: null, L3: null, L4: null, L7: null, AP: "Average
   XOR: null, BASE: null, CAP: null, ETA: null, SLA: null, DST: null, PIN: null, PAN: null, ID: null, UI: null, IO: null};
 const ABBR_RE = new RegExp("(?<![\\w/.-])(" + [...new Set([...Object.keys(ABBR), ...Object.keys(ABBR_MLX)])].sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")(s?)(?![\\w/-])", "g");
 const ABBR_UNIT = ".sdc, .sdq, .mlcard, .mlcap, .sdstage, .lab, .sheet, .note, .pcard, .box, .nvitem, .sdbox, .qday, .ppsolwrap, .kit, .sdx > p, .sdx > h2, .trcard";
-const ABBR_SKIP = ".pptable tr:not(.ppsolrow), nav, .groups, .today, header, .tmacts, pre, code, textarea, input, select, script, style, svg, abbr, .tag, .sdlv, .sdfq, .sdqt, .nvkind, .sdrt, .codebar, .lgd";
+const ABBR_SKIP = ".pptable tr:not(.ppsolrow), nav, .groups, .today, header, .tmacts, pre, code, textarea, input, select, script, style, svg, abbr, .tag, .sdlv, .sdfq, .sdqt, .nvkind, .sdrt, .codebar, .lgd, .vxkey, .vxth, .vxctl";
 const abbrSeen = new WeakMap(), abbrDone = new WeakSet();
 const T = t => { const x = document.createTextNode(t); abbrDone.add(x); return x; };
 function expandAbbr(root){

@@ -293,3 +293,49 @@ mark.hl.hlflash{outline:2px solid var(--accent);outline-offset:2px}
 mark.hl[data-hl]:hover{outline:1px dashed color-mix(in srgb,var(--ink) 40%,transparent)}
 #updbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);border-radius:99px;padding:8px 8px 8px 16px;font:500 14px var(--sans);display:flex;gap:10px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:calc(100% - 32px)}
 #updbar button{font:600 13px var(--sans);border:0;border-radius:99px;padding:6px 12px;background:var(--accent);color:#fff;cursor:pointer}
+
+/* ---------- detailed explanations with diagrams ---------- */
+.sdx{margin:4px 0 18px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--lab0) 35%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--lab0) 4%,var(--panel))}
+.sdxt{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--lab0) 75%,var(--ink));margin-bottom:6px}
+.sdx h5.vxh{font-size:15px;margin:18px 0 6px;padding-top:10px;border-top:1px dashed var(--line)}
+.sdx h5.vxh:first-of-type{border-top:0;padding-top:0}
+.vxft{font-weight:600;font-size:13.5px;margin:2px 4px 6px}
+.vxcap{color:var(--muted)}
+.vxfig.vxhtml{overflow-x:auto}
+.vxcls rect,.vxstate rect{fill:var(--panel);stroke:var(--ink);stroke-width:1.2}
+.vxcls line{stroke:var(--ink);stroke-width:1}
+.vxcls.interface rect{fill:color-mix(in srgb,var(--lab2) 10%,var(--panel));stroke-dasharray:5 3}
+.vxcls.abstract rect{fill:color-mix(in srgb,var(--lab4) 10%,var(--panel))}
+.vxcls.enum rect,.vxcls.record rect{fill:color-mix(in srgb,var(--lab3) 12%,var(--panel))}
+.vxcn{fill:var(--ink);font:600 12.5px var(--sans)}.vxst{fill:var(--muted);font:italic 10.5px var(--sans)}.vxm{fill:var(--ink);font:11px var(--mono)}
+.vxhollow{fill:var(--panel);stroke:var(--muted);stroke-width:1.3}.vxopen{fill:none;stroke:var(--muted);stroke-width:1.5}
+.vxstate rect{fill:color-mix(in srgb,var(--lab0) 9%,var(--panel))}.vxstart{fill:var(--ink)}.vxend{fill:none;stroke:var(--ink);stroke-width:1.5}
+.vxreply{stroke-dasharray:6 4}
+.vxnote rect{fill:color-mix(in srgb,var(--lab3) 20%,var(--panel));stroke:color-mix(in srgb,var(--lab3) 60%,var(--ink));stroke-width:.8}
+.vxseq .sm{transition:opacity .2s}
+.vxseq.stepping .sm{opacity:.15}.vxseq.stepping .sm.past{opacity:.5}.vxseq.stepping .sm.cur{opacity:1}
+.vxseq.stepping .sm.cur .sde{stroke:var(--lab1,#c0392b);stroke-width:2}.vxseq.stepping .sm.cur text{font-weight:700}
+.vxctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 4px 6px}
+.vxctl button{font:12px var(--sans);padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+.vxctl button:hover{border-color:var(--ink)}.vxpos{font-size:12px;color:var(--muted)}
+.vxexp{margin:6px 4px 2px;padding:8px 10px;border-left:3px solid var(--lab1,#c0392b);background:var(--panel);font-size:13.5px;border-radius:0 6px 6px 0}
+.vxlg{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}.vxlg svg{min-width:0!important;width:34px}
+.vxer{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:4px}
+.vxtbl{border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden}
+.vxth{font:600 13px var(--mono);padding:6px 10px;background:color-mix(in srgb,var(--lab0) 12%,var(--panel));display:flex;justify-content:space-between;gap:8px}
+.vxth span{font:11px var(--sans);color:var(--muted)}
+.vxtbl table{width:100%;border-collapse:collapse;font-size:12px}.vxtbl td{padding:3px 8px;border-top:1px solid var(--line)}
+.vxtbl td.c{font-family:var(--mono)}.vxtbl td.t{color:var(--muted)}.vxtbl p{font-size:12px;margin:6px 10px;color:var(--muted)}
+.vxkey{font:600 10px var(--mono);padding:1px 5px;border-radius:4px;background:color-mix(in srgb,var(--lab3) 25%,var(--panel))}
+.vxkey.pk{background:color-mix(in srgb,var(--lab1,#c0392b) 22%,var(--panel))}.vxkey.fk{background:color-mix(in srgb,var(--lab2) 25%,var(--panel))}
+.vxlinks{font-size:13px;margin:8px 4px 0}
+.vxcalc,.vxt{width:100%;border-collapse:collapse;font-size:13px}
+.vxcalc th,.vxcalc td,.vxt th,.vxt td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.vxcalc th,.vxt th{font-size:12px;color:var(--muted);font-weight:600}
+.vxcalc code{font-size:12px;white-space:normal}.vxnote2{font-size:12px;color:var(--muted);margin-top:2px}
+.vxbars{display:grid;gap:6px;padding:4px}.vxbar{display:grid;grid-template-columns:minmax(120px,30%) 1fr auto;gap:10px;align-items:center;font-size:13px}
+.vxbar .b{height:14px;background:var(--bg);border-radius:4px;overflow:hidden}.vxbar .b i{display:block;height:100%;background:color-mix(in srgb,var(--lab0) 60%,var(--panel))}
+.vxbar .v{font:12px var(--mono);white-space:nowrap}
+.vxout{margin:10px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden}.vxoh{font:12px var(--mono);padding:5px 10px;background:var(--bg);color:var(--muted)}
+.vxout pre{margin:0;padding:10px;font:12.5px var(--mono);background:var(--panel);white-space:pre-wrap}
+.vxkeypt p{margin:4px 0 0}

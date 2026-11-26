@@ -38,6 +38,41 @@ CONCEPT_TABS = [
 ]
 
 
+def attach_explain(concepts, hld, lld):
+    """Attach the detailed explanation layer (sd_x*.py) to every card and validate its diagrams."""
+    import glob, importlib, json
+    from sd_x_util import EXPLAIN
+    here = os.path.dirname(os.path.abspath(__file__))
+    for f in sorted(glob.glob(os.path.join(here, "sd_x_*.py"))):
+        m = os.path.basename(f)[:-3]
+        if m != "sd_x_util": importlib.import_module(m)
+    out_f = os.path.join(here, "sd_lld_out.json")
+    outs = json.load(open(out_f)) if os.path.exists(out_f) else {}
+    cards = dict(concepts); cards.update({h["id"]: h for h in hld}); cards.update({l["id"]: l for l in lld})
+    strip = lambda n: n.split(":", 1)[1] if n.split(":", 1)[0] in ("db", "q", "c", "u", "x") and ":" in n else n
+    for cid, x in EXPLAIN.items():
+        assert cid in cards, "explain for unknown card " + cid
+        for b in x["blocks"]:
+            sp = b.get("spec")
+            if b["t"] == "flow":
+                names = {strip(n) for row in sp["rows"] for n in row}
+                for a, bb, *_ in sp["edges"]: assert strip(a) in names and strip(bb) in names, f"{cid} flow edge {a}->{bb}"
+            elif b["t"] == "uml":
+                names = {n for row in sp["rows"] for n in row}
+                assert names == set(sp["classes"]), f"{cid} uml rows/classes mismatch {names ^ set(sp['classes'])}"
+                for a, bb, ty, *_ in sp["rels"]:
+                    assert a in names and bb in names and ty in ("inh", "impl", "comp", "agg", "assoc", "dep"), f"{cid} uml rel {a}->{bb} {ty}"
+            elif b["t"] == "state":
+                names = {n for row in sp["rows"] for n in row}
+                for a, bb, *_ in sp["edges"]: assert a in names and bb in names, f"{cid} state edge {a}->{bb}"
+            elif b["t"] == "seq":
+                for m in sp["msgs"]:
+                    if isinstance(m, dict): assert all(a in sp["actors"] for a in m["note"]), f"{cid} note {m}"
+                    else: assert m[0] in sp["actors"] and m[1] in sp["actors"] and m[3] in ("", "r", "a"), f"{cid} seq msg {m}"
+        if cid in outs: x["blocks"].append(dict(t="out", text=outs[cid], title="Real output when you run main()"))
+        cards[cid]["x"] = x
+
+
 def build():
     concepts = {}
     for _, _, _, secs in CONCEPT_TABS:
@@ -99,6 +134,7 @@ def build():
     lcommon = ["chess-lld", "meetingroom-lld", "vending-lld", "snakeladder-lld", "tictactoe-lld", "library-lld", "logger-lld", "kvstore-lld", "pubsub-lld", "atm-lld", "taskscheduler-lld"]
     for l in lld:
         l["freq"] = "Very common" if l["id"] in lvery else "Common" if l["id"] in lcommon else "Sometimes"
+    attach_explain(concepts, hld, lld)
     tabs = [dict(key=k, label=l, intro=i, sections=[dict(name=n, ids=[c["id"] for c in cs]) for n, cs in secs]) for k, l, i, secs in CONCEPT_TABS]
     return dict(tabs=tabs, concepts=concepts, hld=hld, lld=lld, qa=qa,
                 roadmap=[dict(name=n, why=w, ids=l) for n, w, l in M.ROADMAP],
