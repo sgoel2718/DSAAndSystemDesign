@@ -381,3 +381,4 @@ mark.hl[data-hl]:hover{outline:1px dashed color-mix(in srgb,var(--ink) 40%,trans
 .askin{flex:1;resize:vertical;min-height:44px;max-height:180px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:14px var(--sans)}
 .askkey{padding:0 14px 10px}.asklist{padding-left:18px}.asklist li{margin:6px 0}
 @media (min-width:1100px){body.asking .wrap{margin-right:440px}}
+.asklog .askretry{align-self:flex-start}.asknote .expkeyrow{display:flex;gap:6px;margin:6px 0}.asknote .expkeyin{flex:1}
