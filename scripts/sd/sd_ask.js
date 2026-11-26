@@ -67,9 +67,7 @@ function askContext(){
 async function askGetSampler(){
   // inside Claude, claude.use("sample") can take a few seconds to answer; wait up to 12 s
   if (!EXP.ready) await new Promise(r => { const t = setInterval(() => { if (EXP.ready) { clearInterval(t); r(); } }, 100); setTimeout(() => { clearInterval(t); r(); }, 12000); });
-  if (EXP.sample) return EXP.sample;
-  const k = (() => { try { return localStorage.getItem("dsa30-anthropic-key") || ""; } catch (e) { return ""; } })();
-  return k ? (EXP.sample = apiSample(k)) : null;
+  return EXP.sample || null;
 }
 function askNotice(html){
   const log = askPane.querySelector(".asklog"); if (!log) return null;
@@ -78,13 +76,17 @@ function askNotice(html){
   return log.lastElementChild;
 }
 function askKeyForm(){
-  const inClaude = !!(window.claude && claude.use);
-  const box = askNotice(`<p class="expnote"><b>${inClaude ? "Claude isn't connected in this view yet." : "This copy of the board isn't running inside Claude."}</b> ${inClaude ? "Reload the page and press Send again; if Claude asks for permission to answer, allow it." : "Open the board inside the Claude app to ask with your Claude account, or paste your own Anthropic API key here (stored only in this browser, sent only to Anthropic, billed to your account):"}</p>
-    ${inClaude ? "" : `<div class="expkeyrow"><input type="password" class="expkeyin" placeholder="sk-ant-…" autocomplete="off" aria-label="Anthropic API key"><button type="button" class="sdtog askkeysave">Save &amp; get answer</button></div>`}
-    <p class="expnote">Your question is saved in this chat; press <b>Get Claude's answer</b> any time.</p>`);
-  const sv = box && box.querySelector(".askkeysave");
-  if (sv) sv.onclick = () => { const v = box.querySelector(".expkeyin").value.trim(); if (!/^sk-ant-/.test(v)) { box.querySelector(".expkeyin").setCustomValidity("Keys start with sk-ant-"); box.querySelector(".expkeyin").reportValidity(); return; }
-    try { localStorage.setItem("dsa30-anthropic-key", v); } catch (e) {} EXP.sample = apiSample(v); askReply(); };
+  const inClaude = !!(window.claude && claude.use), c = state.chats[ASK.key], last = c && c.msgs.filter(m => m.r === "u").slice(-1)[0];
+  const box = askNotice(inClaude
+    ? `<p class="expnote"><b>Claude isn't connected in this view yet.</b> Reload the page and press <b>Get Claude's answer</b>; if Claude asks for permission to answer, allow it.</p>`
+    : `<p class="expnote"><b>Answers come from your Claude account, so they work in the Claude version of this board</b> (no API key needed). Your question is saved in this chat${SY.claude.on || (GH.repo && GH.token) ? " and syncs there" : ""}.</p>
+       <div class="askacts"><a class="sdlabbtn" href="${CLAUDE_BOARD}" target="_blank" rel="noopener">Open the board in Claude ↗</a><button type="button" class="sdtog askcopy">Copy question for any Claude chat</button></div>`);
+  const cp = box && box.querySelector(".askcopy");
+  if (cp && last) cp.onclick = () => {
+    const txt = `I'm studying "${ASK.title}" for interviews.` + (last.q ? `\n\nAbout this text: "${last.q}"` : "") + `\n\n${last.t}`;
+    const done = () => { cp.textContent = "Copied ✓ paste it into Claude"; };
+    try { navigator.clipboard.writeText(txt).then(done, () => { prompt("Copy this:", txt); }); } catch (e) { prompt("Copy this:", txt); }
+  };
 }
 async function askSend(text){
   text = (text || "").trim(); if (!text || ASK.busy) return;
@@ -120,8 +122,7 @@ async function askReply(){
   } catch (e) {
     ai.t = (e && e.text) || "";
     const code = e && e.code;
-    const msg = {not_granted: "Claude wasn't allowed to answer on this page. Reload and allow it when asked.", sampling_disabled: "Claude isn't available on this account.", rate_limited: "Too many questions at once, or your usage limit was reached. Try again in a moment.", session_expired: "Please sign in to Claude again.", prompt_too_large: "This section is too long to send. Select a smaller part and ask again.", cancelled: "", bad_key: "That API key was rejected, so it has been removed."}[code];
-    if (code === "bad_key") { try { localStorage.removeItem("dsa30-anthropic-key"); } catch (er) {} EXP.sample = null; }
+    const msg = {not_granted: "Claude wasn't allowed to answer on this page. Reload and allow it when asked.", sampling_disabled: "Claude isn't available on this account.", rate_limited: "Too many questions at once, or your usage limit was reached. Try again in a moment.", session_expired: "Please sign in to Claude again.", prompt_too_large: "This section is too long to send. Select a smaller part and ask again.", cancelled: ""}[code];
     if (code === "not_granted" || code === "sampling_disabled") EXP.sample = null;
     if (msg === undefined) ai.t += (ai.t ? "\n\n" : "") + "*Couldn't get an answer right now" + (code ? " (" + code + ")" : "") + ".*"; else if (msg) ai.t += (ai.t ? "\n\n" : "") + "*" + msg + "*";
     else if (ai.t) ai.t += "\n\n*(stopped)*";

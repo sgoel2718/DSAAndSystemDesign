@@ -1,5 +1,7 @@
 /* ================= Select any text → "Explain" → answer right there ================= */
 let EXP = {sample: null, ready: false, ctl: null, last: null};
+const CLAUDE_BOARD = "https://claude.ai/artifact/5zZiwt29yf9z1qFJnxy4FV";
+try { localStorage.removeItem("dsa30-anthropic-key"); } catch (e) {}      // API keys are no longer used anywhere on this board
 (async () => {                                   // Claude is available only inside the Claude artifact viewer
   try { if (window.claude && claude.use) { EXP.sample = await claude.use("sample"); } } catch (e) { EXP.sample = null; }
   EXP.ready = true;
@@ -123,8 +125,6 @@ async function explain(s){
   const local = localExplain(s.text, s.context);
   const localHTML = local.length ? `<div class="explocal">${local.map(x => `<div class="expitem"><span class="nvkind">${esc(x.kind)}</span><b>${esc(x.title)}</b>${x.body ? `<p class="expwhat">${mdInline(x.body.length > 420 ? x.body.slice(0, 420) + "…" : x.body)}</p>` : ""}${x.extra && x.extra.length ? `<ul class="expsent">${x.extra.map(e => `<li>${mdInline(e)}</li>`).join("")}</ul>` : ""}${x.say ? `<p class="expsay"><span class="sayw">In the interview</span>${mdInline(x.say.a.replace(/^"|"$/g, "").slice(0, 360))}${x.say.a.length > 360 ? "…" : ""}</p>` : ""}${x.go ? `<button type="button" class="sdlink" data-exp-go="${x.go}">Open full topic →</button>` : x.pat ? `<button type="button" class="sdlink" data-exp-pat="${esc(x.pat)}">Open pattern →</button>` : ""}</div>`).join("")}</div>` : "";
   if (!EXP.ready) await new Promise(r => { const t = setInterval(() => { if (EXP.ready) { clearInterval(t); r(); } }, 100); setTimeout(() => { clearInterval(t); r(); }, 3000); });
-  const apiKey = (() => { try { return localStorage.getItem("dsa30-anthropic-key") || ""; } catch (e) { return ""; } })();
-  if (!EXP.sample && apiKey) EXP.sample = apiSample(apiKey);
   if (EXP.sample) {
     expPop.innerHTML = expShell(s, `<div class="expans" aria-live="polite"><span class="expthink">Thinking…</span></div><button type="button" class="sdlink expstop">Stop</button>${localHTML ? `<details class="expmore"><summary>Related on this site</summary>${localHTML}</details>` : ""}`);
     wireExp(s);
@@ -136,48 +136,22 @@ async function explain(s){
       box.innerHTML = md(text); s.answer = text;
     } catch (e) {
       if (e.text) box.innerHTML = md(e.text);
-      const msg = {not_granted: "Claude isn't allowed for this page, so here is what the site itself says.", sampling_disabled: "Claude isn't available on this account.", rate_limited: "Too many questions at once — try again in a moment.", cancelled: "", bad_key: "That API key was rejected, so it has been removed. Here is what the site says."}[e.code];
-      if (e.code === "bad_key") { try { localStorage.removeItem("dsa30-anthropic-key"); } catch (er) {} EXP.sample = null; }
+      const msg = {not_granted: "Claude isn't allowed for this page, so here is what the site itself says.", sampling_disabled: "Claude isn't available on this account.", rate_limited: "Too many questions at once — try again in a moment.", cancelled: ""}[e.code];
       if (e.code === "not_granted" || e.code === "sampling_disabled") EXP.sample = null;
       if (!e.text) box.innerHTML = (msg !== undefined ? (msg ? `<p class="expnote">${msg}</p>` : "") : `<p class="expnote">Couldn't get an answer right now.</p>`) + (localHTML || "");
     }
     if (stop.isConnected) stop.remove();
   } else {
     expPop.innerHTML = expShell(s, (localHTML || `<p class="expnote">Nothing on the site matches this yet.</p>`) +
-      `<details class="expkey"><summary>Want Claude's full answer right here? Add your Anthropic API key</summary>
-        <p class="expnote">Paste a key from console.anthropic.com. It is stored only in this browser and sent only to Anthropic. API use is billed to your Anthropic account (a few paise per explanation). The Claude copy of this site needs no key.</p>
-        <div class="expkeyrow"><input type="password" class="expkeyin" placeholder="sk-ant-…" autocomplete="off" aria-label="Anthropic API key"><button type="button" class="sdtog expkeysave">Save &amp; explain</button></div></details>`);
+      `<p class="expnote">For Claude's full answer, open this board inside Claude (no API key needed): <a href="${CLAUDE_BOARD}" target="_blank" rel="noopener">Open in Claude ↗</a></p>`);
     s.answer = local.map(x => x.title + (x.body ? ": " + x.body : "")).join("\n\n");
     wireExp(s);
   }
-}
-function apiSample(key){
-  // Calls the Anthropic Messages API straight from this browser with the viewer's own key (streams the answer).
-  return async (prompt, opt = {}) => {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", signal: opt.signal,
-      headers: {"content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"},
-      body: JSON.stringify({model: "claude-haiku-5-5", max_tokens: opt.maxTokens || 500, stream: true, messages: Array.isArray(prompt) ? prompt : [{role: "user", content: prompt}]})})
-      .catch(e => { throw {code: e.name === "AbortError" ? "cancelled" : "upstream_error", message: String(e)}; });
-    if (!r.ok) { const t = await r.text().catch(() => ""); throw {code: r.status === 401 ? "bad_key" : r.status === 429 ? "rate_limited" : "upstream_error", message: t.slice(0, 300)}; }
-    const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", text = "";
-    try {
-      for (;;) { const {done, value} = await rd.read(); if (done) break; buf += dec.decode(value, {stream: true});
-        let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
-          if (!line.startsWith("data:")) continue; let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
-          if (ev.type === "content_block_delta" && ev.delta && ev.delta.text) { text += ev.delta.text; opt.onText && opt.onText({text, delta: ev.delta.text}); }
-          if (ev.type === "error") throw {code: "upstream_error", message: ev.error && ev.error.message, text}; } }
-    } catch (e) { if (e && e.code) throw e; throw {code: opt.signal && opt.signal.aborted ? "cancelled" : "upstream_error", message: String(e), text}; }
-    if (!text) throw {code: "empty_completion", message: "no text"};
-    return {text, truncated: false};
-  };
 }
 function wireExp(s){
   expPop.querySelector(".expx").onclick = closeExp;
   expPop.querySelectorAll("[data-exp-go]").forEach(b => b.onclick = () => { closeExp(); sdGo(b.dataset.expGo); });
   expPop.querySelectorAll("[data-exp-pat]").forEach(b => b.onclick = () => { closeExp(); const i = PLAN.patterns.findIndex(p => p[0] === b.dataset.expPat); if (i >= 0) openPattern(i); });
-  const ks = expPop.querySelector(".expkeysave");
-  if (ks) ks.onclick = () => { const v = expPop.querySelector(".expkeyin").value.trim(); if (!/^sk-ant-/.test(v)) { expPop.querySelector(".expkeyin").setCustomValidity("Keys start with sk-ant-"); expPop.querySelector(".expkeyin").reportValidity(); return; }
-    try { localStorage.setItem("dsa30-anthropic-key", v); } catch (e) {} EXP.sample = apiSample(v); explain(s); };
   const sv = expPop.querySelector('[data-exp="save"]');
   sv.onclick = () => {
     const ans = (expPop.querySelector(".expans") || {}).innerText || s.answer || "";
