@@ -1,0 +1,122 @@
+/* ================= Select text → "Ask Claude" → a separate chat for every section ================= */
+if (!state.chats || typeof state.chats !== "object") state.chats = {};   // key -> {title, at, msgs: [{id, r: "u"|"a", t, q, at}]}  (synced across devices)
+const ASK = {key: null, unit: null, quote: "", ctl: null, busy: false};
+const askBtn = document.createElement("button");
+askBtn.type = "button"; askBtn.className = "expbtn askbtn";
+askBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Ask Claude';
+expBtn.after(askBtn);
+const askPane = document.createElement("aside");
+askPane.className = "askpane"; askPane.hidden = true; askPane.setAttribute("role", "dialog"); askPane.setAttribute("aria-label", "Ask Claude about this section");
+document.body.append(askPane);
+
+function askUnitFromSelection(){
+  const sel = getSelection(); if (!sel || !sel.rangeCount || sel.isCollapsed) return null;
+  const text = sel.toString().replace(/\s+/g, " ").trim(); if (text.length < 2) return null;
+  const node = sel.getRangeAt(0).startContainer;
+  let u = hlUnitOf(node);
+  if (!u) { const tab = document.querySelector(".tabs [aria-pressed='true'], .tabs .on"); const t = (tab && tab.textContent.trim()) || "This page";
+    u = {unit: document.getElementById("sdx") && !document.getElementById("sdx").hidden ? document.getElementById("sdx") : document.querySelector(".wrap"), key: "page:" + GROUP + ":" + filter, title: t}; }
+  return {key: u.key, title: hlNorm(u.title || "").slice(0, 160) || "This section", unit: u.unit, quote: text.slice(0, 2000)};
+}
+askBtn.addEventListener("click", () => { const s = askUnitFromSelection(); selTool.hidden = true; if (s) openAsk(s.key, s.title, s.unit, s.quote); });
+
+function askChat(key, title){ return state.chats[key] || (state.chats[key] = {title, at: Date.now(), msgs: []}); }
+function openAsk(key, title, unit, quote){
+  ASK.key = key; ASK.unit = unit || null; ASK.quote = quote || "";
+  const c = state.chats[key]; if (c && title && !c.title) c.title = title;
+  ASK.title = (c && c.title) || title || "This section";
+  askPane.hidden = false; document.body.classList.add("asking"); renderAsk();
+  const ta = askPane.querySelector(".askin"); if (ta) ta.focus();
+}
+function closeAsk(){ if (ASK.ctl) ASK.ctl.abort(); askPane.hidden = true; document.body.classList.remove("asking"); }
+function askMsgHTML(m){
+  return `<div class="askmsg ${m.r === "u" ? "me" : "ai"}">${m.q ? `<blockquote class="askq">${esc(m.q.length > 300 ? m.q.slice(0, 300) + "…" : m.q)}</blockquote>` : ""}<div class="sdmd">${m.r === "u" ? esc(m.t).replace(/\n/g, "<br>") : md(m.t)}</div></div>`;
+}
+function renderAsk(){
+  const c = state.chats[ASK.key], msgs = c ? c.msgs : [], others = Object.entries(state.chats).filter(([k, v]) => k !== ASK.key && v.msgs && v.msgs.length).sort((a, b) => b[1].at - a[1].at);
+  askPane.innerHTML = `<div class="askhead"><div><div class="eyebrow">Ask Claude · separate chat for this section</div><b class="asktitle">${esc(ASK.title)}</b></div>
+      <button type="button" class="askx" aria-label="Close">✕</button></div>
+    <div class="asktools">${others.length ? `<select class="askswitch" aria-label="Open another section's chat"><option value="">Your other chats (${others.length})…</option>${others.map(([k, v]) => `<option value="${esc(k)}">${esc(v.title || k)} · ${v.msgs.length} msgs</option>`).join("")}</select>` : "<span></span>"}
+      ${msgs.length ? `<button type="button" class="sdlink askclear">Clear this chat</button>` : ""}</div>
+    <div class="asklog" aria-live="polite">${msgs.length ? msgs.map(askMsgHTML).join("") : `<p class="expnote">Ask anything about <b>${esc(ASK.title)}</b>. Claude sees this section's content and the text you selected. This chat is saved for this section and syncs to your other devices.</p>`}</div>
+    ${ASK.quote ? `<div class="askquote"><span>About:</span> “${esc(ASK.quote.length > 220 ? ASK.quote.slice(0, 220) + "…" : ASK.quote)}”<button type="button" class="askqx" aria-label="Remove quoted text">✕</button></div>` : ""}
+    <div class="askrow"><textarea class="askin" rows="2" placeholder="${ASK.quote ? "What do you want to know about the selected text?" : "Ask a question about this section…"}" aria-label="Your question"></textarea>
+      <button type="button" class="sdlabbtn asksend">${ASK.busy ? "Stop" : "Send"}</button></div>
+    <div class="askkey"></div>`;
+  const log = askPane.querySelector(".asklog"); log.scrollTop = log.scrollHeight;
+  askPane.querySelector(".askx").onclick = closeAsk;
+  const sw = askPane.querySelector(".askswitch"); if (sw) sw.onchange = () => { if (sw.value) openAsk(sw.value, state.chats[sw.value].title, askFindUnit(sw.value), ""); };
+  const cl = askPane.querySelector(".askclear"); if (cl) cl.onclick = () => { if (cl.dataset.sure) { delete state.chats[ASK.key]; save(); renderAsk(); if (filter === 34) renderSDX(); } else { cl.dataset.sure = 1; cl.textContent = "Click again to delete this chat"; } };
+  const qx = askPane.querySelector(".askqx"); if (qx) qx.onclick = () => { ASK.quote = ""; renderAsk(); };
+  const ta = askPane.querySelector(".askin"), send = askPane.querySelector(".asksend");
+  send.onclick = () => { if (ASK.busy) { if (ASK.ctl) ASK.ctl.abort(); return; } askSend(ta.value); };
+  ta.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!ASK.busy) askSend(ta.value); } };
+}
+function askFindUnit(key){
+  if (key.startsWith("sdc-") || key.startsWith("qa-") || key.startsWith("mqa-")) return document.getElementById(key);
+  return null;
+}
+function askContext(){
+  let txt = "";
+  const u = ASK.unit && ASK.unit.isConnected ? ASK.unit : askFindUnit(ASK.key);
+  if (u) txt = (u.innerText || u.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+  return txt.length > 14000 ? txt.slice(0, 14000) + "\n…(section continues)" : txt;
+}
+async function askGetSampler(){
+  if (!EXP.ready) await new Promise(r => { const t = setInterval(() => { if (EXP.ready) { clearInterval(t); r(); } }, 100); setTimeout(() => { clearInterval(t); r(); }, 3000); });
+  if (EXP.sample) return EXP.sample;
+  const k = (() => { try { return localStorage.getItem("dsa30-anthropic-key") || ""; } catch (e) { return ""; } })();
+  return k ? (EXP.sample = apiSample(k)) : null;
+}
+function askKeyForm(){
+  const box = askPane.querySelector(".askkey");
+  box.innerHTML = `<p class="expnote">Claude answers automatically when this board is opened inside Claude. On this copy, paste your own Anthropic API key (stored only in this browser, sent only to Anthropic, billed to your account):</p>
+    <div class="expkeyrow"><input type="password" class="expkeyin" placeholder="sk-ant-…" autocomplete="off" aria-label="Anthropic API key"><button type="button" class="sdtog askkeysave">Save &amp; send</button></div>`;
+  box.querySelector(".askkeysave").onclick = () => { const v = box.querySelector(".expkeyin").value.trim(); if (!/^sk-ant-/.test(v)) return;
+    try { localStorage.setItem("dsa30-anthropic-key", v); } catch (e) {} EXP.sample = apiSample(v); box.innerHTML = ""; askSend(ASK.pending || ""); };
+}
+async function askSend(text){
+  text = (text || "").trim(); if (!text) return;
+  const sample = await askGetSampler();
+  if (!sample) { ASK.pending = text; askKeyForm(); return; }
+  const c = askChat(ASK.key, ASK.title), quote = ASK.quote;
+  c.msgs.push({id: "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), r: "u", t: text, q: quote || "", at: Date.now()}); c.at = Date.now();
+  ASK.quote = ""; save();
+  const context = askContext();
+  const intro = `You are a patient tutor helping a software engineer prepare for DSA, system design and ML interviews. They are studying this section of their study board:\n\nSECTION: ${ASK.title}\n` +
+    (context ? `\nSECTION CONTENT (for reference):\n"""\n${context}\n"""\n` : "") +
+    `\nAnswer their questions clearly and concisely, using the section's own examples where useful. Use short paragraphs, bullet points, tables or small code snippets (Java) when they help. If they quote text, focus on that text. If something in the section looks wrong, say so.\n\n`;
+  const recent = c.msgs.slice(-20); while (recent.length && recent[0].r !== "u") recent.shift();
+  const history = recent.map((m, i) => ({role: m.r === "u" ? "user" : "assistant",
+    content: (i === 0 ? intro : "") + (m.q ? `About this text: "${m.q}"\n\n` : "") + m.t}));
+  const ai = {id: "m" + Date.now().toString(36) + "a", r: "a", t: "", at: Date.now()};
+  ASK.busy = true; renderAsk();
+  const log = askPane.querySelector(".asklog");
+  log.insertAdjacentHTML("beforeend", `<div class="askmsg ai"><div class="sdmd askstream"><span class="expthink">Thinking…</span></div></div>`);
+  const out = log.querySelector(".askstream"); log.scrollTop = log.scrollHeight;
+  ASK.ctl = new AbortController();
+  try {
+    const r = await sample(history, {signal: ASK.ctl.signal, cache: false, maxTokens: 1500, onText: ({text}) => { if (out.isConnected) { out.innerHTML = md(text); log.scrollTop = log.scrollHeight; } }});
+    ai.t = r.text;
+  } catch (e) {
+    ai.t = (e && e.text) || "";
+    const msg = {not_granted: "Claude isn't allowed for this page.", sampling_disabled: "Claude isn't available on this account.", rate_limited: "Too many questions at once. Try again in a moment.", cancelled: "", bad_key: "That API key was rejected, so it has been removed."}[e && e.code];
+    if (e && e.code === "bad_key") { try { localStorage.removeItem("dsa30-anthropic-key"); } catch (er) {} EXP.sample = null; }
+    if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) EXP.sample = null;
+    if (msg === undefined) ai.t += (ai.t ? "\n\n" : "") + "*Couldn't get an answer right now.*"; else if (msg) ai.t += (ai.t ? "\n\n" : "") + "*" + msg + "*";
+    else if (ai.t) ai.t += "\n\n*(stopped)*";
+  }
+  ASK.busy = false; ASK.ctl = null;
+  if (ai.t) { askChat(ASK.key, ASK.title).msgs.push(ai); save(); }
+  if (!askPane.hidden) renderAsk();
+  if (filter === 34 && typeof renderSDX === "function" && askPane.hidden) renderSDX();
+}
+function askListHTML(){
+  const list = Object.entries(state.chats).filter(([, v]) => v.msgs && v.msgs.length).sort((a, b) => b[1].at - a[1].at);
+  return `<section class="nvsec"><div class="trhead"><h3>Your Claude chats</h3></div>${list.length ? `<ul class="asklist">${list.map(([k, v]) => {
+    const last = v.msgs.filter(m => m.r === "u").slice(-1)[0];
+    return `<li><button type="button" class="sdlink" data-askopen="${esc(k)}">${esc(v.title || k)}</button> <span class="vxnote2">${v.msgs.length} messages · ${new Date(v.at).toLocaleDateString("en-IN", {day: "2-digit", month: "short"})}${last ? " · “" + esc(last.t.slice(0, 80)) + "”" : ""}</span></li>`; }).join("")}</ul>`
+    : `<p class="expnote">Select any text on a topic, lesson or question and tap <b>Ask Claude</b>. Each section gets its own chat, kept here and synced to your other devices.</p>`}</section>`;
+}
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-askopen]"); if (!b) return; const k = b.dataset.askopen, c = state.chats[k]; if (c) openAsk(k, c.title, askFindUnit(k), ""); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !askPane.hidden && askPane.contains(document.activeElement) && !ASK.busy) closeAsk(); });

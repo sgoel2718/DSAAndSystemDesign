@@ -362,3 +362,22 @@ mark.hl[data-hl]:hover{outline:1px dashed color-mix(in srgb,var(--ink) 40%,trans
 .sysetup{margin-top:8px;font-size:14px}.sysetup summary{cursor:pointer;font-weight:600}
 .syform{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.syform input{flex:1 1 220px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:13px var(--mono)}
 @media (max-width:600px){#syncpill{bottom:8px;left:8px;font-size:11px}}
+.seltool .askbtn{position:static;box-shadow:none;padding:6px 11px;background:#d97757;color:#fff}
+.askpane{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:70;background:var(--panel);border-left:1px solid var(--line);box-shadow:-6px 0 24px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.askhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:12px 14px;border-bottom:1px solid var(--line)}
+.askhead .eyebrow{margin:0}.asktitle{font-size:15px;display:block;margin-top:2px}
+.askx{border:0;background:none;font-size:18px;cursor:pointer;color:var(--muted)}
+.asktools{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 14px;border-bottom:1px solid var(--line)}
+.askswitch{max-width:70%;font:12px var(--sans);padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.asklog{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.askmsg{padding:8px 11px;border-radius:10px;font-size:14px;max-width:92%}
+.askmsg.me{align-self:flex-end;background:color-mix(in srgb,#d97757 14%,var(--panel));border:1px solid color-mix(in srgb,#d97757 35%,var(--line))}
+.askmsg.ai{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}
+.askmsg .sdmd p:first-child{margin-top:0}.askmsg .sdmd p:last-child{margin-bottom:0}
+.askq{margin:0 0 6px;padding:4px 8px;border-left:3px solid #d97757;font-size:12.5px;color:var(--muted)}
+.askquote{margin:0 14px;padding:6px 8px;font-size:12.5px;border-left:3px solid #d97757;background:var(--bg);display:flex;gap:6px;align-items:flex-start}
+.askquote span{font-weight:600}.askqx{margin-left:auto;border:0;background:none;cursor:pointer;color:var(--muted)}
+.askrow{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+.askin{flex:1;resize:vertical;min-height:44px;max-height:180px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:14px var(--sans)}
+.askkey{padding:0 14px 10px}.asklist{padding-left:18px}.asklist li{margin:6px 0}
+@media (min-width:1100px){body.asking .wrap{margin-right:440px}}

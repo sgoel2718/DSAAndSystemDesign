@@ -91,6 +91,7 @@ function renderNotes(root){
     <div class="sdbar"><label class="sdsearch"><span class="sr">Search notes</span><input type="search" id="nvQ" placeholder="Search your notes and bookmarks" value="${esc(NV.q)}"></label>
       <button type="button" class="sdtog" id="nvExport">Export backup</button><label class="sdtog nvimp">Import backup<input type="file" id="nvImport" accept="application/json" hidden></label></div>
     <section class="nvsec sybox" id="syncbox">${syPanel()}</section>
+    ${askListHTML()}
     <div class="nvstats"><span><b>${state.pad.length}</b> notepad notes</span><span><b>${Object.keys(state.tm).length}</b> bookmarked topics</span><span><b>${Object.keys(state.tn).length}</b> topic notes</span><span><b>${state.hl.length}</b> highlights</span>
       <button type="button" class="sdlink" id="nvProb">${probMarks} bookmarked · ${probNotes} commented DSA questions →</button></div>
     <section class="nvsec"><div class="trhead"><h3>Notepad</h3><button type="button" class="sdlabbtn" id="nvNew">+ New note</button></div>

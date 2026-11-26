@@ -18,7 +18,7 @@ document.body.append(selTool, expPop);
 function expSelection(){
   const sel = window.getSelection(); if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
   const text = sel.toString().replace(/\s+/g, " ").trim();
-  if (text.length < 2 || text.length > 400) return null;
+  if (text.length < 2 || text.length > 2000) return null;
   const range = sel.getRangeAt(0), node = range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement;
   if (!node || node.closest("input, textarea, .exppop, .expbtn, nav, .groups")) return null;
   if (!node.closest(".wrap, #sheet, #viz")) return null;
@@ -42,7 +42,7 @@ document.addEventListener("selectionchange", () => {
   expTimer = setTimeout(() => { const s = expSelection(); if (s) { EXP.last = s; placeBtn(s); } else if (!selTool.contains(document.activeElement)) selTool.hidden = true; }, 250);
 });
 selTool.addEventListener("mousedown", e => e.preventDefault());      // keep the selection
-expBtn.addEventListener("click", () => { const s = EXP.last || expSelection(); selTool.hidden = true; if (s) explain(s); });
+expBtn.addEventListener("click", () => { const s = EXP.last || expSelection(); selTool.hidden = true; if (s) { s.text = s.text.slice(0, 400); explain(s); } });
 selTool.querySelector(".hlrmbtn").addEventListener("click", () => { selTool.hidden = true; removeSelectedHighlights(); });
 selTool.querySelectorAll("[data-hc]").forEach(b => b.addEventListener("click", () => { selTool.hidden = true; addHighlight(b.dataset.hc); }));
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !expPop.hidden) closeExp(); });
@@ -156,7 +156,7 @@ function apiSample(key){
   return async (prompt, opt = {}) => {
     const r = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", signal: opt.signal,
       headers: {"content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"},
-      body: JSON.stringify({model: "claude-haiku-5-5", max_tokens: 500, stream: true, messages: [{role: "user", content: prompt}]})})
+      body: JSON.stringify({model: "claude-haiku-5-5", max_tokens: opt.maxTokens || 500, stream: true, messages: Array.isArray(prompt) ? prompt : [{role: "user", content: prompt}]})})
       .catch(e => { throw {code: e.name === "AbortError" ? "cancelled" : "upstream_error", message: String(e)}; });
     if (!r.ok) { const t = await r.text().catch(() => ""); throw {code: r.status === 401 ? "bad_key" : r.status === 429 ? "rate_limited" : "upstream_error", message: t.slice(0, 300)}; }
     const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", text = "";

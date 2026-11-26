@@ -89,7 +89,7 @@ function syMerge(remote){
 function syRerender(){
   const a = document.activeElement;
   if (a && /^(TEXTAREA|INPUT)$/.test(a.tagName) && a.type !== "checkbox") { a.addEventListener("blur", syRerender, {once: true}); return; }   // never wipe what you're typing
-  try { renderTop(); renderTabs(); renderBoard(); } catch (e) {}
+  try { renderTop(); renderTabs(); renderBoard(); if (!askPane.hidden && !ASK.busy) renderAsk(); } catch (e) {}
 }
 
 /* ---- backend 1: Claude account (private per-user documents, live across devices) ---- */
