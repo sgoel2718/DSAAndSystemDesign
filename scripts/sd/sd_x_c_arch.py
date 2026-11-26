@@ -1,11 +1,12 @@
 """Detailed explanations with diagrams: Architecture, Reliability & Security tab."""
-from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE
+from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE, BA
 
 X("monolith-microservices",
-  FLOW("Monolith: one deployable, one database", [["u:Clients"], ["Monolith app: users · orders · payments modules"], ["db:One shared DB"]],
+  BA(FLOW("Monolith: one deployable, one database", [["u:Clients"], ["Monolith app: users · orders · payments modules"], ["db:One shared DB"]],
        [["Clients", "Monolith app: users · orders · payments modules"], ["Monolith app: users · orders · payments modules", "One shared DB", "in-process calls, one transaction"]]),
   FLOW("Microservices: one service and one database per domain", [["u:Clients"], ["API gateway"], ["User svc", "Order svc", "Payment svc"], ["db:Users DB", "db:Orders DB", "db:Payments DB"]],
        [["Clients", "API gateway"], ["API gateway", "User svc"], ["API gateway", "Order svc"], ["API gateway", "Payment svc"], ["Order svc", "Payment svc", "network call"], ["User svc", "Users DB"], ["Order svc", "Orders DB"], ["Payment svc", "Payments DB"]]),
+     "Before: one monolith", "After: split into services"),
   TABLE("Trade-offs", ["", "Monolith", "Microservices"], [["deploy", "one unit; simple", "independent per team"], ["scaling", "scale everything together", "scale hot services only"], ["calls", "in-process (ns)", "network (ms), can fail"],
                                                      ["data", "one DB, joins + transactions", "DB per service; sagas, eventual consistency"], ["debugging", "one stack trace", "distributed tracing needed"], ["best for", "small teams, new products", "many teams, clear domain boundaries"]]),
   KEY("Start with a **modular monolith** (strict module boundaries inside one app). Extract a service when a module needs independent scaling, deployment cadence, or team ownership.", "Practical path"))
@@ -24,14 +25,20 @@ X("service-mesh",
   KEY("Cost: an extra proxy hop (~1 ms) and real operational complexity. Worth it with many services and teams; overkill for five services.", "Trade-off"))
 
 X("bff",
-  FLOW("One backend per frontend", [["u:Mobile app", "u:Web app", "u:Smart TV"], ["Mobile BFF", "Web BFF", "TV BFF"], ["User svc", "Catalog svc", "Recommendation svc"]],
+  BA(SEQ("Phone calls every service itself", ["Mobile app", "User svc", "Catalog svc", "Recs svc"],
+          [["Mobile app", "User svc", "GET /users/42 (40 fields, needs 3)"], ["Mobile app", "Catalog svc", "GET /catalog?home"], ["Mobile app", "Recs svc", "GET /recs/42", "", "3 round trips on a slow mobile network, over-fetched payloads, and the app breaks whenever a service API changes."]]),
+       FLOW("One backend per frontend", [["u:Mobile app", "u:Web app", "u:Smart TV"], ["Mobile BFF", "Web BFF", "TV BFF"], ["User svc", "Catalog svc", "Recommendation svc"]],
        [["Mobile app", "Mobile BFF"], ["Web app", "Web BFF"], ["Smart TV", "TV BFF"], ["Mobile BFF", "User svc"], ["Mobile BFF", "Catalog svc"], ["Web BFF", "Catalog svc"], ["Web BFF", "Recommendation svc"], ["TV BFF", "Recommendation svc"]]),
+     "Before: client talks to every service", "After: backend for frontend"),
   TABLE("Why", ["Problem without BFF", "BFF fix"], [["mobile makes 6 calls on a slow network", "BFF aggregates into 1 response"], ["web needs 40 fields, mobile 8", "each BFF shapes its own payload"], ["one generic API changes break every client", "each frontend team owns its BFF"]]))
 
 X("event-driven",
-  SEQ("Order placed: services react to an event instead of being called", ["Order svc", "Event bus (Kafka)", "Payment svc", "Email svc", "Analytics"],
+  BA(SEQ("Order service calls everyone synchronously", ["Order svc", "Payment svc", "Email svc", "Analytics"],
+          [["Order svc", "Payment svc", "charge (200 ms)"], ["Order svc", "Email svc", "send receipt (300 ms)"], ["Order svc", "Analytics", "track (down! ✘)", "", "Checkout is slow (sum of all calls), fails if any one service is down, and every new consumer means editing order svc."]]),
+       SEQ("Order placed: services react to an event instead of being called", ["Order svc", "Event bus (Kafka)", "Payment svc", "Email svc", "Analytics"],
       [["Order svc", "Event bus (Kafka)", "publish OrderPlaced {id: 987}"], ["Event bus (Kafka)", "Payment svc", "OrderPlaced", "a"], ["Event bus (Kafka)", "Email svc", "OrderPlaced", "a"], ["Event bus (Kafka)", "Analytics", "OrderPlaced", "a", "Order svc doesn't know or wait for consumers; adding a new consumer needs no change to it."],
        ["Payment svc", "Event bus (Kafka)", "publish PaymentSucceeded"]]),
+     "Before: tight synchronous coupling", "After: event-driven"),
   TABLE("Choreography vs orchestration", ["", "Choreography (events)", "Orchestration (central coordinator)"], [["control", "each service reacts", "orchestrator tells each step"], ["coupling", "loose", "tighter to orchestrator"], ["visibility", "flow is implicit (hard to trace)", "flow is explicit in one place"], ["tools", "Kafka, SNS/SQS", "Temporal, Step Functions, Camunda"]]),
   TABLE("Event types", ["Type", "Contains", "Example"], [["notification", "id only; consumer calls back", "OrderPlaced {id}"], ["event-carried state transfer", "full data", "OrderPlaced {id, items, total}"], ["domain event (sourcing)", "the change itself", "ItemAdded {sku, qty}"]]))
 
@@ -55,6 +62,13 @@ X("serverless-containers",
                                          ("Two always-on small containers ($30 each)", "2 * 30", "$", "at steady high traffic, containers become cheaper")]))
 
 X("resilience-patterns",
+  BA(SEQ("No timeout, no breaker: cascading failure", ["Users", "Product page", "Recommendations (slow)"],
+          [["Users", "Product page", "GET /product (1,000/s)"], ["Product page", "Recommendations (slow)", "call (hangs 30 s)"], NOTE(["Product page"], "all 200 threads stuck waiting"),
+           ["Product page", "Users", "timeouts for EVERY page, even ones not needing recs ✘", "r", "One slow dependency takes down the whole service, then its callers."]]),
+     SEQ("Timeout + circuit breaker + fallback", ["Users", "Product page", "Recommendations (slow)"],
+          [["Users", "Product page", "GET /product"], ["Product page", "Recommendations (slow)", "call with 200 ms timeout"], ["Product page", "Product page", "3 failures → breaker OPEN"],
+           ["Product page", "Users", "page with cached 'top sellers' instead ✔", "r", "Threads are freed in 200 ms; while OPEN no calls are made; after a cool-down one trial call tests recovery."]]),
+     "Before: cascading failure", "After: resilience patterns"),
   STATE("Circuit breaker", [["[*]"], ["CLOSED"], ["OPEN"], ["HALF-OPEN"]],
         [["[*]", "CLOSED", ""], ["CLOSED", "OPEN", "failures > 50% in 10 s"], ["OPEN", "HALF-OPEN", "after 30 s cooldown"], ["HALF-OPEN", "CLOSED", "trial calls succeed"], ["HALF-OPEN", "OPEN", "trial call fails"], ["CLOSED", "CLOSED", "success"]]),
   TABLE("Retry with exponential backoff + jitter (base 100 ms, cap 5 s)", ["Attempt", "Backoff ceiling", "Actual wait (random 0..ceiling)"], [["1", "100 ms", "e.g. 63 ms"], ["2", "200 ms", "e.g. 151 ms"], ["3", "400 ms", "e.g. 298 ms"], ["4", "800 ms", "e.g. 512 ms"], ["5", "1.6 s", "give up → fallback"]],
@@ -63,19 +77,26 @@ X("resilience-patterns",
         ["Bulkhead", "one dependency using all threads", "separate pools per dependency"], ["Fallback / graceful degradation", "partial outage", "show cached recommendations"], ["Load shedding", "overload", "reject low-priority requests with 503"]]))
 
 X("idempotency",
-  SEQ("Idempotency key prevents a double charge", ["App", "Payment API", "Idempotency store"],
+  BA(SEQ("Retry without a key", ["App", "Payment API"],
+          [["App", "Payment API", "POST /charges ₹500"], ["Payment API", "Payment API", "charge card ✔"], ["Payment API", "App", "response lost (timeout)", "r"], ["App", "Payment API", "retry POST /charges ₹500"],
+           ["Payment API", "App", "second charge ✘ customer pays ₹1,000", "r"]]),
+       SEQ("Idempotency key prevents a double charge", ["App", "Payment API", "Idempotency store"],
       [["App", "Payment API", "POST /charges ₹500, Idempotency-Key: k-81"], ["Payment API", "Idempotency store", "INSERT k-81 (status IN_PROGRESS)"], ["Payment API", "Payment API", "charge card…"], ["Payment API", "Idempotency store", "save k-81 → response {charge_id: ch_9}"],
        ["Payment API", "App", "response lost (timeout)", "r"], ["App", "Payment API", "retry: same body, Idempotency-Key: k-81"], ["Payment API", "Idempotency store", "k-81 exists → return saved response"],
        ["Payment API", "App", "200 {charge_id: ch_9} (no second charge)", "r"]]),
+     "Before: retries double-charge", "After: idempotency key"),
   TABLE("Ways to make operations idempotent", ["Technique", "Example"], [["client-generated key", "Idempotency-Key header (Stripe)"], ["natural unique constraint", "UNIQUE(order_id) on payments"], ["absolute instead of relative updates", "SET status = 'PAID' vs balance = balance − 500"],
         ["conditional writes", "UPDATE … WHERE version = 7"], ["dedup table of processed message ids", "Kafka consumers"]]))
 
 X("deployments",
   TABLE("Deployment strategies", ["Strategy", "How", "Rollback", "Cost / risk"], [["Recreate", "stop old, start new", "redeploy old", "downtime"], ["Rolling", "replace instances a few at a time", "roll back gradually", "mixed versions run together"],
         ["Blue-green", "full new env (green); switch the LB", "switch back instantly", "2× infrastructure briefly"], ["Canary", "1% → 10% → 50% → 100% while watching metrics", "route back to old", "needs good metrics"], ["Feature flags", "deploy dark, enable per user", "flip the flag", "flag debt"]]),
-  SEQ("Canary release with automatic rollback", ["Deploy pipeline", "Load balancer / mesh", "v2 pods", "Monitoring"],
+  BA(SEQ("Big-bang deploy to every server at once", ["Deploy pipeline", "All 50 servers", "Users"],
+          [["Deploy pipeline", "All 50 servers", "replace v1 with v2 everywhere"], ["Users", "All 50 servers", "requests"], ["All 50 servers", "Users", "v2 bug → 100% of users see errors ✘", "r", "Rollback means another full deploy while everyone is affected."]]),
+       SEQ("Canary release with automatic rollback", ["Deploy pipeline", "Load balancer / mesh", "v2 pods", "Monitoring"],
       [["Deploy pipeline", "v2 pods", "deploy v2 (2 pods)"], ["Deploy pipeline", "Load balancer / mesh", "send 5% of traffic to v2"], ["Monitoring", "Deploy pipeline", "compare v2 vs v1: errors 0.1% vs 0.1%, p99 210 vs 205 ms ✔", "r"],
        ["Deploy pipeline", "Load balancer / mesh", "25% → 50% → 100%"], NOTE(["Deploy pipeline", "Monitoring"], "if v2 error rate spikes at any stage → traffic back to v1 automatically")]),
+     "Before: all at once", "After: canary"),
   KEY("Database changes must be backward compatible across versions: **expand → migrate → contract** (add the new column, write both, backfill, switch reads, drop the old column later).", "Schema changes"))
 
 X("config-multitenancy",
@@ -88,9 +109,12 @@ CREATE POLICY tenant_isolation ON invoices
   TABLE("Noisy neighbour & config", ["Concern", "Approach"], [["one tenant floods the system", "per-tenant rate limits and quotas"], ["config per tenant/env", "central config service (Consul, AppConfig), feature flags per tenant"], ["secrets", "secret manager (Vault, AWS Secrets Manager), never in code"]]))
 
 X("redundancy-failover",
-  SEQ("Active–passive database failover", ["App", "Primary DB", "Standby DB", "Failover manager"],
+  BA(SEQ("Single database, no standby", ["App", "Database"],
+          [["App", "Database", "writes"], NOTE(["Database"], "disk fails"), ["App", "Database", "write"], ["Database", "App", "connection refused ✘", "r", "Full outage until someone restores a backup: hours, and data since the last backup is lost."]]),
+       SEQ("Active–passive database failover", ["App", "Primary DB", "Standby DB", "Failover manager"],
       [["Primary DB", "Standby DB", "stream WAL (sync or async)", "a"], ["Failover manager", "Primary DB", "health check"], NOTE(["Primary DB"], "primary dies"), ["Failover manager", "Primary DB", "no response × 3 (≈ 30 s)"],
        ["Failover manager", "Standby DB", "promote to primary"], ["Failover manager", "App", "update DNS / virtual IP to standby"], ["App", "Standby DB", "reconnect; writes resume", "", "Downtime ≈ detection + promotion + reconnection. Async replication may lose the last seconds of writes."]]),
+     "Before: single point of failure", "After: standby + automatic failover"),
   TABLE("Active–passive vs active–active", ["", "Active–passive", "Active–active"], [["traffic", "one serves, one waits", "both serve"], ["failover", "seconds–minutes", "near-instant (just stop routing)"], ["utilisation", "standby idle", "both used"], ["hard part", "fast detection, avoiding split brain", "write conflicts, data sync"]]))
 
 X("disaster-recovery",
@@ -154,9 +178,9 @@ X("web-security",
   TABLE("OWASP-style top threats", ["Attack", "Example", "Defence"],
         [["SQL injection", "`' OR 1=1 --` in a login field", "parameterised queries / ORM"], ["XSS", "`<script>` in a comment steals cookies", "escape output, Content-Security-Policy, HttpOnly cookies"], ["CSRF", "a hidden form on evil.com posts to your bank", "SameSite cookies, CSRF tokens"],
          ["SSRF", "server fetches http://169.254.169.254 (cloud metadata)", "allow-list outbound URLs, block internal ranges"], ["Broken access control", "GET /invoices/124 shows someone else's invoice", "check ownership on every request"], ["DDoS", "1 M requests/s from a botnet", "CDN/WAF, rate limits, autoscaling"]]),
-  CODE("SQL injection: vulnerable vs safe", """// vulnerable
-String q = "SELECT * FROM users WHERE email = '" + email + "'";
-// safe
-PreparedStatement ps = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
-ps.setString(1, email);"""),
+  BA(CODE("Vulnerable: string concatenation", """String q = "SELECT * FROM users WHERE email = '" + email + "'";
+// email = "x' OR '1'='1"  ->  WHERE email = 'x' OR '1'='1'  ->  every row returned"""),
+     CODE("Safe: parameterised query", """PreparedStatement ps = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
+ps.setString(1, email);   // sent as data, never parsed as SQL"""),
+     "Before: SQL injection", "After: prepared statement"),
   KEY("Defence in depth: WAF at the edge, authN/authZ at the gateway and service, least-privilege IAM, secrets in a vault, encrypted data, audit logs.", "Layering"))

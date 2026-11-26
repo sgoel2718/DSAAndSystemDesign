@@ -65,6 +65,20 @@ def attach_java(concepts, hld, tabs):
         if not os.path.exists(fp) or open(fp).read() != j["code"]: open(fp, "w").write(j["code"])
 
 
+def attach_questions(concepts, hld, lld):
+    """Attach the per-topic theory interview questions (sd_iq_*.py)."""
+    import glob, importlib
+    from sd_iq_util import IQ
+    here = os.path.dirname(os.path.abspath(__file__))
+    for f in sorted(glob.glob(os.path.join(here, "sd_iq_*.py"))):
+        m = os.path.basename(f)[:-3]
+        if m != "sd_iq_util": importlib.import_module(m)
+    cards = dict(concepts); cards.update({h["id"]: h for h in hld}); cards.update({l["id"]: l for l in lld})
+    for cid, qs in IQ.items():
+        assert cid in cards, "questions for unknown card " + cid
+        cards[cid]["iq"] = qs
+
+
 def attach_explain(concepts, hld, lld):
     """Attach the detailed explanation layer (sd_x*.py) to every card and validate its diagrams."""
     import glob, importlib, json
@@ -79,7 +93,9 @@ def attach_explain(concepts, hld, lld):
     strip = lambda n: n.split(":", 1)[1] if n.split(":", 1)[0] in ("db", "q", "c", "u", "x") and ":" in n else n
     for cid, x in EXPLAIN.items():
         assert cid in cards, "explain for unknown card " + cid
-        for b in x["blocks"]:
+        flat = []
+        for b in x["blocks"]: flat.extend([b["before"], b["after"]] if b["t"] == "ba" else [b])
+        for b in flat:
             sp = b.get("spec")
             if b["t"] == "flow":
                 names = {strip(n) for row in sp["rows"] for n in row}
@@ -162,6 +178,7 @@ def build():
     for l in lld:
         l["freq"] = "Very common" if l["id"] in lvery else "Common" if l["id"] in lcommon else "Sometimes"
     attach_explain(concepts, hld, lld)
+    attach_questions(concepts, hld, lld)
     tabs = [dict(key=k, label=l, intro=i, sections=[dict(name=n, ids=[c["id"] for c in cs]) for n, cs in secs]) for k, l, i, secs in CONCEPT_TABS]
     attach_java(concepts, hld, tabs)
     return dict(tabs=tabs, concepts=concepts, hld=hld, lld=lld, qa=qa,

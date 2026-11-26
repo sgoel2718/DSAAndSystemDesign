@@ -1,5 +1,5 @@
 """Detailed explanations with diagrams: Fundamentals tab."""
-from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE
+from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE, BA
 
 X("what-is-sd",
   P("System design is deciding **which components** a product needs, **how they talk**, and **where data lives**, so that it keeps working as users grow from 100 to 100 million. The same app evolves through predictable stages:"),
@@ -15,6 +15,13 @@ X("client-server",
   SEQ("One request/response", ["Browser", "Web server", "App server", "Database"],
       [["Browser", "Web server", "GET /profile (cookie: session=abc)"], ["Web server", "App server", "forward"], ["App server", "Database", "SELECT * FROM users WHERE id = 42"],
        ["Database", "App server", "row", "r"], ["App server", "Browser", "200 OK, HTML/JSON", "r", "The server keeps no memory of this browser after replying; the cookie identifies it next time."]]),
+  BA(SEQ("Session kept in server memory", ["Browser", "Load balancer", "Server A", "Server B"],
+          [["Browser", "Load balancer", "POST /login"], ["Load balancer", "Server A", "forward"], ["Server A", "Browser", "OK (session stored in A's memory)", "r"],
+           ["Browser", "Load balancer", "GET /cart"], ["Load balancer", "Server B", "forward (round robin)"], ["Server B", "Browser", "401: who are you? log in again", "r", "B has never heard of this session. Sticky sessions hide the problem until A restarts."]]),
+     SEQ("Session in a shared store", ["Browser", "Load balancer", "Server B", "Redis (sessions)"],
+          [["Browser", "Load balancer", "GET /cart (cookie sid=abc)"], ["Load balancer", "Server B", "forward (any server)"], ["Server B", "Redis (sessions)", "GET sess:abc"],
+           ["Redis (sessions)", "Server B", "{user: 42}", "r"], ["Server B", "Browser", "200 cart", "r", "Any server can answer, so servers can be added, removed or restarted freely."]]),
+     "Before: stateful servers", "After: stateless servers"),
   TABLE("Stateful vs stateless servers", ["", "Stateful (session in server memory)", "Stateless (session in Redis/JWT)"], [["scaling out", "needs sticky sessions", "any server works"], ["server crash", "users logged out", "nothing lost"], ["deploys", "drain carefully", "easy rolling deploys"]]))
 
 X("url-journey",
@@ -36,8 +43,13 @@ X("latency-throughput",
 
 X("scalability",
   P("**Vertical scaling** = a bigger machine. **Horizontal scaling** = more machines behind a load balancer. Vertical is simple until you hit the biggest machine (and it's a single point of failure); horizontal scales further but needs **stateless** servers and data partitioning."),
-  FLOW("Vertical vs horizontal", [["Vertical: 1 server, 8 → 96 cores", "u:Horizontal: users"], ["db:same single DB", "Load balancer"], ["App 1", "App 2", "App 3"]],
-       [["Vertical: 1 server, 8 → 96 cores", "same single DB"], ["Horizontal: users", "Load balancer"], ["Load balancer", "App 1"], ["Load balancer", "App 2"], ["Load balancer", "App 3"]]),
+  BA(FLOW("One big server", [["u:Users"], ["Single server: 96 cores (biggest available)"], ["db:Database"]],
+          [["Users", "Single server: 96 cores (biggest available)", "all traffic"], ["Single server: 96 cores (biggest available)", "Database"]],
+          "Traffic doubles again and there is no bigger machine to buy; if it crashes, everything is down."),
+     FLOW("Many small servers behind a load balancer", [["u:Users"], ["Load balancer"], ["App 1", "App 2", "App 3", "App N…"], ["db:Database (scaled separately)"]],
+          [["Users", "Load balancer"], ["Load balancer", "App 1"], ["Load balancer", "App 2"], ["Load balancer", "App 3"], ["Load balancer", "App N…"], ["App 2", "Database (scaled separately)"]],
+          "Add a server when load grows; one failing server only removes a share of capacity."),
+     "Before: vertical scaling hits a ceiling", "After: horizontal scaling"),
   TABLE("Trade-offs", ["", "Vertical", "Horizontal"], [["limit", "biggest machine available", "practically none"], ["failure", "single point of failure", "one node down = less capacity"], ["complexity", "none", "LB, state externalised, partitioning"],
                                                     ["cost curve", "high-end hardware is pricey", "commodity machines"], ["good for", "databases early on", "stateless web/app tiers"]]))
 
@@ -157,9 +169,14 @@ X("realtime-comm",
   TABLE("Choosing", ["Need", "Use"], [["occasional updates, simple", "polling"], ["server → client notifications, feeds, LLM token streams", "SSE"], ["two-way, low latency (chat, games)", "WebSocket"], ["server → another server on events", "webhooks"]]))
 
 X("api-gateway",
-  FLOW("One front door for many services", [["u:Mobile / web clients"], ["API gateway: auth · rate limit · routing · TLS · logging"], ["User service", "Order service", "Search service"]],
-       [["Mobile / web clients", "API gateway: auth · rate limit · routing · TLS · logging"], ["API gateway: auth · rate limit · routing · TLS · logging", "User service", "/users/*"],
-        ["API gateway: auth · rate limit · routing · TLS · logging", "Order service", "/orders/*"], ["API gateway: auth · rate limit · routing · TLS · logging", "Search service", "/search"]]),
+  BA(FLOW("Clients call every service directly", [["u:Mobile / web clients"], ["User service (own auth + rate limit)", "Order service (own auth + rate limit)", "Search service (own auth + rate limit)"]],
+          [["Mobile / web clients", "User service (own auth + rate limit)"], ["Mobile / web clients", "Order service (own auth + rate limit)"], ["Mobile / web clients", "Search service (own auth + rate limit)"]],
+          "Clients must know every service address; auth, TLS and rate limiting are re-implemented (differently) in each service."),
+     FLOW("One front door for many services", [["u:Mobile / web clients"], ["API gateway: auth · rate limit · routing · TLS · logging"], ["User service", "Order service", "Search service"]],
+          [["Mobile / web clients", "API gateway: auth · rate limit · routing · TLS · logging"], ["API gateway: auth · rate limit · routing · TLS · logging", "User service", "/users/*"],
+           ["API gateway: auth · rate limit · routing · TLS · logging", "Order service", "/orders/*"], ["API gateway: auth · rate limit · routing · TLS · logging", "Search service", "/search"]],
+          "One public address; cross-cutting concerns live in one place; services can move or split without clients noticing."),
+     "Before: no gateway", "After: API gateway"),
   SEQ("What happens at the gateway", ["Client", "API gateway", "Auth", "Order service"],
       [["Client", "API gateway", "GET /orders/9 (Bearer token)"], ["API gateway", "Auth", "validate token (or verify JWT locally)"], ["API gateway", "API gateway", "rate limit check; route by path; add request id"],
        ["API gateway", "Order service", "GET /orders/9 + X-User-Id"], ["Order service", "Client", "200", "r", "Services trust identity headers from the gateway, so they don't each re-implement auth."]]),
@@ -174,8 +191,11 @@ X("proxies",
 X("rate-limiting",
   TABLE("Token bucket, capacity 5, refill 1 token/s", ["Time", "Requests", "Tokens before", "Allowed", "Tokens after"],
         [["0 s", "5", "5", "5 ✔", "0"], ["0 s", "1 more", "0", "✘ 429", "0"], ["1 s", "1", "1", "1 ✔", "0"], ["4 s", "2", "3", "2 ✔", "1"]], "Bursts up to the capacity are allowed; the long-run average is the refill rate."),
-  BARS("Fixed window's edge problem (limit 100 per minute)", [("10:00:59 burst", 100, "100 allowed"), ("10:01:00 burst", 100, "100 allowed")],
-       caption="200 requests in 2 seconds pass a '100 per minute' fixed-window limit. Sliding windows and token buckets avoid this."),
+  BA(BARS("Fixed window, limit 100 per minute: a burst across the boundary", [("10:00:59 burst (window 10:00)", 100, "100 allowed"), ("10:01:00 burst (window 10:01)", 100, "100 allowed")],
+          caption="200 requests in 2 seconds pass a '100 per minute' limit because the counter resets at 10:01:00."),
+     BARS("Sliding window, same burst", [("10:00:59 burst", 100, "100 allowed"), ("10:01:00 burst", 100, "0 allowed (last 60 s already has 100)")],
+          caption="The window always looks back 60 s from now, so the limit holds across the boundary. A token bucket gives the same protection."),
+     "Before: fixed window lets 2× through", "After: sliding window holds the limit"),
   TABLE("Algorithms", ["Algorithm", "Memory", "Accuracy", "Bursts"], [["Token bucket", "2 numbers", "good", "up to capacity"], ["Leaky bucket", "queue", "smooth output", "none"], ["Fixed window", "1 counter", "edge spikes", "2× at edges"],
                                                                     ["Sliding log", "1 timestamp per request", "exact", "none"], ["Sliding window counter", "2 counters", "approximate", "small"]]),
   KEY("Where to enforce: at the API gateway per key/user/IP, with counters in Redis updated by an atomic Lua script. Return 429 with `Retry-After`. See the distributed rate limiter HLD for the full design.", "In practice"))

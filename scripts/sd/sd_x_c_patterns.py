@@ -1,19 +1,21 @@
 """Detailed explanations with diagrams: Common Patterns tab."""
-from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE
+from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE, BA
 
 X("feed-fanout",
   SEQ("Fan-out on write (push) for a normal user", ["Asha (200 followers)", "Post svc", "Fan-out workers", "Feed cache (Redis lists)"],
       [["Asha (200 followers)", "Post svc", "create post 901"], ["Post svc", "Fan-out workers", "PostCreated (via Kafka)", "a"], ["Fan-out workers", "Feed cache (Redis lists)", "LPUSH feed:<follower> 901 for each of 200 followers"],
        NOTE(["Asha (200 followers)", "Feed cache (Redis lists)"], "reading a feed = LRANGE feed:me 0 49: one fast call")]),
-  CALC("Why celebrities break push", [("Celebrity followers", "f = 100e6", ""), ("Cache writes for ONE post", "f", ""), ("At 1 M writes/s of fan-out capacity", "f / 1e6", "seconds", "followers wait ~2 minutes, and fan-out capacity is tied up"), ("Normal user (200 followers)", "200", "writes")]),
-  TABLE("Hybrid approach (used by Twitter/Instagram-style feeds)", ["Author type", "On post", "On feed read"], [["normal users", "push into followers' feed caches", "already there"], ["celebrities (> ~10k followers)", "store once in their own timeline", "pull recent celebrity posts and merge"], ["inactive followers", "skip push", "build on demand when they return"]]))
+  BA(CALC("Why celebrities break push", [("Celebrity followers", "f = 100e6", ""), ("Cache writes for ONE post", "f", ""), ("At 1 M writes/s of fan-out capacity", "f / 1e6", "seconds", "followers wait ~2 minutes, and fan-out capacity is tied up"), ("Normal user (200 followers)", "200", "writes")]),
+  TABLE("Hybrid approach (used by Twitter/Instagram-style feeds)", ["Author type", "On post", "On feed read"], [["normal users", "push into followers' feed caches", "already there"], ["celebrities (> ~10k followers)", "store once in their own timeline", "pull recent celebrity posts and merge"], ["inactive followers", "skip push", "build on demand when they return"]]),
+     "Before: push to everyone", "After: hybrid push/pull"))
 
 X("counters",
-  CALC("Hot counter problem: likes on a viral post", [("Likes per second", "l = 50000", "/s"), ("Single-row UPDATE throughput (row lock)", "u = 1000", "/s"), ("Overload factor", "l / u", "×", "one row can't take this"),
+  BA(CALC("Hot counter problem: likes on a viral post", [("Likes per second", "l = 50000", "/s"), ("Single-row UPDATE throughput (row lock)", "u = 1000", "/s"), ("Overload factor", "l / u", "×", "one row can't take this"),
                                                     ("Sharded counter with 64 sub-counters", "l / 64", "/s per shard", "read = sum of 64 values")]),
   SEQ("Buffered counting", ["Like API", "Redis", "Flusher (every 5 s)", "Database"],
       [["Like API", "Redis", "INCR likes:post:9 (and SADD to dedupe users)"], ["Like API", "Like API", "reply instantly"], ["Flusher (every 5 s)", "Redis", "GETSET delta:post:9 0 → 31,240"],
        ["Flusher (every 5 s)", "Database", "UPDATE posts SET likes = likes + 31240 WHERE id = 9", "", "One DB write per 5 s instead of 250,000."]]),
+     "Before: one hot row", "After: sharded / buffered counting"),
   TABLE("Choose by need", ["Need", "Technique"], [["exact, low rate", "atomic DB UPDATE"], ["high rate, slightly delayed is fine", "Redis INCR + periodic flush"], ["very hot single key", "sharded counters"], ["unique counts (views by distinct users)", "HyperLogLog"], ["across regions", "CRDT PN-counter"]]))
 
 X("notification-pattern",
@@ -50,9 +52,12 @@ X("payments-ledger",
   TABLE("Correctness rules", ["Rule", "Why"], [["idempotency keys on every payment API", "retries can't double charge"], ["amounts as integers (paise)", "no floating-point errors"], ["append-only ledger; corrections are new entries", "audit trail"], ["daily reconciliation with the bank/PSP", "catch mismatches"], ["outbox for events", "never lose 'payment succeeded'"]]))
 
 X("inventory-overselling",
-  SEQ("The race that oversells the last item", ["Buyer 1", "Database", "Buyer 2"],
-      [["Buyer 1", "Database", "SELECT stock → 1"], ["Buyer 2", "Database", "SELECT stock → 1"], ["Buyer 1", "Database", "UPDATE stock = 0; create order"], ["Buyer 2", "Database", "UPDATE stock = 0; create order", "", "Two orders, one item."]]),
-  CODE("Fix: atomic conditional update", """UPDATE inventory
+  BA(SEQ("Check-then-act race", ["Buyer 1", "Database", "Buyer 2"],
+          [["Buyer 1", "Database", "SELECT stock → 1"], ["Buyer 2", "Database", "SELECT stock → 1"], ["Buyer 1", "Database", "UPDATE stock = 0; create order"], ["Buyer 2", "Database", "UPDATE stock = 0; create order ✘", "", "Two orders, one item."]]),
+     SEQ("Atomic conditional decrement", ["Buyer 1", "Database", "Buyer 2"],
+          [["Buyer 1", "Database", "UPDATE … SET stock = stock − 1 WHERE stock ≥ 1"], ["Database", "Buyer 1", "1 row updated → create order ✔", "r"], ["Buyer 2", "Database", "same UPDATE"], ["Database", "Buyer 2", "0 rows updated → sold out", "r", "The check and the write are one atomic statement, so they can't interleave."]]),
+     "Before: oversold", "After: atomic decrement"),
+  CODE("The fix in SQL", """UPDATE inventory
 SET stock = stock - 1
 WHERE sku = 'PS5' AND stock >= 1;      -- affected rows = 1 → success, 0 → sold out""", "sql"),
   TABLE("Flash-sale toolkit", ["Technique", "Purpose"], [["conditional update / optimistic version", "correctness at moderate load"], ["reservation with TTL (hold for 10 min)", "cart checkout; release if unpaid"], ["Redis DECR pre-check (Lua) then async order creation", "absorb 100k+ requests/s"],
@@ -94,6 +99,9 @@ X("read-write-heavy",
 
 X("hotspots",
   P("A hotspot is one key, partition or server receiving far more load than others: a celebrity's profile, a viral post, today's date as a partition key, or a flash-sale item."),
-  BARS("Requests per shard with a celebrity on shard 3", [("Shard 0", 1200, "1.2k/s"), ("Shard 1", 1100, "1.1k/s"), ("Shard 2", 1300, "1.3k/s"), ("Shard 3 (celebrity)", 48000, "48k/s ← overloaded"), ("Shard 4", 1000, "1.0k/s")]),
+  BA(BARS("Requests per shard with a celebrity on shard 3", [("Shard 0", 1200, "1.2k/s"), ("Shard 1", 1100, "1.1k/s"), ("Shard 2", 1300, "1.3k/s"), ("Shard 3 (celebrity)", 48000, "48k/s ← overloaded"), ("Shard 4", 1000, "1.0k/s")]),
+     BARS("Celebrity key copied to all 5 shards + local cache absorbing 80%", [("Shard 0", 3120, "3.1k/s"), ("Shard 1", 3020, "3.0k/s"), ("Shard 2", 3220, "3.2k/s"), ("Shard 3", 2920, "2.9k/s"), ("Shard 4", 2920, "2.9k/s")],
+          caption="48k/s → 9.6k/s reach the shards (80% served from in-process caches), split as 1.9k/s per copy across 5 shards."),
+     "Before: hot shard", "After: replicated hot key"),
   TABLE("Fixes", ["Hotspot", "Fix"], [["hot read key", "in-process cache + CDN; replicate key across N copies (key#1…key#N)"], ["hot write key (counter)", "sharded counters, buffer and batch"], ["time-based partition key (all writes hit 'today')", "add a hash prefix/salt: (hash(id) % 16, date)"],
         ["hot partition in Kafka", "better key; more partitions; split heavy keys"], ["sequential ids in range-sharded DB", "hash or randomised ids"]]))

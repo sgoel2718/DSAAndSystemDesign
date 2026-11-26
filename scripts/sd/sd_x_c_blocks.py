@@ -1,14 +1,18 @@
 """Detailed explanations with diagrams: Building Blocks tab."""
-from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE
+from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE, BA
 
 X("load-balancer",
   P("A load balancer (LB) is the single address clients talk to; it spreads requests over a pool of healthy servers, removes dead ones via **health checks**, and lets you add or remove servers without clients noticing."),
   FLOW("Where load balancers sit", [["u:Clients"], ["DNS (GeoDNS)"], ["L7 load balancer (active) + standby"], ["App 1", "App 2", "App 3"], ["L4 LB (internal)"], ["db:DB replicas"]],
        [["Clients", "DNS (GeoDNS)"], ["DNS (GeoDNS)", "L7 load balancer (active) + standby", "nearest region"], ["L7 load balancer (active) + standby", "App 1"], ["L7 load balancer (active) + standby", "App 2"], ["L7 load balancer (active) + standby", "App 3"],
         ["App 2", "L4 LB (internal)"], ["L4 LB (internal)", "DB replicas"]]),
-  SEQ("A server dies: health checks route around it", ["Load balancer", "App 1", "App 2"],
+  BA(SEQ("A server dies and the LB keeps sending to it", ["User", "Load balancer", "App 1", "App 2"],
+          [NOTE(["App 2"], "App 2 crashes"), ["User", "Load balancer", "request 1"], ["Load balancer", "App 2", "forward (round robin)"], ["Load balancer", "User", "502 Bad Gateway", "r", "Without health checks, every third request fails until a human notices."],
+           ["User", "Load balancer", "request 2"], ["Load balancer", "App 1", "forward"], ["App 1", "User", "200", "r"]]),
+     SEQ("A server dies: health checks route around it", ["Load balancer", "App 1", "App 2"],
       [["Load balancer", "App 1", "GET /health (every 5 s)"], ["App 1", "Load balancer", "200", "r"], ["Load balancer", "App 2", "GET /health"], ["App 2", "Load balancer", "timeout ×3", "r", "After N consecutive failures the LB marks App 2 unhealthy."],
        NOTE(["Load balancer", "App 2"], "App 2 removed from the pool"), ["Load balancer", "App 1", "all new requests go here (and other healthy servers)", "", "When App 2 passes checks again it's re-added. Connection draining lets in-flight requests finish during deploys."]]),
+     "Before: no health checks", "After: health checks route around the dead server"),
   TABLE("L4 vs L7", ["", "L4 (transport)", "L7 (application)"], [["sees", "IP + port", "full HTTP: path, headers, cookies"], ["can do", "forward TCP/UDP fast", "path routing, TLS termination, retries, header rewrite, auth, compression"],
                                                              ["speed", "very fast, cheap", "more CPU"], ["examples", "AWS NLB, LVS", "AWS ALB, Nginx, Envoy, HAProxy (both)"]]),
   KEY("The LB itself must not be a single point of failure: run an active–passive pair sharing a virtual IP (keepalived), or use a managed cloud LB that is already redundant.", "Avoid the SPOF"))
@@ -23,14 +27,24 @@ X("lb-algorithms",
 
 X("cdn",
   P("A CDN keeps copies of content on **edge servers** in hundreds of cities. A user in Pune is served from a Mumbai edge (5 ms away) instead of the origin in Virginia (200 ms away)."),
-  SEQ("First request (miss) vs second request (hit)", ["User (Pune)", "CDN edge (Mumbai)", "Origin (Virginia)"],
-      [["User (Pune)", "CDN edge (Mumbai)", "GET /img/cat.jpg"], ["CDN edge (Mumbai)", "Origin (Virginia)", "MISS → fetch from origin", "", "Only the first user in a region pays the long trip."], ["Origin (Virginia)", "CDN edge (Mumbai)", "image + Cache-Control: max-age=86400", "r"],
-       ["CDN edge (Mumbai)", "User (Pune)", "image (≈ 210 ms total)", "r"], ["User (Pune)", "CDN edge (Mumbai)", "another user: GET /img/cat.jpg"], ["CDN edge (Mumbai)", "User (Pune)", "HIT → image (≈ 10 ms)", "r", "Served from the edge cache until max-age expires."]]),
+  BA(SEQ("No CDN: every user crosses the world", ["User (Pune)", "Origin (Virginia)"],
+          [["User (Pune)", "Origin (Virginia)", "GET /img/cat.jpg"], ["Origin (Virginia)", "User (Pune)", "image (≈ 210 ms)", "r"], ["User (Pune)", "Origin (Virginia)", "another user: GET /img/cat.jpg"],
+           ["Origin (Virginia)", "User (Pune)", "image (≈ 210 ms again)", "r", "Every request pays the long round trip, and the origin serves every byte."]]),
+     SEQ("With a CDN: only the first request goes far", ["User (Pune)", "CDN edge (Mumbai)", "Origin (Virginia)"],
+          [["User (Pune)", "CDN edge (Mumbai)", "GET /img/cat.jpg"], ["CDN edge (Mumbai)", "Origin (Virginia)", "MISS → fetch once"], ["Origin (Virginia)", "CDN edge (Mumbai)", "image + Cache-Control: max-age=86400", "r"],
+           ["CDN edge (Mumbai)", "User (Pune)", "image (≈ 210 ms, first time only)", "r"], ["User (Pune)", "CDN edge (Mumbai)", "another user: GET /img/cat.jpg"], ["CDN edge (Mumbai)", "User (Pune)", "HIT → image (≈ 10 ms)", "r", "Served from the edge until max-age expires; the origin is untouched."]]),
+     "Before: no CDN", "After: CDN edge cache"),
   TABLE("Push vs pull CDN", ["", "Pull (lazy)", "Push"], [["how content arrives", "edge fetches on first miss", "you upload ahead of time"], ["good for", "most websites", "big files you know will be popular (game patches, video)"], ["first request", "slow", "fast"]]),
   KEY("Invalidate by **versioned file names** (`app.3f9c.js`) instead of purging: new deploy = new URL, so caches never serve stale code. CDNs also absorb DDoS traffic and terminate TLS near users.", "Practical tip"))
 
 X("caching",
   P("A cache stores the result of expensive work (DB queries, rendered pages, API calls) in fast memory so repeat requests skip the work. Caches exist at every layer:"),
+  BA(SEQ("Every read goes to the database", ["App", "Database"],
+          [["App", "Database", "SELECT product 7 (10 ms)"], ["Database", "App", "row", "r"], ["App", "Database", "same query again, 50,000 times a second"], ["Database", "App", "row (DB at 100% CPU, latency rising)", "r"]]),
+     SEQ("Cache-aside in front of the database", ["App", "Redis", "Database"],
+          [["App", "Redis", "GET product:7"], ["Redis", "App", "hit (0.5 ms)", "r", "90–99% of reads stop here."], ["App", "Redis", "GET product:9"], ["Redis", "App", "miss", "r"],
+           ["App", "Database", "SELECT product 9"], ["App", "Redis", "SET product:9 EX 600"]]),
+     "Before: no cache", "After: cache-aside"),
   FLOW("Cache layers from user to database", [["u:Browser cache"], ["CDN edge cache"], ["c:App in-process cache"], ["c:Distributed cache (Redis)"], ["db:DB buffer pool"]],
        [["Browser cache", "CDN edge cache", "miss"], ["CDN edge cache", "App in-process cache", "miss"], ["App in-process cache", "Distributed cache (Redis)", "miss"], ["Distributed cache (Redis)", "DB buffer pool", "miss"]]),
   CALC("Why hit ratio is everything", [("DB read latency", "db = 10", "ms"), ("Cache read latency", "c = 0.5", "ms"), ("Average latency at 90% hit ratio", "0.9 * c + 0.1 * db", "ms"),
@@ -55,9 +69,12 @@ X("cache-eviction",
   TABLE("Choosing", ["Policy", "Good when"], [["LRU", "recent items are likely reused (default for most caches)"], ["LFU", "stable popularity (top products)"], ["TTL", "data goes stale after a known time"], ["Random / approximated LRU", "huge caches (Redis samples 5 keys and evicts the oldest)"]]))
 
 X("cache-problems",
-  SEQ("Cache stampede (thundering herd) and the fix", ["1,000 requests", "Redis", "Database"],
-      [["1,000 requests", "Redis", "GET hot:key"], ["Redis", "1,000 requests", "expired → miss for everyone", "r"], ["1,000 requests", "Database", "1,000 identical queries at once", "", "DB overloads; latency explodes."],
-       NOTE(["1,000 requests", "Database"], "Fix: single-flight lock"), ["1,000 requests", "Redis", "SET lock:key NX EX 5 (one wins)"], ["1,000 requests", "Database", "only the winner queries"], ["1,000 requests", "Redis", "winner SETs value; others wait/retry or get the stale value", "", "Also: jittered TTLs, refresh-ahead before expiry."]]),
+  BA(SEQ("Cache stampede (thundering herd)", ["1,000 requests", "Redis", "Database"],
+          [["1,000 requests", "Redis", "GET hot:key"], ["Redis", "1,000 requests", "expired → miss for everyone", "r"], ["1,000 requests", "Database", "1,000 identical queries at once", "", "DB overloads; latency explodes; more timeouts → more retries."]]),
+     SEQ("Single-flight: one request reloads, the rest wait", ["1,000 requests", "Redis", "Database"],
+          [["1,000 requests", "Redis", "GET hot:key → miss"], ["1,000 requests", "Redis", "SET lock:key NX EX 5 (exactly one wins)"], ["1,000 requests", "Database", "only the winner queries (1 query)"],
+           ["1,000 requests", "Redis", "winner SETs the value", "", "Others wait briefly and re-read, or get the slightly stale value. Also: jittered TTLs and refresh-ahead before expiry."]]),
+     "Before: stampede", "After: single-flight lock"),
   TABLE("The classic problems", ["Problem", "What happens", "Fix"], [["Stampede", "a hot key expires; everyone hits the DB", "lock / single-flight, early refresh, jittered TTL"], ["Penetration", "requests for keys that don't exist always miss", "cache the 'not found' briefly; Bloom filter of valid keys"],
         ["Avalanche", "many keys expire at once or the cache restarts", "random TTL spread, warm-up, replicas"], ["Hot key", "one key gets millions of reads, one Redis node melts", "local in-process cache, replicate key as key#1..key#N"], ["Inconsistency", "DB updated, cache still old", "delete-after-write, short TTL, CDC-driven invalidation"]]))
 
@@ -72,9 +89,12 @@ X("redis-memcached",
 
 X("message-queues",
   P("A queue lets a **producer** hand work to **consumers** without waiting for it: the API replies immediately, and workers process at their own pace. This decouples services, absorbs spikes, and lets failed jobs be retried."),
-  SEQ("Upload a video without making the user wait", ["Client", "API", "Queue", "Transcode worker"],
-      [["Client", "API", "POST /videos"], ["API", "Queue", "publish {videoId: 7}"], ["API", "Client", "202 Accepted (processing…)", "r", "The user isn't blocked by a 5-minute transcode."],
-       ["Transcode worker", "Queue", "receive message (invisible for 30 min)"], ["Transcode worker", "Transcode worker", "transcode…"], ["Transcode worker", "Queue", "ACK → message deleted", "", "If the worker crashes before ACK, the message becomes visible again and another worker retries it."]]),
+  BA(SEQ("Synchronous: the user waits for the slow work", ["Client", "API", "Transcoder"],
+          [["Client", "API", "POST /videos"], ["API", "Transcoder", "transcode now (5 minutes)"], ["Client", "API", "…waiting…", "", "The HTTP request times out after 30–60 s; a spike of uploads exhausts API threads; if the transcoder is down, uploads fail."]]),
+     SEQ("Asynchronous: hand the work to a queue", ["Client", "API", "Queue", "Transcode worker"],
+          [["Client", "API", "POST /videos"], ["API", "Queue", "publish {videoId: 7}"], ["API", "Client", "202 Accepted (processing…)", "r", "The user isn't blocked by a 5-minute transcode."],
+           ["Transcode worker", "Queue", "receive message (invisible for 30 min)"], ["Transcode worker", "Transcode worker", "transcode…"], ["Transcode worker", "Queue", "ACK → message deleted", "", "If the worker crashes before ACK, the message becomes visible again and another worker retries it."]]),
+     "Before: synchronous call", "After: message queue"),
   FLOW("Point-to-point vs publish/subscribe", [["Producer A", "Publisher B"], ["q:Queue", "q:Topic"], ["Worker 1", "Worker 2", "Email svc", "Search svc"]],
        [["Producer A", "Queue"], ["Queue", "Worker 1", "msg 1"], ["Queue", "Worker 2", "msg 2"], ["Publisher B", "Topic"], ["Topic", "Email svc", "every msg"], ["Topic", "Search svc", "every msg"]]),
   TABLE("Must-know features", ["Feature", "Why"], [["ack / visibility timeout", "retry if a consumer dies"], ["dead-letter queue", "park messages that fail N times"], ["retries with backoff", "transient failures"], ["ordering (FIFO / partition key)", "per-entity order"], ["idempotent consumers", "at-least-once delivery means duplicates"]]))
@@ -89,9 +109,12 @@ X("kafka",
                             ("Partitions at ~10 MB/s per partition", "e * s / 10e6", "", "→ use 24–32 for headroom")]))
 
 X("delivery-semantics",
-  SEQ("Why exactly-once is hard: where duplicates come from", ["Producer", "Broker", "Consumer", "DB"],
+  BA(SEQ("Why exactly-once is hard: where duplicates come from", ["Producer", "Broker", "Consumer", "DB"],
       [["Producer", "Broker", "send msg #5"], ["Broker", "Producer", "ack lost in network", "r", "Producer can't tell if #5 was stored, so it retries."], ["Producer", "Broker", "send msg #5 again → duplicate"],
        ["Consumer", "Broker", "read #5"], ["Consumer", "DB", "apply #5 (charge ₹500)"], ["Consumer", "Consumer", "crash before committing offset", "", "On restart the consumer re-reads #5 and charges again, unless the write is idempotent."]]),
+     SEQ("Dedup by message id makes the redelivery harmless", ["Consumer", "Broker", "DB"],
+          [["Consumer", "Broker", "re-read #5 after restart"], ["Consumer", "DB", "BEGIN; INSERT processed(msg_id='m-5')"], ["DB", "Consumer", "duplicate key → already applied", "r"], ["Consumer", "DB", "ROLLBACK (no second charge)"], ["Consumer", "Broker", "commit offset", "", "At-least-once delivery + idempotent processing = effectively once."]]),
+     "Before: duplicates are applied twice", "After: idempotent consumer"),
   TABLE("The three guarantees", ["Guarantee", "How", "Risk", "Use for"], [["At-most-once", "commit offset before processing", "lost messages", "metrics, logs"], ["At-least-once", "commit after processing; retry", "duplicates", "almost everything (+ idempotency)"],
                                                                      ["Exactly-once (effectively)", "idempotent producer + transactions, or dedup by message id in the same DB transaction", "complexity", "payments, ledgers"]]),
   CODE("Effectively-once consumer: dedup in the same transaction", """BEGIN;
@@ -101,7 +124,9 @@ COMMIT;                                                    -- both or neither"""
 
 X("backpressure",
   P("Backpressure is how a slow consumer tells a fast producer to slow down. Without it, queues grow until memory runs out or latency becomes useless."),
-  CALC("Queue growth without backpressure", [("Producer rate", "p = 5000", "/s"), ("Consumer capacity", "c = 4000", "/s"), ("Backlog growth", "p - c", "/s"), ("Backlog after 1 hour", "(p - c) * 3600", ""), ("Time for a new item to be processed after 1 h", "(p - c) * 3600 / c / 60", "minutes", "useless for real-time")]),
+  BA(CALC("Queue growth without backpressure", [("Producer rate", "p = 5000", "/s"), ("Consumer capacity", "c = 4000", "/s"), ("Backlog growth", "p - c", "/s"), ("Backlog after 1 hour", "(p - c) * 3600", ""), ("Time for a new item to be processed after 1 h", "(p - c) * 3600 / c / 60", "minutes", "useless for real-time")]),
+     CALC("With backpressure: bounded queue + autoscale on lag", [("Queue capacity (producer blocks/sheds beyond this)", "q = 10000", ""), ("Worst-case wait in the queue", "q / 4000", "s"), ("Consumers after autoscaling (2 × 4,000/s)", "c2 = 2 * 4000", "/s"), ("Backlog growth now", "max(0, 5000 - c2)", "/s", "the queue drains instead of growing")]),
+     "Before: unbounded queue", "After: backpressure"),
   TABLE("Strategies", ["Strategy", "How", "Example"], [["Block / slow producer", "bounded queue; put() waits", "TCP flow control, Java BlockingQueue"], ["Drop / sample", "discard extra or low-priority items", "metrics, video frames"], ["Shed load", "reject with 429/503", "API under overload"],
                                                     ["Scale consumers", "autoscale on lag", "Kafka consumer lag → more pods"], ["Buffer durably", "spill to Kafka/disk", "absorb short spikes"], ["Pull-based consumption", "consumer requests N items", "Reactive Streams, Kafka"]]))
 

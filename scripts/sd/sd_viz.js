@@ -167,6 +167,7 @@ function vBlock(b){
     case "code": return `<div class="codewrap">${b.title ? `<div class="codebar"><span>${vEsc(b.title)}</span><span class="cbtns"><button type="button" class="copy sdcopy">Copy</button></span></div>` : ""}<pre class="code ${b.lang || "java"}">${vEsc(b.code)}</pre></div>`;
     case "out": return `<div class="vxout"><div class="vxoh">${vEsc(b.title || "Output when you run main()")}</div><pre>${vEsc(b.text)}</pre></div>`;
     case "h": return `<h5 class="vxh">${mdInline(b.md)}</h5>`;
+    case "ba": return `<div class="vxba"><div class="vxbap bef"><div class="vxbal">✘ ${vEsc(b.bl)}</div>${vBlock(b.before)}</div><div class="vxbap aft"><div class="vxbal">✔ ${vEsc(b.al)}</div>${vBlock(b.after)}</div></div>`;
     default: return "";
   }
 }

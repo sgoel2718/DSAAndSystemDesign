@@ -10,6 +10,11 @@ def X(id, *blocks):
     EXPLAIN[id] = dict(blocks=[b for b in blocks if b])
 
 
+def BA(before, after, bl="Before: the problem", al="After: the fix"):
+    """Two separate diagrams: the problem state and the fixed state, each in its own labelled panel."""
+    return dict(t="ba", before=before, after=after, bl=bl, al=al)
+
+
 def P(md): return dict(t="md", md=md.strip())
 def H(md): return dict(t="h", md=md)
 def AN(md): return dict(t="analogy", md=md.strip())

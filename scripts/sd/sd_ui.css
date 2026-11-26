@@ -340,3 +340,17 @@ mark.hl[data-hl]:hover{outline:1px dashed color-mix(in srgb,var(--ink) 40%,trans
 .vxout pre{margin:0;padding:10px;font:12.5px var(--mono);background:var(--panel);white-space:pre-wrap}
 .vxkeypt p{margin:4px 0 0}
 .sdj .sdjt li{margin:4px 0}
+.vxba{display:grid;gap:12px;margin:10px 0}
+.vxbap{border:1px solid var(--line);border-left:5px solid;border-radius:8px;padding:6px 8px 2px;background:var(--panel)}
+.vxbap.bef{border-left-color:#c0392b}.vxbap.aft{border-left-color:#2e8b57}
+.vxbal{font:700 12px var(--mono);letter-spacing:.04em;text-transform:uppercase;margin:2px 4px 4px}
+.vxbap.bef .vxbal{color:#c0392b}.vxbap.aft .vxbal{color:#2e8b57}
+.vxbap .vxfig{margin:4px 0}
+.sdiq .iqd{border:1px solid var(--line);border-radius:8px;margin:6px 0;background:var(--panel)}
+.sdiq .iqd summary{cursor:pointer;padding:8px 10px;display:flex;gap:8px;align-items:baseline;list-style:none}
+.sdiq .iqd summary::-webkit-details-marker{display:none}
+.sdiq .iqd[open] summary{border-bottom:1px dashed var(--line)}
+.sdiq .iqq{font-weight:600;font-size:14px}
+.sdiq .iqa{padding:6px 12px 8px;font-size:14px}
+.iqlv{font:600 10px var(--mono);padding:2px 6px;border-radius:10px;white-space:nowrap;flex:none}
+.iqlv.B{background:color-mix(in srgb,#2e8b57 18%,var(--panel))}.iqlv.I{background:color-mix(in srgb,#d68910 22%,var(--panel))}.iqlv.A{background:color-mix(in srgb,#c0392b 20%,var(--panel))}

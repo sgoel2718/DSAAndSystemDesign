@@ -153,6 +153,18 @@ function javaHTML(j, title){
     <div class="vxout"><div class="vxoh">Output when you run main()</div><pre>${esc(j.out)}</pre></div>
     ${j.tasks.length ? `<div class="sdbox tip"><b>Practice: change the code and predict the output first</b><ol class="sdjt">${j.tasks.map(t => `<li>${mdInline(t)}</li>`).join("")}</ol></div>` : ""}</section>`;
 }
+function iqHTML(qs){
+  if (!qs || !qs.length) return "";
+  const lv = {B: "Basic", I: "Intermediate", A: "Advanced"};
+  return `<section class="sdx sdiq"><div class="sdxt">Theory questions interviewers ask on this topic (${qs.length})</div>
+    <p class="vxnote2">Answer each one out loud first, then open it to compare. <button type="button" class="sdlink iqall">Open all answers</button></p>
+    ${qs.map((x, i) => `<details class="iqd"><summary><span class="iqlv ${x.lv}">${lv[x.lv]}</span><span class="iqq">Q${i + 1}. ${mdInline(x.q)}</span></summary><div class="sdmd iqa">${md(x.a)}</div></details>`).join("")}</section>`;
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".iqall"); if (!b) return;
+  const sec = b.closest(".sdiq"), ds = [...sec.querySelectorAll("details.iqd")], open = !ds.every(d => d.open);
+  ds.forEach(d => d.open = open); b.textContent = open ? "Close all answers" : "Open all answers";
+});
 function conceptRef(c){
   return `<div class="sdmd">${md(c.body)}</div>
     ${c.x ? sdxHTML(c.x, "Explained step by step, with diagrams") : ""}
@@ -164,7 +176,8 @@ function conceptRef(c){
     ${c.deep ? mlDeep(c) : ""}
     ${c.say && c.say.length ? `<div class="sdbox tip sdsay"><b>In the interview: what to say</b>${c.say.map(x => `<div class="sayit">
       <p class="sayq">${x.p.startsWith("Interviewer: ") ? `<span class="sayw">Interviewer asks</span>${mdInline(x.p.slice(13))}` : `<span class="sayw">Tip</span>${mdInline(x.p)}`}</p>
-      <blockquote class="saya"><span class="sayw">Your answer</span>${mdInline(x.a.replace(/^"|"$/g, ""))}</blockquote></div>`).join("")}</div>` : ""}`;
+      <blockquote class="saya"><span class="sayw">Your answer</span>${mdInline(x.a.replace(/^"|"$/g, ""))}</blockquote></div>`).join("")}</div>` : ""}
+    ${c.iq ? iqHTML(c.iq) : ""}`;
 }
 function conceptLinks(c){
   return `${c.demo ? `<div class="sdlabhost" data-demo="${c.demo}"><button type="button" class="sdlabbtn" data-demo="${c.demo}">▶ Try the live demo: ${esc(ML_DEMO_TITLE(c.demo))}</button></div>` : ""}
@@ -226,6 +239,7 @@ function hldBody(h){
   return `<h4>1 · Requirements</h4><div class="sdreq"><div><b>Functional</b><ul>${h.functional.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div>
       <div><b>Non-functional</b><ul>${h.nonfunctional.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div></div>
     ${SDV.practice ? `<details class="sdans"><summary>Try it yourself first: design it on paper for 30 minutes, then open the model answer</summary>${ans}</details>` : ans}
+    ${h.iq ? iqHTML(h.iq) : ""}
     <label class="sdlearn"><input type="checkbox" data-hld="${h.id}"${state.sd.h[h.id] ? " checked" : ""}> I have practised this design</label>`;
 }
 function renderHLD(root){
@@ -256,6 +270,7 @@ function lldBody(l){
       <div><b>Classes / entities</b><ul>${l.entities.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul><b>Patterns used</b><ul>${l.patterns.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div></div>
     ${SDV.practice ? `<details class="sdans"><summary>Try it yourself first: code it in 45 minutes, then open the solution</summary>${code}</details>` : code}
     ${l.extensions.length ? `<div class="sdbox tip"><b>Extensions interviewers ask for</b><ul>${l.extensions.map(f => `<li>${mdInline(f)}</li>`).join("")}</ul></div>` : ""}
+    ${l.iq ? iqHTML(l.iq) : ""}
     <label class="sdlearn"><input type="checkbox" data-lld="${l.id}"${state.sd.l[l.id] ? " checked" : ""}> I have coded this myself</label>`;
 }
 function renderLLD(root){

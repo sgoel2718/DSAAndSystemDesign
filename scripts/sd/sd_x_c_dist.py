@@ -1,14 +1,18 @@
 """Detailed explanations with diagrams: Distributed Systems tab."""
-from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE
+from sd_x_util import X, P, H, AN, KEY, FLOW, SEQ, NOTE, ER, TABLE, CALC, BARS, CODE, UML, STATE, BA
 
 X("fallacies",
   TABLE("The 8 fallacies and what they break", ["False assumption", "Reality", "Design response"],
         [["the network is reliable", "packets drop, links partition", "timeouts, retries, idempotency"], ["latency is zero", "0.5 ms in-DC, 150+ ms cross-continent", "batch calls, cache, keep chatty calls local"], ["bandwidth is infinite", "large payloads saturate links", "compress, paginate, stream"],
          ["the network is secure", "anyone can sniff/spoof", "TLS/mTLS, zero trust"], ["topology doesn't change", "IPs and nodes come and go", "service discovery, DNS, health checks"], ["there is one administrator", "many teams/providers", "contracts, observability, runbooks"],
          ["transport cost is zero", "serialisation CPU + cloud egress fees", "efficient formats, keep traffic in-region"], ["the network is homogeneous", "mixed hardware, protocols, versions", "standard protocols, backward-compatible APIs"]]),
-  SEQ("Why a timeout tells you almost nothing", ["Client", "Server"],
-      [["Client", "Server", "charge ₹500"], NOTE(["Client", "Server"], "no reply within 2 s"),
-       ["Client", "Client", "was the request lost? the server slow? the reply lost?", "", "All three look identical to the client. The charge may or may not have happened, so a retry must be idempotent (same Idempotency-Key)."]]))
+  BA(SEQ("Naive retry after a timeout", ["Client", "Server"],
+          [["Client", "Server", "charge ₹500"], ["Server", "Server", "charged ✔"], NOTE(["Client", "Server"], "reply lost: client sees a 2 s timeout"),
+           ["Client", "Server", "retry: charge ₹500"], ["Server", "Client", "charged again ✘ (₹1,000 total)", "r", "A timeout can't tell 'request lost' from 'reply lost'."]]),
+     SEQ("Retry with an idempotency key", ["Client", "Server"],
+          [["Client", "Server", "charge ₹500, key k-81"], ["Server", "Server", "charged, response saved under k-81"], NOTE(["Client", "Server"], "reply lost: timeout"),
+           ["Client", "Server", "retry: charge ₹500, key k-81"], ["Server", "Client", "saved response returned (no second charge) ✔", "r", "Timeouts + retries + idempotency is the standard answer to an unreliable network."]]),
+     "Before: retry double-charges", "After: idempotent retry"))
 
 X("cap",
   P("CAP: during a network **P**artition, a distributed store must give up either **C**onsistency (every read sees the latest write) or **A**vailability (every request gets a non-error answer). Without a partition, you can have both."),
@@ -31,16 +35,22 @@ X("consistency-models",
         [["Linearizable (strong)", "acts like one copy; reads see the latest completed write", "comment as soon as Asha's write returns", "highest latency, coordination"], ["Sequential", "everyone sees writes in the same order", "same order, maybe later", "high"],
          ["Causal", "cause before effect (reply after the comment it answers)", "never a reply before its comment", "medium"], ["Read-your-writes", "Asha always sees her own writes", "(Ravi: no promise)", "low: sticky reads"],
          ["Monotonic reads", "you never go back in time", "doesn't see the comment and then lose it", "low"], ["Eventual", "replicas converge if writes stop", "may see it late, possibly out of order", "lowest"]]),
-  SEQ("Read-your-writes violation and fix", ["Asha", "Leader", "Lagging replica"],
-      [["Asha", "Leader", "post comment"], ["Leader", "Asha", "OK", "r"], ["Asha", "Lagging replica", "reload page"], ["Lagging replica", "Asha", "no comment!", "r", "She thinks it failed and posts again."],
-       NOTE(["Asha", "Lagging replica"], "Fix: route Asha's reads to the leader for ~10 s after a write, or wait until the replica reaches her write's log position")]))
+  BA(SEQ("Read from a lagging replica", ["Asha", "Leader", "Lagging replica"],
+          [["Asha", "Leader", "post comment"], ["Leader", "Asha", "OK", "r"], ["Asha", "Lagging replica", "reload page"], ["Lagging replica", "Asha", "no comment!", "r", "She thinks it failed and posts again."]]),
+     SEQ("Read-your-writes", ["Asha", "Leader", "Lagging replica"],
+          [["Asha", "Leader", "post comment (write at log position 501)"], ["Leader", "Asha", "OK + position 501", "r"], ["Asha", "Lagging replica", "reload: need position ≥ 501"],
+           ["Lagging replica", "Asha", "I'm at 498: redirect to leader", "r"], ["Asha", "Leader", "read"], ["Leader", "Asha", "comment visible ✔", "r", "Or: route a user's reads to the leader for ~10 s after they write."]]),
+     "Before: user can't see their own write", "After: read-your-writes"))
 
 X("quorum",
   P("With **N** replicas, a write waits for **W** acks and a read asks **R** replicas. If **R + W > N**, every read set overlaps every write set in at least one replica, so the read sees the latest value (by version)."),
   TABLE("N = 3: choosing R and W", ["W", "R", "R + W > N?", "Behaviour"], [["2", "2", "✔ (4 > 3)", "balanced; tolerates 1 node down for both"], ["3", "1", "✔", "fast reads, writes fail if any node down"], ["1", "3", "✔", "fast writes, slow reads"], ["1", "1", "✘", "fastest, may read stale data"]]),
-  SEQ("Overlap in action (N = 3, W = 2, R = 2)", ["Client", "Replica 1", "Replica 2", "Replica 3"],
+  BA(SEQ("W = 1, R = 1 (R + W = 2, not > 3)", ["Client", "Replica 1", "Replica 2", "Replica 3"],
+          [["Client", "Replica 1", "write x = 7 (v2), ack after 1"], NOTE(["Replica 2", "Replica 3"], "haven't received v2 yet"), ["Client", "Replica 3", "read x (asks just 1)"], ["Replica 3", "Client", "x = 5 (v1): stale ✘", "r"]]),
+       SEQ("Overlap in action (N = 3, W = 2, R = 2)", ["Client", "Replica 1", "Replica 2", "Replica 3"],
       [["Client", "Replica 1", "write x = 7 (v2)"], ["Client", "Replica 2", "write x = 7 (v2)"], NOTE(["Replica 3"], "missed the write: still x = 5 (v1)"),
-       ["Client", "Replica 2", "read x"], ["Client", "Replica 3", "read x"], ["Replica 3", "Client", "x = 5 (v1)", "r"], ["Replica 2", "Client", "x = 7 (v2) → newest wins", "r", "Read repair: the client/coordinator also writes v2 back to Replica 3."]]))
+       ["Client", "Replica 2", "read x"], ["Client", "Replica 3", "read x"], ["Replica 3", "Client", "x = 5 (v1)", "r"], ["Replica 2", "Client", "x = 7 (v2) → newest wins", "r", "Read repair: the client/coordinator also writes v2 back to Replica 3."]]),
+     "Before: quorums don't overlap", "After: R + W > N"))
 
 X("time-clocks",
   P("Machines' clocks drift and NTP corrections can move them backwards, so wall-clock timestamps can't reliably order events across machines. **Lamport clocks** give a consistent order using counters:"),
@@ -67,16 +77,24 @@ X("consensus",
   CALC("Fault tolerance", [("Nodes", "n = 5", ""), ("Majority needed", "n // 2 + 1", ""), ("Crashes tolerated", "n - (n // 2 + 1)", "", "3 nodes tolerate 1; 5 tolerate 2; even numbers add no tolerance")]))
 
 X("leader-election",
-  SEQ("Lease-based election with etcd", ["Node A", "etcd", "Node B"],
+  BA(SEQ("Lease expires during a pause: two leaders", ["Node A", "etcd", "Node B"],
       [["Node A", "etcd", "create /leader = A with lease 10 s (if absent)"], ["etcd", "Node A", "success → A is leader", "r"], ["Node B", "etcd", "create /leader = B"], ["etcd", "Node B", "exists → B watches the key", "r"],
        ["Node A", "etcd", "keep-alive every 3 s"], NOTE(["Node A"], "A freezes (GC pause) for 15 s"), ["etcd", "Node B", "lease expired: key deleted", "a"], ["Node B", "etcd", "create /leader = B → leader"],
-       ["Node A", "Node A", "wakes up still thinking it's leader!", "", "Split brain risk. Fix: fencing tokens (next card) and A checking its lease before acting."]]),
+       ["Node A", "Node A", "wakes up still thinking it's leader!", "", "Split brain: A and B both act as leader and both write."]]),
+     SEQ("Fencing token: the old leader's writes are rejected", ["Node A", "etcd", "Node B", "Storage"],
+          [["etcd", "Node A", "leadership, token 7", "r"], NOTE(["Node A"], "GC pause"), ["etcd", "Node B", "lease expired → B leads, token 8", "r"], ["Node B", "Storage", "write (token 8) ✔"],
+           ["Node A", "Storage", "write (token 7)"], ["Storage", "Node A", "rejected: 7 < 8 ✘", "r", "A learns it's no longer leader and steps down."]]),
+     "Before: split brain", "After: fencing tokens"),
   TABLE("Approaches", ["Method", "How", "Example"], [["Consensus algorithm", "Raft/Paxos built into the system", "etcd, Kafka KRaft"], ["Coordination service", "ephemeral node / lease", "ZooKeeper, etcd, Consul"], ["Database lock", "row with expiry / advisory lock", "small systems"], ["Bully / ring", "highest id wins (classic)", "textbooks"]]))
 
 X("distributed-locks",
-  SEQ("Fencing tokens prevent a stale lock holder from doing damage", ["Client 1", "Lock service", "Client 2", "Storage"],
+  BA(SEQ("Lock without fencing: a paused holder corrupts data", ["Client 1", "Lock service", "Client 2", "Storage"],
+          [["Client 1", "Lock service", "acquire lock (TTL 30 s)"], NOTE(["Client 1"], "40 s GC pause; lock expires"), ["Client 2", "Lock service", "acquire lock ✔"], ["Client 2", "Storage", "write PAID"],
+           ["Client 1", "Storage", "write PENDING (still thinks it holds the lock)"], ["Storage", "Client 1", "accepted ✘ data now wrong", "r"]]),
+       SEQ("Fencing tokens prevent a stale lock holder from doing damage", ["Client 1", "Lock service", "Client 2", "Storage"],
       [["Client 1", "Lock service", "acquire lock"], ["Lock service", "Client 1", "granted, token 33", "r"], NOTE(["Client 1"], "long GC pause; lock expires"), ["Client 2", "Lock service", "acquire lock"], ["Lock service", "Client 2", "granted, token 34", "r"],
        ["Client 2", "Storage", "write (token 34)"], ["Client 1", "Storage", "write (token 33)"], ["Storage", "Client 1", "rejected: 33 < 34 already seen", "r", "Storage only accepts increasing tokens, so the stale holder can't corrupt data."]]),
+     "Before: lock alone", "After: lock + fencing token"),
   CODE("Redis lock: acquire and safe release", """SET lock:order:987 <random-uuid> NX PX 30000      -- only if absent, 30 s expiry
 
 -- release only if we still own it (atomic Lua)
