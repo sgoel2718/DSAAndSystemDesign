@@ -354,3 +354,11 @@ mark.hl[data-hl]:hover{outline:1px dashed color-mix(in srgb,var(--ink) 40%,trans
 .sdiq .iqa{padding:6px 12px 8px;font-size:14px}
 .iqlv{font:600 10px var(--mono);padding:2px 6px;border-radius:10px;white-space:nowrap;flex:none}
 .iqlv.B{background:color-mix(in srgb,#2e8b57 18%,var(--panel))}.iqlv.I{background:color-mix(in srgb,#d68910 22%,var(--panel))}.iqlv.A{background:color-mix(in srgb,#c0392b 20%,var(--panel))}
+#syncpill{position:fixed;left:12px;bottom:12px;z-index:40;font:600 12px var(--sans);padding:6px 10px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#syncpill.ok{color:#2e8b57;border-color:color-mix(in srgb,#2e8b57 50%,var(--line))}#syncpill.err{color:#c0392b;border-color:#c0392b}
+.sybox{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--panel);margin:12px 0}
+.sybox h3{margin:0 0 4px}.syrow{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px dashed var(--line);font-size:14px}
+.syok{color:#2e8b57;font-weight:600}.syerr{color:#c0392b}
+.sysetup{margin-top:8px;font-size:14px}.sysetup summary{cursor:pointer;font-weight:600}
+.syform{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.syform input{flex:1 1 220px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:13px var(--mono)}
+@media (max-width:600px){#syncpill{bottom:8px;left:8px;font-size:11px}}

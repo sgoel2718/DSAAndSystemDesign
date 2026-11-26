@@ -90,6 +90,7 @@ function renderNotes(root){
     <p class="lead">Write anything to revisit later, and find every topic you bookmarked or annotated across DSA, System Design and ML &amp; AI. Tap ☆ to bookmark or ✎ to write a note on any topic card, day lesson, pattern, HLD/LLD question, ML lab or Q&amp;A. Select any text and tap <b>Highlight</b> to mark it.</p>
     <div class="sdbar"><label class="sdsearch"><span class="sr">Search notes</span><input type="search" id="nvQ" placeholder="Search your notes and bookmarks" value="${esc(NV.q)}"></label>
       <button type="button" class="sdtog" id="nvExport">Export backup</button><label class="sdtog nvimp">Import backup<input type="file" id="nvImport" accept="application/json" hidden></label></div>
+    <section class="nvsec sybox" id="syncbox">${syPanel()}</section>
     <div class="nvstats"><span><b>${state.pad.length}</b> notepad notes</span><span><b>${Object.keys(state.tm).length}</b> bookmarked topics</span><span><b>${Object.keys(state.tn).length}</b> topic notes</span><span><b>${state.hl.length}</b> highlights</span>
       <button type="button" class="sdlink" id="nvProb">${probMarks} bookmarked · ${probNotes} commented DSA questions →</button></div>
     <section class="nvsec"><div class="trhead"><h3>Notepad</h3><button type="button" class="sdlabbtn" id="nvNew">+ New note</button></div>
@@ -129,6 +130,7 @@ function renderNotes(root){
   root.querySelectorAll("[data-unmark]").forEach(b => b.onclick = () => { delete state.tm[b.dataset.unmark]; save(); renderSDX(); });
   root.querySelectorAll("[data-unnote]").forEach(b => b.onclick = () => { const k = "n:" + b.dataset.unnote; if (NV.confirm === k) { delete state.tn[b.dataset.unnote]; NV.confirm = null; save(); } else NV.confirm = k; renderSDX(); });
   root.querySelector("#nvProb").onclick = () => { filter = 5; qFilter.marks = true; qFilter.notes = false; GROUP = "dsa"; renderTabs(); renderBoard(); };
+  syWire();
   root.querySelector("#nvExport").onclick = async () => {
     const blob = new Blob([JSON.stringify({app: "dsa30", exported: new Date().toISOString(), state}, null, 1)], {type: "application/json"});
     const fname = "dsa-notes-backup-" + new Date().toISOString().slice(0, 10) + ".json";
